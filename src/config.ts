@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 /** Model slug used when OPENROUTER_MODEL is not set. Any slug from https://openrouter.ai/models works. */
-export const DEFAULT_MODEL = "anthropic/claude-opus-5.5";
+export const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
 
 export const KEY_SETUP_URL = "https://openrouter.ai/keys";
 

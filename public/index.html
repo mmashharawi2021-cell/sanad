@@ -3,6 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%237bb0ff'/%3E%3C/svg%3E"
+    />
     <title>opencode · محادثة OpenRouter</title>
     <style>
       :root {
@@ -277,39 +281,182 @@
         margin: 4px 0 0;
         font-size: 11.5px;
         color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .model-wrap {
+      .model-picker {
         position: relative;
+      }
+
+      .model-btn {
         display: flex;
         align-items: center;
-        gap: 8px;
-      }
-
-      .model-wrap::after {
-        content: "▾";
-        position: absolute;
-        inset-inline-start: 12px;
-        color: var(--muted);
-        font-size: 11px;
-        pointer-events: none;
-      }
-
-      .model-select {
-        appearance: none;
+        gap: 10px;
+        max-width: 320px;
         border: 0;
-        max-width: 300px;
-        padding: 11px 34px 11px 16px;
         border-radius: var(--radius-sm);
         background: var(--bg);
         color: var(--text);
-        font-size: 12.5px;
+        padding: 8px 14px;
         box-shadow: var(--inset-sm);
         cursor: pointer;
-        outline: none;
+        text-align: start;
       }
 
-      .model-select:focus { box-shadow: var(--inset-sm), 0 0 0 2px var(--accent-soft); }
+      .model-btn:hover .model-btn-name { color: var(--accent); }
+
+      .model-btn-text {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .model-btn-name {
+        font-size: 12.5px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: color .16s ease;
+      }
+
+      .model-btn-meta {
+        font-size: 10.5px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .chev {
+        color: var(--muted);
+        font-size: 10px;
+        transition: transform .18s ease;
+      }
+
+      .model-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+      .model-panel {
+        position: absolute;
+        top: calc(100% + 10px);
+        inset-inline-end: 0;
+        z-index: 40;
+        width: min(390px, calc(100vw - 40px));
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+        border-radius: var(--radius);
+        background: var(--bg);
+        box-shadow: var(--raised);
+      }
+
+      .model-search {
+        border: 0;
+        outline: none;
+        border-radius: 11px;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 12.5px;
+        padding: 10px 12px;
+        box-shadow: var(--inset-sm);
+      }
+
+      .model-search::placeholder { color: var(--muted); opacity: .8; }
+
+      .model-search:focus { box-shadow: var(--inset-sm), 0 0 0 2px var(--accent-soft); }
+
+      .model-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: min(52vh, 420px);
+        overflow-y: auto;
+        padding: 2px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--shadow-dark) transparent;
+      }
+
+      .model-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--text);
+        text-align: start;
+        padding: 9px 10px;
+        cursor: pointer;
+      }
+
+      .model-item:hover,
+      .model-item.active { box-shadow: var(--raised-sm); }
+
+      .model-item.selected { box-shadow: var(--inset-sm); }
+
+      .model-item-text {
+        min-width: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .model-item-name {
+        font-size: 12.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .model-item-meta {
+        font-size: 10.5px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .model-item-check {
+        color: var(--accent);
+        font-size: 12px;
+        opacity: 0;
+      }
+
+      .model-item.selected .model-item-check { opacity: 1; }
+
+      .model-tag {
+        flex: 0 0 auto;
+        font-size: 9.5px;
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 2px 7px;
+        box-shadow: var(--inset-sm);
+        white-space: nowrap;
+      }
+
+      .model-empty {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+        padding: 20px 8px;
+        line-height: 1.8;
+      }
+
+      .model-foot {
+        color: var(--muted);
+        font-size: 10.5px;
+        line-height: 1.8;
+        padding: 0 3px;
+      }
+
+      .model-foot a { color: var(--accent); }
 
       /* ---------------- thread ---------------- */
 
@@ -650,7 +797,14 @@
 
         .chat-head { padding: 14px 16px 10px; gap: 10px; }
 
-        .model-select { max-width: 190px; }
+        .model-btn { max-width: 200px; }
+
+        .model-panel {
+          position: fixed;
+          top: 70px;
+          inset-inline: 12px;
+          width: auto;
+        }
 
         .thread { padding: 8px 14px 18px; }
 
@@ -692,11 +846,34 @@
             <p id="convMeta">مجاني بالكامل عبر OpenRouter</p>
           </div>
 
-          <div class="model-wrap">
-            <label class="sr-only" for="modelSelect">الموديل</label>
-            <select class="model-select" id="modelSelect">
-              <option value="">الافتراضي</option>
-            </select>
+          <div class="model-picker" id="modelPicker">
+            <button
+              class="model-btn"
+              id="modelBtn"
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="modelPanel"
+            >
+              <span class="model-btn-text">
+                <span class="model-btn-name" id="modelBtnName">الافتراضي</span>
+                <span class="model-btn-meta" id="modelBtnMeta">جاري تحميل الموديلات…</span>
+              </span>
+              <span class="chev" aria-hidden="true">▾</span>
+            </button>
+
+            <div class="model-panel hidden" id="modelPanel">
+              <input
+                class="model-search"
+                id="modelSearch"
+                type="search"
+                placeholder="ابحث بالاسم أو المزوّد…"
+                autocomplete="off"
+                aria-label="بحث في الموديلات"
+              />
+              <div class="model-list" id="modelList" role="listbox" aria-label="الموديلات المجانية المتاحة"></div>
+              <div class="model-foot" id="modelFoot"></div>
+            </div>
           </div>
         </header>
 
@@ -714,8 +891,8 @@
             </div>
           </div>
           <div class="foot-note">
-            Model slugs from
-            <a href="https://openrouter.ai/models" target="_blank" rel="noreferrer">openrouter.ai/models</a>
+            كل الموديلات المجانية من
+            <a href="https://openrouter.ai/models?variant=free" target="_blank" rel="noreferrer">OpenRouter</a>
             · الردود قد تكون غير دقيقة
           </div>
         </form>
@@ -739,7 +916,14 @@
       const themeBtn = document.getElementById("theme");
       const convTitle = document.getElementById("convTitle");
       const convMeta = document.getElementById("convMeta");
-      const modelSelect = document.getElementById("modelSelect");
+      const modelPicker = document.getElementById("modelPicker");
+      const modelBtn = document.getElementById("modelBtn");
+      const modelBtnName = document.getElementById("modelBtnName");
+      const modelBtnMeta = document.getElementById("modelBtnMeta");
+      const modelPanel = document.getElementById("modelPanel");
+      const modelSearch = document.getElementById("modelSearch");
+      const modelList = document.getElementById("modelList");
+      const modelFoot = document.getElementById("modelFoot");
       const form = document.getElementById("form");
       const promptEl = document.getElementById("prompt");
       const sendBtn = document.getElementById("send");
@@ -749,6 +933,12 @@
       let state = loadState();
       let models = [];
       let defaultModel = "";
+      let modelsSource = "";
+      let modelsGeneratedAt = "";
+      let modelsReady = false;
+      let pickerOpen = false;
+      let activeIndex = 0;
+      let pickerItems = [];
       let busy = false;
       let controller = null;
       let activeEls = null;
@@ -857,38 +1047,241 @@
       async function loadModels() {
         try {
           const response = await fetch("/api/models");
-          if (!response.ok) return;
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
           const data = await response.json();
-          models = data.models || [];
-          defaultModel = data.default || "";
-          renderModelSelect();
-        } catch {}
-      }
+          models = Array.isArray(data.models) ? data.models : [];
+          defaultModel = typeof data.default === "string" ? data.default : "";
+          modelsSource = data.source === "catalog" ? "catalog" : "live";
+          modelsGeneratedAt = typeof data.generatedAt === "string" ? data.generatedAt : "";
 
-      function renderModelSelect() {
-        modelSelect.innerHTML = "";
-
-        const fallback = document.createElement("option");
-        fallback.value = "";
-        fallback.textContent = defaultModel ? `الافتراضي — ${defaultModel}` : "الافتراضي";
-        modelSelect.appendChild(fallback);
-
-        for (const model of models) {
-          const option = document.createElement("option");
-          option.value = model.id;
-          option.textContent = [model.name, humanContext(model.contextLength)].filter(Boolean).join(" · ");
-          modelSelect.appendChild(option);
+          // A model can disappear from the free list; fall back to the default chain.
+          if (models.length && state.model && !models.some((model) => model.id === state.model)) {
+            state.model = "";
+            const conv = activeConv();
+            if (conv) conv.model = "";
+            saveState();
+          }
+        } catch {
+          modelsSource = "error";
         }
 
-        modelSelect.value = state.model || "";
+        modelsReady = true;
+        renderModelButton();
+        if (pickerOpen) renderModelPanel();
       }
 
-      modelSelect.addEventListener("change", () => {
-        state.model = modelSelect.value;
+      function findModel(id) {
+        return models.find((model) => model.id === id) || null;
+      }
+
+      function modelButtonLabel() {
+        if (!modelsReady) {
+          return { name: "الافتراضي", meta: modelsSource === "error" ? "تعذّر تحميل القائمة" : "جاري تحميل الموديلات…" };
+        }
+
+        const selected = state.model ? findModel(state.model) : null;
+        if (selected) {
+          return {
+            name: selected.name,
+            meta: [selected.provider, humanContext(selected.contextLength)].filter(Boolean).join(" · "),
+          };
+        }
+        if (state.model) return { name: state.model, meta: "موديل مخصص" };
+
+        return {
+          name: "الافتراضي",
+          meta: "تلقائي — يجرّب الموديلات بالترتيب",
+        };
+      }
+
+      function renderModelButton() {
+        const label = modelButtonLabel();
+        modelBtnName.textContent = label.name;
+        modelBtnMeta.textContent = label.meta;
+        modelBtn.title = state.model || defaultModel || "الافتراضي";
+      }
+
+      function matchesSearch(model) {
+        const term = modelSearch.value.trim().toLowerCase();
+        if (!term) return true;
+        return `${model.name} ${model.id} ${model.provider}`.toLowerCase().includes(term);
+      }
+
+      function modelMeta(model) {
+        const parts = [model.provider, humanContext(model.contextLength)].filter(Boolean);
+        parts.push((model.inputModalities || []).includes("image") ? "نص + صور" : "نص");
+        return parts.join(" · ");
+      }
+
+      function renderModelPanel() {
+        modelList.innerHTML = "";
+        pickerItems = [];
+
+        const addItem = (id, name, meta, tag) => {
+          const selected = (state.model || "") === id;
+
+          const item = document.createElement("button");
+          item.type = "button";
+          item.className = "model-item" + (selected ? " selected" : "");
+          item.id = `model-option-${pickerItems.length}`;
+          item.dataset.model = id;
+          item.setAttribute("role", "option");
+          item.setAttribute("aria-selected", selected ? "true" : "false");
+
+          const text = document.createElement("span");
+          text.className = "model-item-text";
+
+          const title = document.createElement("span");
+          title.className = "model-item-name";
+          title.textContent = name;
+
+          const sub = document.createElement("span");
+          sub.className = "model-item-meta";
+          sub.textContent = meta;
+
+          text.append(title, sub);
+          item.appendChild(text);
+
+          if (tag) {
+            const badge = document.createElement("span");
+            badge.className = "model-tag";
+            badge.textContent = tag;
+            item.appendChild(badge);
+          }
+
+          const check = document.createElement("span");
+          check.className = "model-item-check";
+          check.textContent = "✓";
+          item.appendChild(check);
+
+          modelList.appendChild(item);
+          pickerItems.push({ id, element: item });
+        };
+
+        addItem("", "الافتراضي", "تلقائي — يجرّب الموديلات بالترتيب", "موصى به");
+
+        const visible = models.filter(matchesSearch);
+        if (!visible.length) {
+          const empty = document.createElement("div");
+          empty.className = "model-empty";
+          empty.textContent = models.length
+            ? "لا يوجد موديل بهذا الاسم. جرّب كلمة أخرى."
+            : modelsReady
+              ? "لا توجد موديلات متاحة. تحقق من اتصال الخادم."
+              : "جاري تحميل الموديلات…";
+          modelList.appendChild(empty);
+        }
+
+        for (const model of visible) {
+          addItem(model.id, model.name, modelMeta(model), model.id === "openrouter/free" ? "راوتر" : "مجاني");
+        }
+
+        if (modelsSource === "catalog") {
+          const date = modelsGeneratedAt ? new Date(modelsGeneratedAt) : null;
+          const when = date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString("ar") : "";
+          modelFoot.innerHTML =
+            `قائمة محفوظة محلياً (${models.length} موديلاً)${when ? ` · ${escapeHtml(when)}` : ""}<br>` +
+            `<a href="https://openrouter.ai/models?variant=free" target="_blank" rel="noreferrer">المصدر على OpenRouter</a>`;
+        } else if (modelsSource === "error") {
+          modelFoot.textContent = "تعذّر تحميل قائمة الموديلات. أعد تحميل الصفحة أو تحقق من الخادم.";
+        } else {
+          modelFoot.innerHTML =
+            `كل الموديلات المجانية للمحادثة النصية (${models.length})<br>` +
+            `<a href="https://openrouter.ai/models?variant=free" target="_blank" rel="noreferrer">عرض القائمة على OpenRouter</a>`;
+        }
+
+        const selectedIndex = pickerItems.findIndex((item) => item.id === (state.model || ""));
+        activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+        highlightActiveItem();
+      }
+
+      function highlightActiveItem() {
+        pickerItems.forEach((item, index) => {
+          item.element.classList.toggle("active", index === activeIndex);
+        });
+
+        const active = pickerItems[activeIndex]?.element;
+        if (active) {
+          active.scrollIntoView({ block: "nearest" });
+          modelSearch.setAttribute("aria-activedescendant", active.id);
+        }
+      }
+
+      function openModelPicker() {
+        if (pickerOpen) return;
+
+        pickerOpen = true;
+        modelPanel.classList.remove("hidden");
+        modelBtn.setAttribute("aria-expanded", "true");
+        modelSearch.value = "";
+        renderModelPanel();
+        modelSearch.focus();
+      }
+
+      function closeModelPicker(focusButton = false) {
+        if (!pickerOpen) return;
+
+        pickerOpen = false;
+        modelPanel.classList.add("hidden");
+        modelBtn.setAttribute("aria-expanded", "false");
+        modelSearch.value = "";
+        if (focusButton) modelBtn.focus();
+      }
+
+      function chooseModel(id) {
+        state.model = id;
         const conv = activeConv();
-        if (conv) conv.model = state.model;
+        if (conv) conv.model = id;
         saveState();
+        renderModelButton();
         renderMeta();
+        closeModelPicker(true);
+      }
+
+      modelBtn.addEventListener("click", () => {
+        if (pickerOpen) closeModelPicker();
+        else openModelPicker();
+      });
+
+      modelSearch.addEventListener("input", () => {
+        renderModelPanel();
+        activeIndex = 0;
+        highlightActiveItem();
+      });
+
+      modelList.addEventListener("click", (event) => {
+        const item = event.target.closest(".model-item");
+        if (item) chooseModel(item.dataset.model || "");
+      });
+
+      modelPanel.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          closeModelPicker(true);
+          return;
+        }
+
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          if (!pickerItems.length) return;
+          const step = event.key === "ArrowDown" ? 1 : -1;
+          activeIndex = (activeIndex + step + pickerItems.length) % pickerItems.length;
+          highlightActiveItem();
+          return;
+        }
+
+        if (event.key === "Enter" && !event.target.closest(".model-item")) {
+          const item = pickerItems[activeIndex];
+          if (item) {
+            event.preventDefault();
+            chooseModel(item.id);
+          }
+        }
+      });
+
+      document.addEventListener("pointerdown", (event) => {
+        if (pickerOpen && !modelPicker.contains(event.target)) closeModelPicker();
       });
 
       /* ======================= rendering ======================= */
@@ -897,6 +1290,7 @@
         renderSidebar();
         renderThread();
         renderMeta();
+        renderModelButton();
         renderStats();
       }
 
@@ -949,7 +1343,8 @@
       function renderMeta() {
         const conv = activeConv();
         const used = state.model || conv?.model || "";
-        const label = used || defaultModel || "الافتراضي";
+        const model = used ? findModel(used) : null;
+        const label = model ? model.name : used || "الافتراضي";
 
         convTitle.textContent = conv?.title || "محادثة جديدة";
         convMeta.textContent = `${label} · مجاني عبر OpenRouter`;
@@ -1276,7 +1671,6 @@
         const conv = activeConv();
         if (conv && conv.model !== undefined) {
           state.model = conv.model;
-          modelSelect.value = conv.model;
         }
         saveState();
         renderAll();
@@ -1603,7 +1997,10 @@
       });
 
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") closeNav();
+        if (event.key === "Escape") {
+          closeNav();
+          closeModelPicker();
+        }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
           event.preventDefault();
           newConversation();

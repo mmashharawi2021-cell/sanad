@@ -6,11 +6,14 @@
 وحفظها محلياً واختيار الموديل من قائمة الموديلات المجانية.
 
 ```
-src/config.ts      قراءة OPENROUTER_API_KEY واسم الموديل من البيئة
-src/openrouter.ts  عميل SDK + ask() + askStream() + تحويل الأخطاء إلى رسائل مفهومة
-src/cli.ts         تشغيل الطلب من الطرفية (عادي أو --stream)
-src/server.ts      خادم HTTP: الصفحة + POST /api/chat + POST /api/chat/stream (SSE) + GET /api/models
-public/index.html  الصفحة (RTL، Neumorphism، محادثات متعددة، اختيار الموديل، بث مباشر)
+src/config.ts            قراءة OPENROUTER_API_KEY واسم الموديل من البيئة
+src/openrouter.ts        عميل SDK + ask() + askStream() + تحويل الأخطاء إلى رسائل مفهومة
+src/models.ts            قائمة الموديلات المجانية + قراءة النسخة المحفوظة
+src/cli.ts               تشغيل الطلب من الطرفية (عادي أو --stream)
+src/server.ts            خادم HTTP: الصفحة + POST /api/chat + POST /api/chat/stream (SSE) + GET /api/models
+scripts/refresh-models.ts  تحديث نسخة الموديلات المحفوظة من OpenRouter
+data/free-models.json    نسخة جاهزة من كل موديلات المحادثة المجانية (تعمل بلا إنترنت)
+public/index.html        الصفحة (RTL، Neumorphism، محادثات متعددة، منتقي موديلات، بث مباشر)
 ```
 
 ## المتطلبات
@@ -75,8 +78,9 @@ npm.cmd run dev
 
 - **محادثات متعددة** في الشريط الجانبي: «＋ محادثة جديدة» أو `Ctrl + K`، وحذف أي محادثة بزر ✕.
   كل شيء يُحفظ في `localStorage`، فتبقى المحادثات بعد إعادة تحميل الصفحة.
-- **اختيار الموديل** من قائمة منسدلة تُبنى تلقائياً من `GET /api/models` (الموديلات المجانية فقط،
-  مع حجم السياق)، والاختيار يُحفظ لكل محادثة.
+- **اختيار الموديل** من منتقي موديلات في الأعلى: زر يعرض الموديل الحالي، وبالنقر تظهر **كل**
+  الموديلات المجانية للمحادثة النصية مع بحث فوري وحجم السياق والمزوّد، والاختيار يُحفظ لكل محادثة.
+  القائمة تُبنى من `GET /api/models`، ومعها نسخة محفوظة داخل المشروع تعمل بلا إنترنت.
 - **إرسال** بـ `Enter`، وسطر جديد بـ `Shift + Enter`؛ الرد يظهر **كلمة بكلمة** مع زر «إيقاف».
 - **لكل رد**: اسم الموديل، الزمن، عدد التوكنز، وأزرار «نسخ» و«إعادة التوليد»، وزر «إعادة المحاولة»
   عند الخطأ. الردود تُعرض كـ Markdown آمن (عناوين، قوائم، أكواد مع زر نسخ، روابط `https` فقط).
@@ -114,15 +118,30 @@ curl.exe -N http://localhost:3000/api/chat/stream `
 
 ### د) قائمة الموديلات المجانية
 
-`GET /api/models` يعيد الموديلات التي تكلفتها صفر والقادرة على محادثة نصية
-(يستبعد موديلات الصوت/الصور)، مع حجم السياق، ومخزّنة مؤقتاً 10 دقائق:
+`GET /api/models` يعيد كل الموديلات المجانية القادرة على محادثة نصية، مع حجم السياق،
+ومخزّنة مؤقتاً 10 دقائق. مصدرها OpenRouter مباشرة، وإن تعذّر الاتصال تُستخدم النسخة
+المحفوظة في `data/free-models.json`:
 
 ```json
 {
   "default": "nvidia/nemotron-3-ultra-550b-a55b:free",
-  "models": [{ "id": "...", "name": "...", "contextLength": 1048576, "maxOutput": 32768, "inputModalities": ["text"] }]
+  "source": "live",
+  "count": 15,
+  "models": [
+    { "id": "...", "name": "...", "provider": "NVIDIA", "contextLength": 1000000, "maxOutput": 32768, "inputModalities": ["text"] }
+  ]
 }
 ```
+
+- `source: "live"` تعني قائمة حيّة من OpenRouter، و`"catalog"` تعني النسخة المحفوظة.
+- موديلات الصور/الصوت/القرارات لا تظهر لأنها لا تصلح للمحادثة النصية.
+- لتحديث النسخة المحفوظة (عند ظهور موديلات مجانية جديدة أو اختفاء القديمة):
+
+```powershell
+npm.cmd run models:refresh
+```
+
+- لتشغيل المنتقي دون أي اتصال بـ OpenRouter إطلاقاً: `MODELS_SOURCE=catalog` في `.env`.
 
 ### هـ) فحص الأنواع
 
@@ -133,23 +152,39 @@ npm.cmd run typecheck
 ## اختيار الموديل
 
 كل موديل له slug، مثل `anthropic/claude-opus-5.5` أو `openai/gpt-6.1-sol`.
-القائمة الكاملة: <https://openrouter.ai/models> — أو من `GET /api/models` في هذا المشروع.
+قائمة الموديلات المجانية: <https://openrouter.ai/models?variant=free> — أو من
+`GET /api/models` في هذا المشروع.
 
 - الافتراضي: `nvidia/nemotron-3-ultra-550b-a55b:free` (من `src/config.ts` أو `OPENROUTER_MODEL`)
 - لتغييره مؤقتاً: `$env:OPENROUTER_MODEL = "openai/gpt-6.1-sol"`
-- أو من الصفحة نفسها عبر قائمة الموديل في الأعلى (لكل محادثة اختيار مستقل)
+- أو من الصفحة نفسها عبر منتقي الموديلات في الأعلى (لكل محادثة اختيار مستقل)
 
 ## المجاني بالكامل
 
 الموديلات المجانية على OpenRouter تنتهي بـ `:free` وتكلفتها صفر. هذا المشروع مضبوط عليها
-حالياً، فلا يحتاج أي رصيد.
+حالياً، فلا يحتاج أي رصيد. القائمة أدناه هي المضمّنة في `data/free-models.json` عند كتابة
+هذا الملف؛ استخدم `npm.cmd run models:refresh` لتحديثها، أو دع الواجهة تجلب الحيّ تلقائياً.
 
-| الموديل | نقاط القوة | ملاحظة |
+| الموديل | المزوّد | السياق |
 | --- | --- | --- |
-| `nvidia/nemotron-3-ultra-550b-a55b:free` | أفضل جودة عربية، 550B، سياق ~1M | أبطأ (5–9 ثوانٍ) |
-| `particle-ai/particle-1:free` | أسرع رد (~1.5 ثانية) وجودة جيدة | مناسب للتجربة السريعة |
-| `google/gemma-4-31b-it:free` | جودة جيدة | قد يرجع `429` مؤقتاً |
-| `openrouter/free` | راوتر يختار أي موديل مجاني متاح | الأفضل كاحتياط |
+| `openrouter/free` | OpenRouter | راوتر تلقائي |
+| `inclusionai/ling-3.2-flash:free` | inclusionAI | 1M |
+| `particle-ai/particle-1:free` | Particle AI | 1M |
+| `thinkingmachines/inkling-2-small:free` | Thinking Machines | 1M |
+| `baidu/ernie-5.5-flash-preview:free` | Baidu | 1M |
+| `nvidia/nemotron-3-ultra-550b-a55b:free` | NVIDIA | 1M |
+| `nvidia/nemotron-3.5-lightning:free` | NVIDIA | 1M |
+| `nvidia/nemotron-3.5-super-vl:free` | NVIDIA | 1M |
+| `dots-studio/dots-3-note-preview:free` | Dots Studio | 512K |
+| `google/gemma-4-26b-a4b-it:free` | Google | 262K |
+| `google/gemma-4-31b-it:free` | Google | 262K |
+| `liquid/lfm-3-1.7b:free` | LiquidAI | 262K |
+| `recursive/flint-v1.0:free` | Recursive | 262K |
+| `cohere/north-mini-code:free` | Cohere | 256K |
+| `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` | NVIDIA | 256K |
+
+> قائمة OpenRouter تتغيّر باستمرار. الواجهة تعرض الحيّ تلقائياً، والجدول أعلاه مجرد
+> نسخة محفوظة تعمل بلا إنترنت.
 
 **حدود الاستخدام:** بلا رصيد = 50 طلباً يومياً لكل الموديلات المجانية. إذا اشتريت رصيداً
 بقيمة \$10 مرة واحدة، يرتفع الحد إلى 1000 طلب يومياً (ويبقى الاستخدام على الموديلات

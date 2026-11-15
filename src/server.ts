@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppError, getConfig } from "./config";
+import { readModelCatalog, toChatModels, type ChatModel, type OpenRouterModel } from "./models";
 import { ask, askStream, toAppError, type Answer, type ChatTurn } from "./openrouter";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -16,15 +17,14 @@ const STREAM_TIMEOUT_MS = 120_000;
 const HEARTBEAT_MS = 15_000;
 const MODELS_TTL_MS = 10 * 60_000;
 
-type FreeModel = {
-  id: string;
-  name: string;
-  contextLength: number;
-  maxOutput: number | null;
-  inputModalities: string[];
+type ModelsResult = {
+  at: number;
+  models: ChatModel[];
+  source: "live" | "catalog";
+  generatedAt?: string;
 };
 
-let modelsCache: { at: number; models: FreeModel[] } | undefined;
+let modelsCache: ModelsResult | undefined;
 
 const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -83,68 +83,70 @@ async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<vo
   sendJson(res, 200, answer);
 }
 
-/** Free models (price 0) for the UI picker, cached for 10 minutes. */
+/** All free text-chat models for the UI picker, cached for 10 minutes. */
 async function handleModels(res: ServerResponse): Promise<void> {
-  if (!modelsCache || Date.now() - modelsCache.at > MODELS_TTL_MS) {
-    const config = getConfig();
-    const upstream = await fetch("https://openrouter.ai/api/v1/models", {
-      headers: { Authorization: `Bearer ${config.apiKey}` },
-      signal: AbortSignal.timeout(15_000),
-    });
+  const result = await resolveModels();
 
-    if (!upstream.ok) {
-      throw new AppError("Could not load the model list from OpenRouter.", {
-        status: 502,
-        hint: `Upstream returned HTTP ${upstream.status}. Try again in a moment.`,
+  sendJson(res, 200, {
+    default: getConfig().model,
+    source: result.source,
+    generatedAt: result.generatedAt,
+    count: result.models.length,
+    models: result.models,
+  });
+}
+
+/**
+ * Tries OpenRouter first, then falls back to the committed snapshot in
+ * `data/free-models.json`. Set MODELS_SOURCE=catalog to skip the network entirely.
+ */
+async function resolveModels(): Promise<ModelsResult> {
+  if (modelsCache && Date.now() - modelsCache.at <= MODELS_TTL_MS) return modelsCache;
+
+  if (process.env.MODELS_SOURCE !== "catalog") {
+    try {
+      const config = getConfig();
+      const upstream = await fetch("https://openrouter.ai/api/v1/models", {
+        headers: { Authorization: `Bearer ${config.apiKey}` },
+        signal: AbortSignal.timeout(15_000),
       });
+
+      if (!upstream.ok) {
+        throw new AppError("Could not load the model list from OpenRouter.", {
+          status: 502,
+          hint: `Upstream returned HTTP ${upstream.status}. Try again in a moment.`,
+        });
+      }
+
+      const payload = (await upstream.json()) as { data?: OpenRouterModel[] };
+      const models = toChatModels(payload.data ?? []);
+
+      if (!models.length) {
+        throw new AppError("OpenRouter returned no free chat models.", { status: 502 });
+      }
+
+      modelsCache = { at: Date.now(), models, source: "live" };
+      return modelsCache;
+    } catch (error) {
+      console.warn(`[models] live list failed: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    const payload = (await upstream.json()) as {
-      data?: Array<{
-        id: string;
-        name?: string;
-        context_length?: number;
-        pricing?: { prompt?: string; completion?: string };
-        top_provider?: { max_completion_tokens?: number | null };
-        architecture?: { input_modalities?: string[]; output_modalities?: string[] };
-      }>;
-    };
-
-    const models: FreeModel[] = (payload.data ?? [])
-      .filter((model) => model.id !== "openrouter/free")
-      .filter((model) => Number(model.pricing?.prompt) === 0 && Number(model.pricing?.completion) === 0)
-      // Audio/image-output models cannot answer a text chat turn (some also emit text).
-      .filter((model) => {
-        const inputs = model.architecture?.input_modalities ?? ["text"];
-        const outputs = model.architecture?.output_modalities ?? ["text"];
-        return (
-          inputs.includes("text") &&
-          outputs.includes("text") &&
-          !outputs.includes("audio") &&
-          !outputs.includes("image")
-        );
-      })
-      .map((model) => ({
-        id: model.id,
-        name: model.name || model.id,
-        contextLength: model.context_length ?? 0,
-        maxOutput: model.top_provider?.max_completion_tokens ?? null,
-        inputModalities: model.architecture?.input_modalities ?? ["text"],
-      }))
-      .sort((a, b) => b.contextLength - a.contextLength);
-
-    models.unshift({
-      id: "openrouter/free",
-      name: "OpenRouter Free Router",
-      contextLength: 0,
-      maxOutput: null,
-      inputModalities: ["text"],
-    });
-
-    modelsCache = { at: Date.now(), models };
   }
 
-  sendJson(res, 200, { default: getConfig().model, models: modelsCache.models });
+  const catalog = await readModelCatalog();
+  if (catalog.models.length) {
+    modelsCache = {
+      at: Date.now(),
+      models: catalog.models,
+      source: "catalog",
+      generatedAt: catalog.generatedAt,
+    };
+    return modelsCache;
+  }
+
+  throw new AppError("Could not load the list of free models.", {
+    status: 502,
+    hint: "Check your connection, or run `npm run models:refresh` while online to rebuild the offline list.",
+  });
 }
 
 /** Server-sent events: delta… delta, then done (or a single error event). */
