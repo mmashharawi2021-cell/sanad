@@ -1,0 +1,29 @@
+#!/bin/sh
+# Prevents committing secrets: real .env files and anything that looks like an OpenRouter key.
+set -eu
+
+blocked=0
+
+envfiles=$(git diff --cached --name-only --diff-filter=ACMR \
+  | grep -E '(^|/)\.env($|\.)' \
+  | grep -v '\.env\.example$' || true)
+
+if [ -n "$envfiles" ]; then
+  echo "pre-commit: refusing to commit environment files (they hold real keys):" >&2
+  echo "$envfiles" | sed 's/^/  - /' >&2
+  blocked=1
+fi
+
+if git grep --cached -I -n -E 'sk-or-v1-[A-Za-z0-9_-]{16,}' >/dev/null 2>&1; then
+  echo "pre-commit: staged content contains what looks like an OpenRouter API key:" >&2
+  git grep --cached -I -n -E 'sk-or-v1-[A-Za-z0-9_-]{16,}' \
+    | sed -E 's/(sk-or-v1-[A-Za-z0-9]{6})[A-Za-z0-9_-]+/\1…/g' \
+    | sed 's/^/  /' >&2
+  blocked=1
+fi
+
+if [ "$blocked" -ne 0 ]; then
+  echo "pre-commit: commit aborted. Remove the secret, rotate the key if it was pushed." >&2
+fi
+
+exit "$blocked"
