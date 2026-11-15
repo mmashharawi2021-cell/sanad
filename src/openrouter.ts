@@ -19,8 +19,15 @@ export type AskOptions = {
   model?: string;
   /** Optional system prompt. */
   system?: string;
+  /** Full conversation (overrides `prompt` when provided). */
+  messages?: ChatTurn[];
   /** Abort signal to cancel the request. */
   signal?: AbortSignal;
+};
+
+export type ChatTurn = {
+  role: "system" | "user" | "assistant";
+  content: string;
 };
 
 export type StreamEvent =
@@ -54,11 +61,21 @@ function buildModelChain(primary: string): string[] {
   return [primary, ...getConfig().fallbackModels.filter((slug) => slug !== primary)];
 }
 
-function buildMessages(prompt: string, system?: string) {
+function buildMessages(prompt: string, system?: string, turns?: ChatTurn[]) {
+  if (turns?.length) {
+    return [...(system ? [{ role: "system" as const, content: system }] : []), ...turns];
+  }
   return [
     ...(system ? [{ role: "system" as const, content: system }] : []),
     { role: "user" as const, content: prompt },
   ];
+}
+
+/** Uses the conversation when present, otherwise the single prompt. */
+function resolveMessages(prompt: string, options: AskOptions): ChatTurn[] {
+  const turns = options.messages?.filter((turn) => turn.content.trim());
+  if (turns?.length) return buildMessages("", options.system, turns);
+  return buildMessages(requirePrompt(prompt), options.system);
 }
 
 /**
@@ -66,7 +83,7 @@ function buildMessages(prompt: string, system?: string) {
  * Throws AppError with a friendly message + hint on any failure.
  */
 export async function ask(prompt: string, options: AskOptions = {}): Promise<Answer> {
-  const text = requirePrompt(prompt);
+  const messages = resolveMessages(prompt, options);
   const config = getConfig();
   const model = options.model?.trim() || config.model;
   const startedAt = Date.now();
@@ -76,7 +93,7 @@ export async function ask(prompt: string, options: AskOptions = {}): Promise<Ans
       {
         model,
         models: buildModelChain(model),
-        messages: buildMessages(text, options.system),
+        messages,
         temperature: 0.7,
       },
       { signal: options.signal, timeoutMs: 90_000 },
@@ -110,7 +127,7 @@ export async function ask(prompt: string, options: AskOptions = {}): Promise<Ans
  * Yields { type: "delta" } events followed by one { type: "done" } event.
  */
 export async function* askStream(prompt: string, options: AskOptions = {}): AsyncGenerator<StreamEvent> {
-  const text = requirePrompt(prompt);
+  const messages = resolveMessages(prompt, options);
   const config = getConfig();
   const model = options.model?.trim() || config.model;
   const startedAt = Date.now();
@@ -124,7 +141,7 @@ export async function* askStream(prompt: string, options: AskOptions = {}): Asyn
       {
         model,
         models: buildModelChain(model),
-        messages: buildMessages(text, options.system),
+        messages,
         temperature: 0.7,
         stream: true,
         streamOptions: { includeUsage: true },
