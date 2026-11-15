@@ -1,14 +1,15 @@
 # opencode · OpenRouter starter
 
 مشروع TypeScript صغير يضيف OpenRouter عبر الـ SDK الرسمي `@openrouter/sdk`،
-مع طلب واحد يعمل من البداية للنهاية، ومعالجة أخطاء واضحة، وصفحة ويب عربية للتجربة السريعة.
+مع طلب واحد يعمل من البداية للنهاية، ومعالجة أخطاء واضحة، وبث للردود،
+وواجهة عربية بطراز **Neumorphism** (وضعان: داكن وفاتح).
 
 ```
 src/config.ts      قراءة OPENROUTER_API_KEY واسم الموديل من البيئة
 src/openrouter.ts  عميل SDK + ask() + askStream() + تحويل الأخطاء إلى رسائل مفهومة
 src/cli.ts         تشغيل الطلب من الطرفية (عادي أو --stream)
 src/server.ts      خادم HTTP: الصفحة + POST /api/chat + POST /api/chat/stream (SSE)
-public/index.html  الصفحة (RTL) مع عرض الرد أثناء توليده
+public/index.html  الصفحة (RTL، Neumorphism، وضع داكن/فاتح، بث مباشر)
 ```
 
 ## المتطلبات
