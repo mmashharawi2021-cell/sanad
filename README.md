@@ -5,16 +5,16 @@
 
 ```
 src/config.ts      قراءة OPENROUTER_API_KEY واسم الموديل من البيئة
-src/openrouter.ts  إنشاء عميل SDK + دالة ask() + تحويل الأخطاء إلى رسائل مفهومة
-src/cli.ts         تشغيل الطلب من الطرفية
-src/server.ts      خادم HTTP صغير: يقدّم الصفحة + POST /api/chat
-public/index.html  الصفحة (RTL) لإرسال الأسئلة ورؤية الرد
+src/openrouter.ts  عميل SDK + ask() + askStream() + تحويل الأخطاء إلى رسائل مفهومة
+src/cli.ts         تشغيل الطلب من الطرفية (عادي أو --stream)
+src/server.ts      خادم HTTP: الصفحة + POST /api/chat + POST /api/chat/stream (SSE)
+public/index.html  الصفحة (RTL) مع عرض الرد أثناء توليده
 ```
 
 ## المتطلبات
 
 - Node.js 20 أو أحدث (تم الاختبار على Node 26)
-- حساب OpenRouter ورصيد بسيط (الموديلات المدفوعة تُخصم من الرصيد)
+- لا حاجة لرصيد: الإعداد الافتراضي يستخدم موديلات مجانية
 
 > على هذا الجهاز صلاحية تشغيل سكربتات PowerShell معطّلة، لذا استخدم `npm.cmd` بدل `npm`
 > إن ظهر خطأ `running scripts is disabled`.
@@ -40,7 +40,7 @@ notepad .env
 
 ```ini
 OPENROUTER_API_KEY=sk-or-v1-...
-OPENROUTER_MODEL=anthropic/claude-opus-5.5
+OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
 ```
 
 ## 2) التثبيت والتشغيل
@@ -57,6 +57,12 @@ npm.cmd run chat -- "اشرح الفرق بين REST وGraphQL في ثلاث ن�
 
 بدون سؤال يستخدم البرومت الافتراضي. الناتج يظهر مع اسم الموديل والزمن وعدد التوكنز.
 
+لعرض الرد أثناء توليده:
+
+```powershell
+npm.cmd run chat -- --stream "اكتب ثلاث نصائح لتحسين التركيز"
+```
+
 ### ب) صفحة الويب
 
 ```powershell
@@ -64,9 +70,30 @@ npm.cmd run dev
 ```
 
 ثم افتح <http://localhost:3000> — اكتب السؤال، اختر الموديل بالـ slug، واضغط إرسال
-(أو `Ctrl + Enter`). الأخطاء تظهر في الصفحة مع تلميح للإصلاح.
+(أو `Ctrl + Enter`). الرد يظهر **كلمة بكلمة** أثناء التوليد، ويمكن إيقافه بزر «إيقاف»،
+والأخطاء تظهر في الصفحة مع تلميح للإصلاح.
 
-### ج) فحص الأنواع
+### ج) واجهة البث المباشر (SSE)
+
+`:POST /api/chat/stream` يرسل الأحداث التالية:
+
+| الحدث | البيانات |
+| --- | --- |
+| `delta` | `{ "text": "..." }` مقطع من الرد |
+| `done` | `{ "model", "latencyMs", "usage" }` |
+| `error` | `{ "error", "hint" }` |
+
+```powershell
+curl.exe -N http://localhost:3000/api/chat/stream `
+  -H "Content-Type: application/json" `
+  -d '{\"prompt\":\"مرحبا\"}'
+```
+
+يبقى `POST /api/chat` متاحاً ويعيد الرد كاملاً في استجابة JSON واحدة.
+عند إغلاق المتصفح يتوقف الاتصال بـ OpenRouter تلقائياً، وتُرسل نبضات `: keep-alive`
+كل 15 ثانية، والمهلة القصوى 120 ثانية.
+
+### د) فحص الأنواع
 
 ```powershell
 npm.cmd run typecheck
@@ -119,10 +146,14 @@ OPENROUTER_FALLBACK_MODELS=particle-ai/particle-1:free,openrouter/free
 | `429` | تجاوز حد الطلبات + نصيحة بالانتظار |
 | `5xx` | خطأ من OpenRouter أو المزوّد + إعادة المحاولة |
 | انقطاع الشبكة | «Could not reach OpenRouter» |
-| مهلة | 90 ثانية للـ SDK و100 ثانية للصفحة، مع رسالة `504` |
+| مهلة | 90 ثانية للـ SDK و120 ثانية للبث، مع رسالة `504` |
+| خطأ أثناء البث | حدث `error` مع التلميح، ويبقى النص الذي ظهر حتى لحظة الخطأ |
 
 كما تُرفض الطلبات بالتحقق: برومت فارغ (`400`)، جسم غير JSON (`400`)،
 وجسم أكبر من 16 كيلوبايت (`413`).
+
+> ملاحظة: بعض مزوّدي الموديلات المجانية يجمّعون الرد ثم يرسلونه دفعة واحدة، فيبدو البث
+> كأنه غير متدفق. هذا سلوك المزوّد لا الكود؛ مع موديلات أسرع يظهر الفرق واضحاً.
 
 ## ملاحظات
 

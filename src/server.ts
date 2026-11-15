@@ -3,13 +3,15 @@ import { readFile } from "node:fs/promises";
 import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppError, getConfig } from "./config";
-import { ask, type Answer } from "./openrouter";
+import { ask, askStream, toAppError, type Answer } from "./openrouter";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, "..", "public");
 const PORT = Number(process.env.PORT ?? 3000);
 const MAX_BODY_BYTES = 16 * 1024;
 const REQUEST_TIMEOUT_MS = 90_000;
+const STREAM_TIMEOUT_MS = 120_000;
+const HEARTBEAT_MS = 15_000;
 
 const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -21,12 +23,12 @@ const CONTENT_TYPES: Record<string, string> = {
 
 const server = createServer((req, res) => {
   handle(req, res).catch((error: unknown) => {
-    if (!res.headersSent) {
-      const appError = error instanceof AppError ? error : new AppError("Internal server error", { cause: error });
-      sendJson(res, appError.status, { error: appError.message, hint: appError.hint });
-    } else {
+    if (res.headersSent) {
       res.end();
+      return;
     }
+    const appError = toAppError(error);
+    sendJson(res, appError.status, { error: appError.message, hint: appError.hint });
   });
 });
 
@@ -35,6 +37,11 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   if (req.method === "POST" && url.pathname === "/api/chat") {
     await handleChat(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/chat/stream") {
+    await handleStream(req, res);
     return;
   }
 
@@ -47,6 +54,55 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 }
 
 async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const { prompt, model } = await readChatRequest(req);
+
+  const answer: Answer = await ask(prompt, {
+    model,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+
+  sendJson(res, 200, answer);
+}
+
+/** Server-sent events: delta… delta, then done (or a single error event). */
+async function handleStream(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const { prompt, model } = await readChatRequest(req);
+
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  res.flushHeaders?.();
+
+  // Stop calling OpenRouter as soon as the browser goes away.
+  const clientGone = new AbortController();
+  const onClose = () => clientGone.abort();
+  req.on("close", onClose);
+
+  const heartbeat = setInterval(() => write(res, ": keep-alive\n\n"), HEARTBEAT_MS);
+
+  try {
+    const signal = AbortSignal.any([clientGone.signal, AbortSignal.timeout(STREAM_TIMEOUT_MS)]);
+
+    for await (const event of askStream(prompt, { model, signal })) {
+      if (clientGone.signal.aborted) break;
+      write(res, frame(event.type, event));
+    }
+  } catch (error) {
+    if (!clientGone.signal.aborted) {
+      const appError = toAppError(error);
+      write(res, frame("error", { error: appError.message, hint: appError.hint }));
+    }
+  } finally {
+    clearInterval(heartbeat);
+    req.off("close", onClose);
+    if (!res.writableEnded) res.end();
+  }
+}
+
+async function readChatRequest(req: IncomingMessage): Promise<{ prompt: string; model?: string }> {
   const body = await readJsonBody(req);
   const prompt = typeof body.prompt === "string" ? body.prompt : "";
   const model = typeof body.model === "string" && body.model.trim() ? body.model.trim() : undefined;
@@ -55,12 +111,16 @@ async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<vo
     throw new AppError("The prompt is empty.", { status: 400, hint: "Type a question first." });
   }
 
-  const answer: Answer = await ask(prompt, {
-    model,
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
+  return { prompt, model };
+}
 
-  sendJson(res, 200, answer);
+function frame(event: string, data: unknown): string {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function write(res: ServerResponse, chunk: string): void {
+  if (res.writableEnded || res.destroyed) return;
+  res.write(chunk);
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -124,10 +184,11 @@ server.listen(PORT, () => {
     const config = getConfig();
     console.log(`OpenRouter demo running at http://localhost:${PORT}`);
     console.log(`Default model: ${config.model}`);
+    if (config.fallbackModels.length) console.log(`Fallbacks: ${config.fallbackModels.join(" → ")}`);
   } catch (error) {
-    const hint = error instanceof AppError ? error.hint : undefined;
-    console.warn(`⚠ ${error instanceof Error ? error.message : String(error)}`);
-    if (hint) console.warn(`  ${hint}`);
+    const appError = toAppError(error);
+    console.warn(`⚠ ${appError.message}`);
+    if (appError.hint) console.warn(`  ${appError.hint}`);
     console.warn(`  The page loads, but requests will fail until a key is set.`);
   }
 });

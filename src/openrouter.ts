@@ -23,6 +23,10 @@ export type AskOptions = {
   signal?: AbortSignal;
 };
 
+export type StreamEvent =
+  | { type: "delta"; text: string }
+  | { type: "done"; model: string; latencyMs: number; usage?: Usage };
+
 let client: OpenRouter | undefined;
 
 function getClient(): OpenRouter {
@@ -37,33 +41,42 @@ function getClient(): OpenRouter {
   return client;
 }
 
+function requirePrompt(prompt: string): string {
+  const text = prompt?.trim();
+  if (!text) {
+    throw new AppError("The prompt is empty.", { status: 400, hint: "Type a question first." });
+  }
+  return text;
+}
+
+/** Primary model first, then the configured fallbacks (deduplicated). */
+function buildModelChain(primary: string): string[] {
+  return [primary, ...getConfig().fallbackModels.filter((slug) => slug !== primary)];
+}
+
+function buildMessages(prompt: string, system?: string) {
+  return [
+    ...(system ? [{ role: "system" as const, content: system }] : []),
+    { role: "user" as const, content: prompt },
+  ];
+}
+
 /**
  * Sends one prompt to OpenRouter and returns the assistant reply.
  * Throws AppError with a friendly message + hint on any failure.
  */
 export async function ask(prompt: string, options: AskOptions = {}): Promise<Answer> {
-  const text = prompt?.trim();
-  if (!text) {
-    throw new AppError("The prompt is empty.", {
-      status: 400,
-      hint: "Type a question first.",
-    });
-  }
-
+  const text = requirePrompt(prompt);
   const config = getConfig();
   const model = options.model?.trim() || config.model;
-  const modelChain = [model, ...config.fallbackModels.filter((slug) => slug !== model)];
   const startedAt = Date.now();
 
   try {
     const response = await getClient().chat.send(
       {
         model,
-        models: modelChain,
-        messages: [
-          ...(options.system ? [{ role: "system" as const, content: options.system }] : []),
-          { role: "user" as const, content: text },
-        ],
+        models: buildModelChain(model),
+        messages: buildMessages(text, options.system),
         temperature: 0.7,
       },
       { signal: options.signal, timeoutMs: 90_000 },
@@ -84,18 +97,79 @@ export async function ask(prompt: string, options: AskOptions = {}): Promise<Ans
     return {
       text: content,
       model: response.model || model,
-      usage: response.usage
-        ? {
-            promptTokens: response.usage.promptTokens,
-            completionTokens: response.usage.completionTokens,
-            totalTokens: response.usage.totalTokens,
-          }
-        : undefined,
+      usage: toUsage(response.usage),
       latencyMs: Date.now() - startedAt,
     };
   } catch (error) {
     throw toAppError(error);
   }
+}
+
+/**
+ * Same request as {@link ask}, but streams the answer as it is generated.
+ * Yields { type: "delta" } events followed by one { type: "done" } event.
+ */
+export async function* askStream(prompt: string, options: AskOptions = {}): AsyncGenerator<StreamEvent> {
+  const text = requirePrompt(prompt);
+  const config = getConfig();
+  const model = options.model?.trim() || config.model;
+  const startedAt = Date.now();
+
+  let servedModel = model;
+  let usage: Usage | undefined;
+  let received = 0;
+
+  try {
+    const stream = await getClient().chat.send(
+      {
+        model,
+        models: buildModelChain(model),
+        messages: buildMessages(text, options.system),
+        temperature: 0.7,
+        stream: true,
+        streamOptions: { includeUsage: true },
+      },
+      { signal: options.signal, timeoutMs: 90_000 },
+    );
+
+    for await (const chunk of stream) {
+      if (chunk.error) {
+        throw new AppError("OpenRouter reported an error mid-stream.", {
+          status: chunk.error.code >= 400 && chunk.error.code < 600 ? chunk.error.code : 502,
+          hint: chunk.error.message,
+        });
+      }
+
+      if (chunk.model) servedModel = chunk.model;
+      if (chunk.usage) usage = toUsage(chunk.usage);
+
+      const delta = chunk.choices?.[0]?.delta?.content;
+      if (delta) {
+        received += delta.length;
+        yield { type: "delta", text: delta };
+      }
+    }
+  } catch (error) {
+    throw toAppError(error);
+  }
+
+  if (received === 0) {
+    throw new AppError("The model returned no text.", {
+      status: 502,
+      hint: "Try again, or pick another free model.",
+    });
+  }
+
+  yield { type: "done", model: servedModel, latencyMs: Date.now() - startedAt, usage };
+}
+
+function toUsage(usage?: { promptTokens: number; completionTokens: number; totalTokens: number } | null): Usage | undefined {
+  if (!usage) return undefined;
+  return {
+    promptTokens: usage.promptTokens,
+    completionTokens: usage.completionTokens,
+    totalTokens: usage.totalTokens,
+  };
 }
 
 /** Assistant content may be a plain string or an array of content parts. */
@@ -115,7 +189,7 @@ function extractText(content: unknown): string {
 }
 
 /** Maps SDK/network failures onto AppError with an actionable hint. */
-function toAppError(error: unknown): AppError {
+export function toAppError(error: unknown): AppError {
   if (error instanceof AppError) return error;
 
   if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {

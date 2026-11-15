@@ -194,6 +194,7 @@
         margin-bottom: 10px;
         padding-bottom: 10px;
         border-bottom: 1px dashed var(--border);
+        min-height: 18px;
       }
 
       .meta b { color: var(--text); font-weight: 600; }
@@ -204,6 +205,17 @@
         line-height: 1.85;
         font-size: 15px;
       }
+
+      .answer-text.streaming::after {
+        content: "▍";
+        color: var(--accent);
+        margin-inline-start: 2px;
+        animation: blink 1s steps(1) infinite;
+      }
+
+      @keyframes blink { 50% { opacity: 0; } }
+
+      .note { margin-top: 10px; color: var(--muted); font-size: 12.5px; }
 
       footer { margin-top: 22px; color: var(--muted); font-size: 12.5px; text-align: center; line-height: 1.9; }
       a { color: var(--accent); text-decoration: none; }
@@ -218,7 +230,7 @@
         <p class="sub">
           اكتب سؤالك واختر موديلاً بالـ slug، وسيتم إرسال الطلب عبر
           <code>@openrouter/sdk</code> إلى <code>openrouter.ai/api/v1</code>.
-          الافتراضي موديل <b>مجاني</b> مع موديلين بديلين تلقائياً.
+          الافتراضي موديل <b>مجاني</b> مع موديلين بديلين تلقائياً، والرد يظهر <b>أثناء توليده</b>.
         </p>
       </header>
 
@@ -242,6 +254,7 @@
 
           <div class="actions">
             <button class="primary" id="send" type="submit">إرسال الطلب</button>
+            <button class="ghost hidden" id="stop" type="button">إيقاف</button>
             <span class="kbd">Ctrl + Enter للإرسال السريع</span>
             <button class="ghost hidden" id="copy" type="button">نسخ الجواب</button>
           </div>
@@ -262,11 +275,16 @@
       const promptEl = document.getElementById("prompt");
       const modelEl = document.getElementById("model");
       const sendBtn = document.getElementById("send");
+      const stopBtn = document.getElementById("stop");
       const copyBtn = document.getElementById("copy");
       const statusEl = document.getElementById("status");
       const outputEl = document.getElementById("output");
 
+      const STREAM_TIMEOUT_MS = 120_000;
+
       let lastAnswer = "";
+      let busy = false;
+      let controller = null;
 
       document.querySelectorAll(".chip").forEach((chip) => {
         chip.addEventListener("click", () => {
@@ -282,6 +300,8 @@
         }
       });
 
+      stopBtn.addEventListener("click", () => controller?.abort());
+
       copyBtn.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(lastAnswer);
@@ -292,9 +312,9 @@
         }
       });
 
-      form.addEventListener("submit", async (event) => {
+      form.addEventListener("submit", (event) => {
         event.preventDefault();
-        await send();
+        if (!busy) send();
       });
 
       async function send() {
@@ -304,65 +324,171 @@
           return;
         }
 
-        setLoading(true);
+        busy = true;
+        lastAnswer = "";
+        setBusy(true);
         hide(statusEl);
         hide(outputEl);
+        hide(copyBtn);
 
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 100_000);
+        controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), STREAM_TIMEOUT_MS);
 
         try {
-          const response = await fetch("/api/chat", {
+          const response = await fetch("/api/chat/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt, model: modelEl.value.trim() }),
             signal: controller.signal,
           });
 
-          const data = await response.json().catch(() => ({}));
-
-          if (!response.ok) {
+          if (!response.ok || !response.body) {
+            const data = await response.json().catch(() => ({}));
             showError(data.error || `فشل الطلب (HTTP ${response.status})`, data.hint);
             return;
           }
 
-          showAnswer(data);
+          await consumeStream(response.body);
         } catch (error) {
-          if (error.name === "AbortError") {
-            showError("انتهت مهلة الانتظار", "لم يستجب الخادم خلال 100 ثانية. جرّب موديلاً أسرع.");
-          } else {
-            showError("تعذر الاتصال بالخادم", "تأكد أن خادم التطوير يعمل: npm run dev");
-          }
+          handleTransportError(error);
         } finally {
           clearTimeout(timer);
-          setLoading(false);
+          controller = null;
+          busy = false;
+          setBusy(false);
         }
       }
 
-      function setLoading(loading) {
-        sendBtn.disabled = loading;
-        sendBtn.innerHTML = loading ? '<span class="spinner"></span>جارٍ الإرسال…' : "إرسال الطلب";
+      async function consumeStream(body) {
+        const reader = body.getReader();
+        const decoder = new TextDecoder();
+        const view = createAnswerView();
+        let buffer = "";
+        let finished = false;
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          let split = buffer.indexOf("\n\n");
+          while (split !== -1) {
+            const raw = buffer.slice(0, split);
+            buffer = buffer.slice(split + 2);
+            finished = handleFrame(raw, view) || finished;
+            split = buffer.indexOf("\n\n");
+          }
+        }
+
+        if (!finished) {
+          view.textEl.classList.remove("streaming");
+          if (!view.textEl.textContent) {
+            showError("انقطع الاتصال قبل وصول الرد", "أعد المحاولة، أو جرّب موديلاً آخر.");
+          }
+        }
+
+        lastAnswer = view.textEl.textContent;
+        if (lastAnswer) show(copyBtn);
       }
 
-      function showAnswer(data) {
-        lastAnswer = data.text || "";
-        const meta = [
-          `<span>الموديل: <b dir="ltr">${escapeHtml(data.model || "")}</b></span>`,
-          `<span>الزمن: <b>${data.latencyMs} ms</b></span>`,
-        ];
+      function handleFrame(raw, view) {
+        let eventName = "message";
+        let dataLine = "";
+
+        for (const line of raw.split("\n")) {
+          if (line.startsWith("event:")) eventName = line.slice(6).trim();
+          else if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+        }
+
+        if (!dataLine) return false;
+
+        let data;
+        try {
+          data = JSON.parse(dataLine);
+        } catch {
+          return false;
+        }
+
+        if (eventName === "delta") {
+          view.textEl.textContent += data.text ?? "";
+          show(outputEl);
+          return false;
+        }
+
+        if (eventName === "done") {
+          finishAnswer(view, data);
+          return true;
+        }
+
+        if (eventName === "error") {
+          view.textEl.classList.remove("streaming");
+          showError(data.error || "خطأ غير معروف", data.hint);
+          return true;
+        }
+
+        return false;
+      }
+
+      function createAnswerView() {
+        outputEl.innerHTML = `
+          <div class="answer">
+            <div class="meta"><span>جارٍ التوليد…</span></div>
+            <div class="answer-text streaming"></div>
+          </div>`;
+        show(outputEl);
+
+        return {
+          textEl: outputEl.querySelector(".answer-text"),
+          metaEl: outputEl.querySelector(".meta"),
+        };
+      }
+
+      function finishAnswer(view, data) {
+        view.textEl.classList.remove("streaming");
+
+        const parts = [`<span>الموديل: <b dir="ltr">${escapeHtml(data.model || "")}</b></span>`];
+        if (typeof data.latencyMs === "number") parts.push(`<span>الزمن: <b>${data.latencyMs} ms</b></span>`);
         if (data.usage) {
-          meta.push(
+          parts.push(
             `<span>التوكنز: <b>${data.usage.promptTokens} → ${data.usage.completionTokens}</b> (${data.usage.totalTokens})</span>`,
           );
         }
+        view.metaEl.innerHTML = parts.join("");
+      }
 
-        outputEl.innerHTML = `
-          <div class="answer">
-            <div class="meta">${meta.join("")}</div>
-            <div class="answer-text">${escapeHtml(lastAnswer)}</div>
-          </div>`;
-        show(outputEl);
-        show(copyBtn);
+      function handleTransportError(error) {
+        if (error.name === "AbortError" || error.name === "TimeoutError") {
+          const view = outputEl.querySelector(".answer-text");
+          if (view) view.classList.remove("streaming");
+
+          if (view && view.textContent) {
+            appendNote("تم إيقاف التوليد — ما ظهر أعلاه جزء من الرد.");
+          } else {
+            showError("تم إلغاء الطلب", "لم يصل أي نص خلال المهلة. جرّب موديلاً أسرع.");
+          }
+          return;
+        }
+        showError("تعذر الاتصال بالخادم", "تأكد أن خادم التطوير يعمل: npm run dev");
+      }
+
+      function appendNote(text) {
+        const note = document.createElement("div");
+        note.className = "note";
+        note.textContent = text;
+        outputEl.querySelector(".answer")?.appendChild(note);
+        lastAnswer = outputEl.querySelector(".answer-text")?.textContent ?? "";
+        if (lastAnswer) show(copyBtn);
+      }
+
+      function setBusy(value) {
+        sendBtn.disabled = value;
+        sendBtn.innerHTML = value ? '<span class="spinner"></span>جارٍ التوليد…' : "إرسال الطلب";
+        stopBtn.classList.toggle("hidden", !value);
+        if (value) {
+          hide(copyBtn);
+          hide(statusEl);
+        }
       }
 
       function showError(message, hint) {
