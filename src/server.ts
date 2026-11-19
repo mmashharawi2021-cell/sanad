@@ -15,6 +15,8 @@ import { getTasks, createTask, toggleTask, deleteTask, runTaskNow, initTaskSched
 import { analyzeScreenImage, planAndExecuteVisualAction } from "./screenVision";
 import { getWorkflows, deleteWorkflow } from "./actionMemory";
 import { organizeDirectory, getDirectoryStatus, setupWorkspacePreset, inspectAndSummarizeFile } from "./desktopAutomation";
+import { runUniversalCommand, type ShellType } from "./universalTerminal";
+import { listProcesses, killProcess, launchAnyApp, setScreenBrightness, executeDailyRoutine } from "./processMaestro";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, "..", "public");
@@ -416,7 +418,76 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return;
     }
 
+    if (action === "launch-any-app" || action === "open-app" || action === "start-app") {
+      const result = await launchAnyApp(target || String(body.appName || ""));
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "kill-process" || action === "stop-process") {
+      const proc = (target || body.process || body.pid || "") as string | number;
+      const result = await killProcess(proc);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "brightness" || action === "set-brightness") {
+      const percent = Number(body.percent ?? target ?? 70);
+      const result = await setScreenBrightness(percent);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "routine" || action === "daily-routine") {
+      const routine = String(body.routine || target || "morning");
+      const result = await executeDailyRoutine(routine);
+      sendJson(res, 200, result);
+      return;
+    }
+
     sendJson(res, 400, { error: "Unknown system action." });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/terminal/run") {
+    const body = await readJsonBody(req);
+    const command = String(body.command || "");
+    const shell = (body.shell || "powershell") as ShellType;
+    const cwd = body.cwd ? String(body.cwd) : undefined;
+    const timeoutMs = typeof body.timeoutMs === "number" ? body.timeoutMs : undefined;
+    const result = await runUniversalCommand({ command, shell, cwd, timeoutMs });
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/system/processes") {
+    const limit = Number(url.searchParams.get("limit") || 15);
+    const result = await listProcesses(limit);
+    sendJson(res, 200, { success: true, processes: result });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/kill-process") {
+    const body = await readJsonBody(req);
+    const proc = (body.process ?? body.pid ?? body.name ?? "") as string | number;
+    const result = await killProcess(proc);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/brightness") {
+    const body = await readJsonBody(req);
+    const percent = Number(body.percent ?? 70);
+    const result = await setScreenBrightness(percent);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/routine") {
+    const body = await readJsonBody(req);
+    const routine = String(body.routine || "morning");
+    const result = await executeDailyRoutine(routine);
+    sendJson(res, 200, result);
     return;
   }
 

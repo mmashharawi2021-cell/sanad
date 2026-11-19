@@ -2005,7 +2005,9 @@
           <button class="island-pill-btn" id="islandQuickNewBtn" type="button">📄 جديد</button>
           <button class="island-pill-btn" id="islandQuickEscBtn" type="button">⎋ Esc</button>
           <button class="island-pill-btn" id="islandOrganizeDesktopBtn" type="button" title="تنظيم وتصنيف سطح المكتب">🧹 رتّب سطح المكتب</button>
-          <button class="island-pill-btn" id="islandGisPresetBtn" type="button" title="تجهيز بيئة ArcGIS Pro والخرائط">🗺️ بيئة GIS</button>
+          <button class="island-pill-btn" id="islandRoutineMorningBtn" type="button" title="بدء روتين العمل اليومي">🌅 ابدأ العمل</button>
+          <button class="island-pill-btn" id="islandRoutineFocusBtn" type="button" title="تفعيل وضع التركيز الصامت">🎯 تركيز</button>
+          <button class="island-pill-btn" id="islandRoutineWrapupBtn" type="button" title="إنهاء العمل وتنظيف الجهاز">🌙 نهاية العمل</button>
           <button class="island-pill-btn primary" id="islandToggleModeBtn" type="button">🖥️ تبديل العرض الكامل</button>
         </div>
       </div>
@@ -2273,6 +2275,13 @@
           <div class="terminal-logs" id="terminalLogs"></div>
         </div>
         <div class="terminal-input-bar">
+          <select id="terminalShellSelect" style="background: rgba(0,0,0,0.6); color: var(--accent); border: 1px solid var(--border-glass); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; outline: none;">
+            <option value="powershell">⚡ PowerShell</option>
+            <option value="cmd">💻 CMD</option>
+            <option value="python">🐍 Python 3.14</option>
+            <option value="node">📦 Node.js</option>
+            <option value="git">🐙 Git</option>
+          </select>
           <span class="terminal-prompt-symbol">&gt;</span>
           <input type="text" class="terminal-input" id="terminalInput" placeholder="اكتب أمراً هنا واضغط Enter (مثل: git status, dir, node script.js)..." autocomplete="off" />
           <button class="terminal-run-btn" id="terminalRunBtn" type="button">تشغيل ⚡</button>
@@ -2495,7 +2504,10 @@
       const islandQuickNewBtn = document.getElementById("islandQuickNewBtn");
       const islandQuickEscBtn = document.getElementById("islandQuickEscBtn");
       const islandOrganizeDesktopBtn = document.getElementById("islandOrganizeDesktopBtn");
-      const islandGisPresetBtn = document.getElementById("islandGisPresetBtn");
+      const islandRoutineMorningBtn = document.getElementById("islandRoutineMorningBtn");
+      const islandRoutineFocusBtn = document.getElementById("islandRoutineFocusBtn");
+      const islandRoutineWrapupBtn = document.getElementById("islandRoutineWrapupBtn");
+      const terminalShellSelect = document.getElementById("terminalShellSelect");
 
       const desktopManagerBtn = document.getElementById("desktopManagerBtn");
       const desktopModalBackdrop = document.getElementById("desktopModalBackdrop");
@@ -4576,13 +4588,139 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
         // Detect if the model outputted tool call format, tool tags, or raw tool requests
         const isToolAttempt =
-          /tool_use|tool_name|create_text_file|write_file|create_file|run_command|execute_command|create_project|web_search|search_web|open_desktop_image|open_image|open_media|launch_app|organize_desktop|workspace_preset|organize_directory/i.test(
+          /tool_use|tool_name|create_text_file|write_file|create_file|run_command|execute_command|create_project|web_search|search_web|open_desktop_image|open_image|open_media|launch_app|organize_desktop|workspace_preset|organize_directory|kill_process|daily_routine|routine|set_brightness/i.test(
             text,
           );
 
         if (!isToolAttempt) return;
 
         try {
+          // Launch App Tool
+          if (/launch_app|open_app|شغل_برنامج|افتح_برنامج/i.test(text)) {
+            let appName = "";
+            const jsonMatch = text.match(/\{[\s\S]*?"(?:appName|target|name)"[\s\S]*?\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                appName = parsed.appName || parsed.target || parsed.name || "";
+              } catch (_) {}
+            }
+            if (!appName) {
+              const m = text.match(/"appName"\s*:\s*"([^"]+)"/i);
+              if (m) appName = m[1];
+            }
+            if (appName) {
+              const res = await fetch("/api/system/action", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "launch-any-app", target: appName }),
+              });
+              const data = await res.json();
+              const cleaned = text
+                .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+                .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+                .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+                .replace(/\{[\s\S]*?"(?:appName|target|name)"[\s\S]*?\}/gi, "")
+                .trim();
+              assistant.content = `${cleaned}\n\n> 🚀 **[إدارة البرامج والنظام]:** ${data.message}`;
+              renderThread();
+              saveState();
+              playSciFiSound("action");
+              if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+              return;
+            }
+          }
+
+          // Kill Process Tool
+          if (/kill_process|stop_process|اغلق_البرنامج|أغلق_العملية/i.test(text)) {
+            let proc = "";
+            const jsonMatch = text.match(/\{[\s\S]*?"(?:process|pid|name)"[\s\S]*?\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                proc = parsed.process || parsed.pid || parsed.name || "";
+              } catch (_) {}
+            }
+            if (proc) {
+              const res = await fetch("/api/system/kill-process", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ process: proc }),
+              });
+              const data = await res.json();
+              const cleaned = text
+                .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+                .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+                .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+                .replace(/\{[\s\S]*?"(?:process|pid|name)"[\s\S]*?\}/gi, "")
+                .trim();
+              assistant.content = `${cleaned}\n\n> 🛑 **[مدير العمليات]:** ${data.message}`;
+              renderThread();
+              saveState();
+              playSciFiSound("action");
+              if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+              return;
+            }
+          }
+
+          // Daily Routine Tool
+          if (/daily_routine|routine|روتين/i.test(text)) {
+            let routine = "morning";
+            const jsonMatch = text.match(/\{[\s\S]*?"(?:routine)"[\s\S]*?\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.routine) routine = parsed.routine;
+              } catch (_) {}
+            }
+            const res = await fetch("/api/system/routine", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ routine }),
+            });
+            const data = await res.json();
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .replace(/\{[\s\S]*?"routine"[\s\S]*?\}/gi, "")
+              .trim();
+            assistant.content = `${cleaned}\n\n> 🌅 **[الروتين الذكي للإنتاجية]:**\n${data.message}`;
+            renderThread();
+            saveState();
+            playSciFiSound("action");
+            if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+            return;
+          }
+
+          // Set Screen Brightness Tool
+          if (/set_brightness|brightness|سطوع/i.test(text)) {
+            let percent = 70;
+            const jsonMatch = text.match(/\{[\s\S]*?"(?:percent|brightness)"[\s\S]*?\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                percent = parsed.percent || parsed.brightness || 70;
+              } catch (_) {}
+            }
+            const res = await fetch("/api/system/brightness", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ percent }),
+            });
+            const data = await res.json();
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .trim();
+            assistant.content = `${cleaned}\n\n> ☀️ **[سطوع الشاشة]:** ${data.message}`;
+            renderThread();
+            saveState();
+            playSciFiSound("confirm");
+            return;
+          }
+
           // Organize Desktop / Directory Tool
           if (/organize_desktop|organize_directory|رتب_سطح_المكتب|تنظيم_سطح_المكتب/i.test(text)) {
             let target = "desktop";
@@ -5788,27 +5926,33 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         const cmd = terminalInput.value.trim();
         if (!cmd) return;
 
+        const shell = terminalShellSelect ? terminalShellSelect.value : "powershell";
         terminalInput.value = "";
         if (terminalRunBtn) terminalRunBtn.disabled = true;
 
         const entry = document.createElement("div");
         entry.className = "terminal-entry";
-        entry.innerHTML = `<div class="terminal-cmd-line">&gt; ${escapeHtml(cmd)}</div><div class="terminal-output">جاري التنفيذ… ⏳</div>`;
+        const shellBadge = shell === "python" ? "🐍 Python" : shell === "node" ? "📦 Node" : shell === "git" ? "🐙 Git" : shell === "cmd" ? "💻 CMD" : "⚡ PS";
+        entry.innerHTML = `<div class="terminal-cmd-line"><span style="color:var(--accent); font-size:11px; margin-left:6px; font-weight: bold;">[${shellBadge}]</span> &gt; ${escapeHtml(cmd)}</div><div class="terminal-output">جاري التنفيذ… ⏳</div>`;
         terminalLogs?.appendChild(entry);
         terminalBody?.scrollTo(0, terminalBody.scrollHeight);
 
         try {
-          const res = await fetch("/api/terminal/exec", {
+          const res = await fetch("/api/terminal/run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ command: cmd, cwd: "desktop" }),
+            body: JSON.stringify({ command: cmd, shell, cwd: "desktop" }),
           });
           const data = await res.json();
           const outEl = entry.querySelector(".terminal-output");
           if (outEl) {
-            const outText = data.stdout || data.stderr || "(اكتمل بدون مخرجات)";
+            let outText = data.stdout || data.stderr || "(اكتمل بدون مخرجات)";
+            if (data.diagnosis) {
+              outText += `\n\n💡 [تشخيص سند الذكي]: ${data.diagnosis}`;
+              if (data.suggestedFix) outText += `\n🔧 [الحل المقترح]: ${data.suggestedFix}`;
+            }
             outEl.textContent = outText;
-            if (!data.success && data.stderr) {
+            if (!data.success) {
               outEl.classList.add("error");
             }
           }
@@ -6954,6 +7098,29 @@ ${data.text}
       if (presetCodingBtn) presetCodingBtn.addEventListener("click", () => triggerWorkspacePreset("coding"));
       if (presetCleanBtn) presetCleanBtn.addEventListener("click", () => triggerWorkspacePreset("clean"));
       if (islandGisPresetBtn) islandGisPresetBtn.addEventListener("click", () => triggerWorkspacePreset("gis"));
+
+      async function triggerDailyRoutine(routine = "morning") {
+        if (typeof setIslandStatus === "function") setIslandStatus("ينفذ الروتين...", true);
+        try {
+          const res = await fetch("/api/system/routine", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ routine }),
+          });
+          const data = await res.json();
+          playSciFiSound("action");
+          if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
+          if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+        } catch (e) {
+          alert("حدث خطأ أثناء تشغيل الروتين: " + e.message);
+        } finally {
+          if (typeof setIslandStatus === "function") setIslandStatus("جاهز للأمر", false);
+        }
+      }
+
+      if (islandRoutineMorningBtn) islandRoutineMorningBtn.addEventListener("click", () => triggerDailyRoutine("morning"));
+      if (islandRoutineFocusBtn) islandRoutineFocusBtn.addEventListener("click", () => triggerDailyRoutine("focus"));
+      if (islandRoutineWrapupBtn) islandRoutineWrapupBtn.addEventListener("click", () => triggerDailyRoutine("wrapup"));
 
       /* ======================= boot ======================= */
 
