@@ -1889,6 +1889,17 @@
         text-shadow: 0 0 8px #ff5252;
       }
 
+      .island-icon-btn#islandDuplexBtn.active {
+        color: #00ff88;
+        text-shadow: 0 0 10px #00ff88, 0 0 20px rgba(0, 255, 136, 0.6);
+        animation: duplexPulse 1.2s infinite alternate ease-in-out;
+      }
+
+      @keyframes duplexPulse {
+        0% { transform: scale(1); opacity: 0.85; }
+        100% { transform: scale(1.18); opacity: 1; }
+      }
+
       .island-drawer {
         padding: 8px 14px 12px;
         border-top: 1px solid rgba(0, 242, 254, 0.15);
@@ -1975,6 +1986,7 @@
         </div>
 
         <div class="island-right">
+          <button class="island-icon-btn" id="islandDuplexBtn" type="button" title="وضع المحادثة الصوتية الحية المستمرة (Full-Duplex Live Voice)">🔴</button>
           <button class="island-icon-btn" id="islandMicBtn" type="button" title="استماع صوتي">🎙️</button>
           <button class="island-icon-btn" id="islandVisionBtn" type="button" title="فحص الشاشة">👁️</button>
           <button class="island-icon-btn" id="islandExpandBtn" type="button" title="توسيع / طي الكبسولة">▾</button>
@@ -2467,6 +2479,7 @@
       const islandInput = document.getElementById("islandInput");
       const islandForm = document.getElementById("islandForm");
       const islandMicBtn = document.getElementById("islandMicBtn");
+      const islandDuplexBtn = document.getElementById("islandDuplexBtn");
       const islandVisionBtn = document.getElementById("islandVisionBtn");
       const islandExpandBtn = document.getElementById("islandExpandBtn");
       const islandLatestMsg = document.getElementById("islandLatestMsg");
@@ -5212,8 +5225,28 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             autoGrow();
           }
 
-          // Debounce: wait 1500ms after user pauses speaking before dispatching
+          // Full-Duplex Real-Time Interruption (Barge-in):
+          // If SANAD is currently speaking and user speaks, immediately interrupt speech output
+          if (window.speechSynthesis && window.speechSynthesis.speaking) {
+            const lowerTranscript = text.toLowerCase();
+            if (lowerTranscript.length > 2) {
+              stopSpeaking();
+              playSciFiSound("wake");
+              setIslandStatus("نعم، تفضل أنا استمع إليك...", true);
+            }
+          }
+
+          // Interim Wake-Word Detection:
+          const normText = normalizeArabicSpeech(text);
+          const lower = normText.toLowerCase().trim();
+          if (lower.startsWith("يا سند") || lower.startsWith("سند") || lower.startsWith("يا جارفيس") || lower.startsWith("جارفيس")) {
+            setIslandStatus("نعم، أنا معك! اسمعك...", true);
+            if (islandWaves) islandWaves.classList.add("active");
+          }
+
+          // Debounce: 1200ms pause before dispatching command
           if (speechSilenceTimeout) clearTimeout(speechSilenceTimeout);
+          const debounceMs = jarvisVoiceMode ? 1100 : 1400;
           speechSilenceTimeout = setTimeout(() => {
             const rawText = promptEl.value.trim();
             if (rawText && !busy) {
@@ -5222,7 +5255,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
               autoGrow();
               handleVoiceTranscription(rawText);
             }
-          }, 1500);
+          }, debounceMs);
         };
 
         recognition.onerror = (event) => {
@@ -5260,6 +5293,25 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       function handleVoiceTranscription(text) {
         const cleanedText = normalizeArabicSpeech(text);
         const lower = cleanedText.toLowerCase().trim();
+
+        // Check for session exit / farewell phrases in voice mode
+        if (
+          lower.includes("مع السلامة") ||
+          lower.includes("مع السلامه") ||
+          lower.includes("وداعا") ||
+          lower.includes("إيقاف وضع الصوت") ||
+          lower.includes("اغلق وضع الصوت") ||
+          lower.includes("اكتفينا") ||
+          lower === "توقف يا سند" ||
+          lower === "بس يا سند" ||
+          lower === "يكفي يا سند"
+        ) {
+          speakText("مع السلامة يا صديقي! سأكون في انتظارك دائماً كلما احتجتني.", null, () => {
+            if (jarvisVoiceMode && voiceModeBtn) voiceModeBtn.click();
+          });
+          return;
+        }
+
         const wakeWords = ["يا سند", "سند", "يا جارفيس", "جارفيس", "hey sanad", "sanad"];
 
         let matchedWake = false;
@@ -5269,6 +5321,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           if (lower.startsWith(w)) {
             matchedWake = true;
             command = cleanedText.slice(w.length).trim();
+            command = command.replace(/^[،,\s.]+/, "").trim();
             break;
           }
         }
@@ -5282,12 +5335,13 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           if (!command || command === "." || command === "،") {
             const replies = [
               "نعم، سند معك وفي خدمتك! كيف أساعدك؟",
-              "أمرك، أنا استمع إليك تفضل.",
+              "أمرك، أنا استمع إليك باهتمام، تفضل.",
               "معك يا صديقي، بماذا أخدمك اليوم؟"
             ];
             const greeting = replies[Math.floor(Math.random() * replies.length)];
+            setIslandStatus("استمع إليك...", true);
             speakText(greeting, null, () => {
-              if (jarvisVoiceMode) setTimeout(() => startListening(), 400);
+              if (jarvisVoiceMode) setTimeout(() => startListening(), 350);
             });
             return;
           }
@@ -5370,11 +5424,20 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         const cleaned = cleanTextForSpeech(text);
         if (!cleaned) return;
 
-        const utterance = new SpeechSynthesisUtterance(cleaned);
+        // In live voice mode, speak the most relevant conversational sentences (up to 3) for snappy responses
+        const sentences = cleaned.split(/(?<=[.؟!؛\n])\s+/).filter(Boolean);
+        const spokenContent = (jarvisVoiceMode && sentences.length > 3)
+          ? sentences.slice(0, 3).join(" ")
+          : cleaned;
+
+        const utterance = new SpeechSynthesisUtterance(spokenContent);
 
         const voices = window.speechSynthesis.getVoices();
         const arabicVoice =
-          voices.find((v) => v.lang && v.lang.startsWith("ar")) ||
+          voices.find((v) => v.name && v.name.includes("Hamed") && v.lang.startsWith("ar")) ||
+          voices.find((v) => v.name && v.name.includes("Shakir") && v.lang.startsWith("ar")) ||
+          voices.find((v) => v.name && v.name.includes("Natural") && v.lang.startsWith("ar")) ||
+          voices.find((v) => v.lang && (v.lang === "ar-SA" || v.lang.startsWith("ar"))) ||
           voices.find((v) => v.name && (v.name.includes("Arabic") || v.name.includes("Naayf") || v.name.includes("Hoda") || v.name.includes("Salma")));
 
         if (arabicVoice) {
@@ -5383,7 +5446,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         } else {
           utterance.lang = "ar-SA";
         }
-        utterance.rate = 1.0;
+        utterance.rate = 1.05;
         utterance.pitch = 1.0;
 
         if (btn) {
@@ -5392,13 +5455,17 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           btn.classList.add("speaking");
         }
 
+        setIslandStatus("سند يتحدث...", false);
+
         utterance.onend = () => {
           stopSpeaking();
+          setIslandStatus(jarvisVoiceMode ? "يستمع إليك مباشرة..." : "جاهز للأمر", jarvisVoiceMode);
           if (onEndCallback) onEndCallback();
         };
 
         utterance.onerror = () => {
           stopSpeaking();
+          setIslandStatus("جاهز للأمر", false);
         };
 
         currentSpeakingUtterance = utterance;
@@ -5425,21 +5492,37 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         voiceModeBtn.addEventListener("click", () => {
           jarvisVoiceMode = !jarvisVoiceMode;
           voiceModeBtn.classList.toggle("active", jarvisVoiceMode);
+          if (islandDuplexBtn) islandDuplexBtn.classList.toggle("active", jarvisVoiceMode);
           if (arcReactorHud) arcReactorHud.classList.toggle("active", jarvisVoiceMode);
           const label = voiceModeBtn.querySelector("span:last-child");
           if (jarvisVoiceMode) {
             if (label) label.textContent = "سند مفعّل";
+            setIslandStatus("🟢 حوار صوتي مباشر", true);
             playSciFiSound("wake");
-            speakText("أهلاً بك! وضع سند الصوتي مفعّل. أنا استمع إليك دائماً، فقط نادني بـ «يا سند» وسأنفذ فوراً.", null, () => {
+            speakText("أهلاً بك! وضع الحوار الصوتي المباشر مفعّل. أنا استمع إليك دائماً، نادني بـ «يا سند» أو تحدث بحرية وسأنفذ فوراً.", null, () => {
               if (jarvisVoiceMode) startListening();
             });
           } else {
             if (label) label.textContent = "وضع سند";
+            setIslandStatus("جاهز للأمر", false);
             stopSpeaking();
             stopListening();
           }
         });
       }
+
+      if (islandDuplexBtn) {
+        islandDuplexBtn.addEventListener("click", () => {
+          if (voiceModeBtn) voiceModeBtn.click();
+        });
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.shiftKey && (e.key === "V" || e.key === "v" || e.code === "KeyV")) {
+          e.preventDefault();
+          if (voiceModeBtn) voiceModeBtn.click();
+        }
+      });
 
       if (arcReactorHud) {
         arcReactorHud.addEventListener("click", () => {
