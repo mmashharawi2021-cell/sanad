@@ -5,13 +5,23 @@ import { fileURLToPath } from "node:url";
 import { AppError, getConfig } from "./config";
 import { readModelCatalog, toChatModels, type ChatModel, type OpenRouterModel } from "./models";
 import { ask, askStream, toAppError, type Answer, type ChatTurn } from "./openrouter";
+import { getSystemStats, launchApp, openFolder, openMediaFile, openFileDirectly, createOrWriteTextFile, cleanTemporaryFiles, setVolume, lockWorkstation, controlMouse, controlKeyboard } from "./systemTools";
+import { askOllama, askOllamaStream, getOllamaChatModels, getOllamaStatus, isOllamaModel } from "./ollama";
+import { extractTextFromBuffer, extractTextFromLocalPath } from "./fileReader";
+import { getMemories, addMemory, deleteMemory, getSystemPromptWithMemory } from "./memory";
+import { executeTerminalCommand, createFullProject, readProjectTree } from "./codeRunner";
+import { searchWeb, fetchPageContent } from "./webSearch";
+import { getTasks, createTask, toggleTask, deleteTask, runTaskNow, initTaskScheduler } from "./taskScheduler";
+import { analyzeScreenImage, planAndExecuteVisualAction } from "./screenVision";
+import { getWorkflows, deleteWorkflow } from "./actionMemory";
+import { organizeDirectory, getDirectoryStatus, setupWorkspacePreset, inspectAndSummarizeFile } from "./desktopAutomation";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, "..", "public");
 const PORT = Number(process.env.PORT ?? 3000);
-const MAX_BODY_BYTES = 128 * 1024;
-const MAX_TURNS = 40;
-const MAX_TURN_CHARS = 8_000;
+const MAX_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_TURNS = 60;
+const MAX_TURN_CHARS = 150_000; // Allow up to 150,000 characters per turn for large files and codebases
 const REQUEST_TIMEOUT_MS = 90_000;
 const STREAM_TIMEOUT_MS = 120_000;
 const HEARTBEAT_MS = 15_000;
@@ -32,6 +42,8 @@ const CONTENT_TYPES: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
 };
 
 const server = createServer((req, res) => {
@@ -63,6 +75,410 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/system/stats") {
+    const stats = await getSystemStats();
+    sendJson(res, 200, stats);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/ollama/status") {
+    const status = await getOllamaStatus();
+    sendJson(res, 200, status);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/memory") {
+    const memories = await getMemories();
+    sendJson(res, 200, { success: true, count: memories.length, memories });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/memory") {
+    const body = await readJsonBody(req);
+    const content = String(body.content || "").trim();
+    const category = (body.category || "general") as any;
+    if (!content) {
+      sendJson(res, 400, { error: "محتوى المعلومة لا يمكن أن يكون فارغاً." });
+      return;
+    }
+    const memory = await addMemory(content, category);
+    sendJson(res, 200, { success: true, memory });
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname === "/api/memory") {
+    const body = (await readJsonBody(req).catch(() => ({}))) as Record<string, unknown>;
+    const id = url.searchParams.get("id") || String(body.id || "");
+    if (!id) {
+      sendJson(res, 400, { error: "معرف المعلومة مطلوب للحذف." });
+      return;
+    }
+    const success = await deleteMemory(id);
+    sendJson(res, 200, { success });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/terminal/exec") {
+    const body = await readJsonBody(req);
+    const command = String(body.command || "").trim();
+    const cwd = typeof body.cwd === "string" ? body.cwd : undefined;
+    const timeoutMs = typeof body.timeoutMs === "number" ? body.timeoutMs : 45_000;
+
+    if (!command) {
+      sendJson(res, 400, { error: "الأمر المطلوب تنفيذه فارغ." });
+      return;
+    }
+
+    const result = await executeTerminalCommand(command, cwd, timeoutMs);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/project/create") {
+    const body = await readJsonBody(req);
+    const projectName = String(body.projectName || "").trim();
+    const files = Array.isArray(body.files) ? (body.files as any[]) : [];
+    const baseFolder = (body.baseFolder || "desktop") as any;
+    const openInVsCode = body.openInVsCode !== false;
+
+    if (!projectName || !files.length) {
+      sendJson(res, 400, { error: "اسم المشروع والملفات مطلوبة." });
+      return;
+    }
+
+    const result = await createFullProject({ projectName, files, baseFolder, openInVsCode });
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/project/tree") {
+    const body = await readJsonBody(req);
+    const targetPath = String(body.path || ".");
+    const tree = await readProjectTree(targetPath);
+    sendJson(res, 200, { success: true, tree });
+    return;
+  }
+
+  // --- Web Search & Scraping Endpoints ---
+  if (req.method === "POST" && url.pathname === "/api/web/search") {
+    const body = await readJsonBody(req);
+    const query = String(body.query || "").trim();
+    const limit = typeof body.limit === "number" ? body.limit : 5;
+    if (!query) {
+      sendJson(res, 400, { error: "يرجى تحديد عبارة البحث." });
+      return;
+    }
+    const results = await searchWeb(query, limit);
+    sendJson(res, 200, { success: true, query, count: results.length, results });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/web/read") {
+    const body = await readJsonBody(req);
+    const targetUrl = String(body.url || "").trim();
+    const maxChars = typeof body.maxChars === "number" ? body.maxChars : 6000;
+    if (!targetUrl) {
+      sendJson(res, 400, { error: "يرجى تزويد رابط الصفحة." });
+      return;
+    }
+    const page = await fetchPageContent(targetUrl, maxChars);
+    sendJson(res, 200, { success: true, page });
+    return;
+  }
+
+  // --- Live Screen Vision Endpoint ---
+  if (req.method === "POST" && url.pathname === "/api/vision/analyze") {
+    const body = await readJsonBody(req, 15 * 1024 * 1024);
+    const imageBase64 = String(body.imageBase64 || "").trim();
+    const prompt = typeof body.prompt === "string" ? body.prompt : undefined;
+    const model = typeof body.model === "string" ? body.model : undefined;
+    const mimeType = typeof body.mimeType === "string" ? body.mimeType : undefined;
+
+    if (!imageBase64) {
+      sendJson(res, 400, { error: "صورة الشاشة مطلوبة للتحليل." });
+      return;
+    }
+
+    const result = await analyzeScreenImage({ imageBase64, prompt, model, mimeType });
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/vision/act") {
+    const body = await readJsonBody(req);
+    const imageBase64 = String(body.imageBase64 || "").trim();
+    const goal = String(body.goal || "").trim();
+    const screenWidth = typeof body.screenWidth === "number" ? body.screenWidth : 1920;
+    const screenHeight = typeof body.screenHeight === "number" ? body.screenHeight : 1080;
+    const model = typeof body.model === "string" ? body.model : undefined;
+    const autoExecute = body.autoExecute !== false;
+
+    if (!imageBase64 || !goal) {
+      sendJson(res, 400, { error: "صورة الشاشة والهدف المطلوب كلاهما مطلوب للوكيل البصري." });
+      return;
+    }
+
+    const result = await planAndExecuteVisualAction({
+      imageBase64,
+      goal,
+      screenWidth,
+      screenHeight,
+      model,
+      autoExecute,
+    });
+    sendJson(res, 200, result);
+    return;
+  }
+
+  // --- Visual Action Workflows Memory Endpoints ---
+  if (req.method === "GET" && url.pathname === "/api/vision/workflows") {
+    const workflows = await getWorkflows();
+    sendJson(res, 200, { success: true, count: workflows.length, workflows });
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname === "/api/vision/workflows") {
+    const body = (await readJsonBody(req).catch(() => ({}))) as Record<string, unknown>;
+    const id = url.searchParams.get("id") || String(body.id || "");
+    if (!id) {
+      sendJson(res, 400, { error: "معرف المسار مطلوب للحذف." });
+      return;
+    }
+    const success = await deleteWorkflow(id);
+    sendJson(res, 200, { success });
+    return;
+  }
+
+  // --- Background Tasks & Scheduler Endpoints ---
+  if (req.method === "GET" && url.pathname === "/api/tasks") {
+    const tasks = await getTasks();
+    sendJson(res, 200, { success: true, count: tasks.length, tasks });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tasks") {
+    const body = await readJsonBody(req);
+    const title = String(body.title || "").trim();
+    const actionValue = String(body.actionValue || "").trim();
+    const intervalMinutes = Number(body.intervalMinutes) || 30;
+    const actionType = (body.actionType || "command") as any;
+
+    if (!title || !actionValue) {
+      sendJson(res, 400, { error: "عنوان المهمة وأمر التنفيذ مطلوبان." });
+      return;
+    }
+
+    const task = await createTask({ title, actionValue, intervalMinutes, actionType });
+    sendJson(res, 200, { success: true, task });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tasks/toggle") {
+    const body = await readJsonBody(req);
+    const id = String(body.id || "");
+    const task = await toggleTask(id);
+    if (!task) {
+      sendJson(res, 404, { error: "المهمة غير موجودة." });
+      return;
+    }
+    sendJson(res, 200, { success: true, task });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tasks/run") {
+    const body = await readJsonBody(req);
+    const id = String(body.id || "");
+    const result = await runTaskNow(id);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname === "/api/tasks") {
+    const body = (await readJsonBody(req).catch(() => ({}))) as Record<string, unknown>;
+    const id = url.searchParams.get("id") || String(body.id || "");
+    const success = await deleteTask(id);
+    sendJson(res, 200, { success });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/action") {
+    const body = await readJsonBody(req);
+    const action = String(body.action || "");
+    const target = String(body.target || "");
+
+    if (action === "launch-app") {
+      const createProject = Boolean(body.createProject);
+      const result = await launchApp(target, { createProject });
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "open-folder") {
+      const result = await openFolder(target);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "open-media") {
+      const folder = String(body.folder || target || "desktop");
+      const type = (body.type === "pdf" ? "pdf" : "image") as "image" | "pdf";
+      const result = await openMediaFile(folder, type);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "open-file") {
+      const result = await openFileDirectly(target);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "create-file" || action === "write-file" || action === "create_text_file") {
+      const filePath = String(body.filePath || body.path || "");
+      const folder = String(body.folder || "desktop");
+      const filename = String(body.filename || "");
+      const content = typeof body.content === "string" ? body.content : "";
+      const openAfterCreate = body.openAfterCreate !== false;
+
+      const result = await createOrWriteTextFile({
+        filePath,
+        folder,
+        filename,
+        content,
+        openAfterCreate,
+      });
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "clean-temp" || action === "cleanup") {
+      const result = await cleanTemporaryFiles();
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "volume" || action === "set-volume") {
+      const volAction = (body.volumeAction || target || "up") as "up" | "down" | "mute" | "max" | "min";
+      const steps = typeof body.steps === "number" ? body.steps : 5;
+      const result = await setVolume(volAction, steps);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "lock-screen" || action === "lock-workstation" || action === "lock") {
+      const result = await lockWorkstation();
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "mouse" || action === "click" || action === "mouse-click") {
+      const mouseAction = (body.mouseAction || body.type || target || "click") as "click" | "left_click" | "right_click" | "double_click" | "move";
+      const x = typeof body.x === "number" ? body.x : undefined;
+      const y = typeof body.y === "number" ? body.y : undefined;
+      const result = await controlMouse({ action: mouseAction, x, y });
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "keyboard" || action === "type" || action === "press" || action === "hotkey") {
+      const kbAction = (body.keyboardAction || (action !== "keyboard" ? action : "press")) as "type" | "press" | "hotkey";
+      const text = body.text ? String(body.text) : undefined;
+      const key = body.key ? String(body.key) : undefined;
+      const hotkey = body.hotkey ? String(body.hotkey) : undefined;
+      const pressEnter = Boolean(body.pressEnter);
+      const result = await controlKeyboard({
+        action: kbAction,
+        text,
+        key,
+        hotkey,
+        pressEnter,
+      });
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "organize-desktop" || action === "organize_desktop") {
+      const result = await organizeDirectory("desktop");
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "organize-downloads" || action === "organize_downloads") {
+      const result = await organizeDirectory("downloads");
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (action === "preset" || action === "workspace-preset") {
+      const preset = String(body.preset || target || "gis");
+      const result = await setupWorkspacePreset(preset);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    sendJson(res, 400, { error: "Unknown system action." });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/desktop/organize") {
+    const body = await readJsonBody(req);
+    const target = typeof body.target === "string" ? body.target : "desktop";
+    const result = await organizeDirectory(target);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/desktop/status") {
+    const target = url.searchParams.get("target") || "desktop";
+    const result = await getDirectoryStatus(target);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/desktop/preset") {
+    const body = await readJsonBody(req);
+    const preset = typeof body.preset === "string" ? body.preset : "gis";
+    const result = await setupWorkspacePreset(preset);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/desktop/inspect") {
+    const body = await readJsonBody(req);
+    const filePath = typeof body.filePath === "string" ? body.filePath : "";
+    if (!filePath) {
+      sendJson(res, 400, { success: false, error: "يرجى تحديد مسار الملف" });
+      return;
+    }
+    const result = await inspectAndSummarizeFile(filePath);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/files/extract") {
+    const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+    const body = await readJsonBody(req, MAX_UPLOAD_BYTES);
+    const filename = String(body.filename || "file.txt");
+    const contentBase64 = typeof body.contentBase64 === "string" ? body.contentBase64 : "";
+    const filePath = typeof body.filePath === "string" ? body.filePath : "";
+
+    if (filePath) {
+      const result = await extractTextFromLocalPath(filePath);
+      sendJson(res, 200, { success: true, file: result });
+      return;
+    }
+
+    if (contentBase64) {
+      const buffer = Buffer.from(contentBase64, "base64");
+      const result = await extractTextFromBuffer(buffer, filename);
+      sendJson(res, 200, { success: true, file: result });
+      return;
+    }
+
+    sendJson(res, 400, { error: "يرجى تزويد ملف للقراءة." });
+    return;
+  }
+
   if (req.method === "GET" || req.method === "HEAD") {
     await serveStatic(url.pathname, res);
     return;
@@ -73,10 +489,23 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
 async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const { prompt, model, messages } = await readChatRequest(req);
+  const systemPrompt = await getSystemPromptWithMemory();
+
+  if (isOllamaModel(model)) {
+    const answer: Answer = await askOllama(prompt, {
+      model,
+      messages,
+      system: systemPrompt,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    sendJson(res, 200, answer);
+    return;
+  }
 
   const answer: Answer = await ask(prompt, {
     model,
     messages,
+    system: systemPrompt,
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
@@ -101,7 +530,18 @@ async function handleModels(res: ServerResponse): Promise<void> {
  * `data/free-models.json`. Set MODELS_SOURCE=catalog to skip the network entirely.
  */
 async function resolveModels(): Promise<ModelsResult> {
-  if (modelsCache && Date.now() - modelsCache.at <= MODELS_TTL_MS) return modelsCache;
+  const ollamaModels = await getOllamaChatModels();
+
+  if (modelsCache && Date.now() - modelsCache.at <= MODELS_TTL_MS) {
+    if (ollamaModels.length) {
+      const merged = [
+        ...ollamaModels,
+        ...modelsCache.models.filter((m) => !isOllamaModel(m.id)),
+      ];
+      return { ...modelsCache, models: merged };
+    }
+    return modelsCache;
+  }
 
   if (process.env.MODELS_SOURCE !== "catalog") {
     try {
@@ -119,12 +559,13 @@ async function resolveModels(): Promise<ModelsResult> {
       }
 
       const payload = (await upstream.json()) as { data?: OpenRouterModel[] };
-      const models = toChatModels(payload.data ?? []);
+      const baseModels = toChatModels(payload.data ?? []);
 
-      if (!models.length) {
+      if (!baseModels.length) {
         throw new AppError("OpenRouter returned no free chat models.", { status: 502 });
       }
 
+      const models = [...ollamaModels, ...baseModels];
       modelsCache = { at: Date.now(), models, source: "live" };
       return modelsCache;
     } catch (error) {
@@ -134,11 +575,21 @@ async function resolveModels(): Promise<ModelsResult> {
 
   const catalog = await readModelCatalog();
   if (catalog.models.length) {
+    const models = [...ollamaModels, ...catalog.models];
     modelsCache = {
       at: Date.now(),
-      models: catalog.models,
+      models,
       source: "catalog",
       generatedAt: catalog.generatedAt,
+    };
+    return modelsCache;
+  }
+
+  if (ollamaModels.length) {
+    modelsCache = {
+      at: Date.now(),
+      models: ollamaModels,
+      source: "catalog",
     };
     return modelsCache;
   }
@@ -161,7 +612,7 @@ async function handleStream(req: IncomingMessage, res: ServerResponse): Promise<
   });
   res.flushHeaders?.();
 
-  // Stop calling OpenRouter as soon as the browser goes away.
+  // Stop calling provider as soon as the browser goes away.
   const clientGone = new AbortController();
   const onClose = () => clientGone.abort();
   req.on("close", onClose);
@@ -170,10 +621,18 @@ async function handleStream(req: IncomingMessage, res: ServerResponse): Promise<
 
   try {
     const signal = AbortSignal.any([clientGone.signal, AbortSignal.timeout(STREAM_TIMEOUT_MS)]);
+    const systemPrompt = await getSystemPromptWithMemory();
 
-    for await (const event of askStream(prompt, { model, messages, signal })) {
-      if (clientGone.signal.aborted) break;
-      write(res, frame(event.type, event));
+    if (isOllamaModel(model)) {
+      for await (const event of askOllamaStream(prompt, { model, messages, system: systemPrompt, signal })) {
+        if (clientGone.signal.aborted) break;
+        write(res, frame(event.type, event));
+      }
+    } else {
+      for await (const event of askStream(prompt, { model, messages, system: systemPrompt, signal })) {
+        if (clientGone.signal.aborted) break;
+        write(res, frame(event.type, event));
+      }
     }
   } catch (error) {
     if (!clientGone.signal.aborted) {
@@ -246,14 +705,17 @@ function write(res: ServerResponse, chunk: string): void {
   res.write(chunk);
 }
 
-async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+async function readJsonBody(req: IncomingMessage, maxBytes: number = MAX_BODY_BYTES): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
   let size = 0;
 
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
-      throw new AppError("Request body is too large.", { status: 413, hint: "Keep the conversation under 128 KB." });
+    if (size > maxBytes) {
+      throw new AppError("Request body is too large.", {
+        status: 413,
+        hint: `Keep request size under ${(maxBytes / 1024 / 1024).toFixed(1)} MB.`,
+      });
     }
     chunks.push(Buffer.from(chunk));
   }
@@ -308,6 +770,7 @@ server.listen(PORT, () => {
     console.log(`OpenRouter demo running at http://localhost:${PORT}`);
     console.log(`Default model: ${config.model}`);
     if (config.fallbackModels.length) console.log(`Fallbacks: ${config.fallbackModels.join(" → ")}`);
+    initTaskScheduler().catch((e) => console.warn(`[scheduler error]:`, e));
   } catch (error) {
     const appError = toAppError(error);
     console.warn(`⚠ ${appError.message}`);

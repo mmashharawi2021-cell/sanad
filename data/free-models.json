@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-15T11:50:00.650Z",
+  "generatedAt": "2026-11-15T12:02:43.055Z",
   "source": "https://openrouter.ai/api/v1/models",
-  "count": 15,
+  "count": 16,
   "models": [
     {
       "id": "openrouter/free",
@@ -180,6 +180,18 @@
         "video"
       ],
       "description": "NVIDIA Nemotron™ 3 Nano Omni is a 30B-A3B open multimodal model designed to function as a perception and context sub-agent in enterprise agent systems. It accepts text, image, video, and..."
+    },
+    {
+      "id": "openrouter/free",
+      "name": "Free Models Router",
+      "provider": "openrouter",
+      "contextLength": 200000,
+      "maxOutput": null,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "description": "The simplest way to get free inference. openrouter/free is a router that selects free models at random from the models available on OpenRouter. The router smartly filters for models that..."
     }
   ]
 }

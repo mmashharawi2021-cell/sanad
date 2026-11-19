@@ -1,5 +1,5 @@
 import { OpenRouter } from "@openrouter/sdk";
-import { AppError, getConfig } from "./config";
+import { AppError, getConfig, JARVIS_SYSTEM_PROMPT } from "./config";
 
 export type Usage = {
   promptTokens: number;
@@ -62,13 +62,14 @@ function buildModelChain(primary: string): string[] {
 }
 
 function buildMessages(prompt: string, system?: string, turns?: ChatTurn[]) {
+  const sys = system?.trim() || JARVIS_SYSTEM_PROMPT;
+  const sysTurn = sys ? [{ role: "system" as const, content: sys }] : [];
+
   if (turns?.length) {
-    return [...(system ? [{ role: "system" as const, content: system }] : []), ...turns];
+    const nonSystem = turns.filter((t) => t.role !== "system");
+    return [...sysTurn, ...nonSystem];
   }
-  return [
-    ...(system ? [{ role: "system" as const, content: system }] : []),
-    { role: "user" as const, content: prompt },
-  ];
+  return [...sysTurn, { role: "user" as const, content: prompt }];
 }
 
 /** Uses the conversation when present, otherwise the single prompt. */
