@@ -1,4 +1,4 @@
-import { exec, execFile } from "node:child_process";
+import { exec, execFile, spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -138,41 +138,34 @@ export async function launchAnyApp(
   const target = APP_ALIASES[norm] || norm;
 
   return new Promise((resolve) => {
-    // If it's a protocol (like ms-settings:), use Start-Process directly
-    if (target.includes(":")) {
-      execFile("powershell.exe", ["-NoProfile", "-Command", `Start-Process "${target}"`], (err) => {
-        if (err) resolve({ success: false, message: `تعذر تشغيل ${appNameOrPath}: ${err.message}` });
-        else resolve({ success: true, message: `تم تشغيل ${appNameOrPath} بنجاح.`, fullCommand: target });
-      });
-      return;
-    }
-
-    // Use cmd start for standard apps and executables
-    exec(`cmd.exe /c start "" "${target}"`, { windowsHide: true }, (err) => {
-      if (err) {
-        // Fallback to powershell Start-Process
-        execFile("powershell.exe", ["-NoProfile", "-Command", `Start-Process "${target}"`], (psErr) => {
-          if (psErr) {
-            resolve({
-              success: false,
-              message: `تعذر تشغيل البرنامج (${appNameOrPath}). تأكد من اسمه أو تثبيته.`,
-            });
-          } else {
-            resolve({
-              success: true,
-              message: `تم تشغيل ${appNameOrPath} بنجاح عبر النظام.`,
-              fullCommand: target,
-            });
-          }
+    try {
+      if (target.includes(":")) {
+        const child = spawn("powershell.exe", ["-NoProfile", "-Command", `Start-Process "${target}"`], {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
         });
+        child.unref();
       } else {
-        resolve({
-          success: true,
-          message: `تم فتح وتشغيل ${appNameOrPath} بنجاح.`,
-          fullCommand: target,
+        const child = spawn("cmd.exe", ["/c", "start", "", target], {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
         });
+        child.unref();
       }
-    });
+
+      resolve({
+        success: true,
+        message: `تم فتح وتشغيل ${appNameOrPath} بنجاح.`,
+        fullCommand: target,
+      });
+    } catch (err: any) {
+      resolve({
+        success: false,
+        message: `تعذر تشغيل ${appNameOrPath}: ${err.message}`,
+      });
+    }
   });
 }
 
