@@ -17,6 +17,7 @@ import { getWorkflows, deleteWorkflow } from "./actionMemory";
 import { organizeDirectory, getDirectoryStatus, setupWorkspacePreset, inspectAndSummarizeFile } from "./desktopAutomation";
 import { runUniversalCommand, type ShellType } from "./universalTerminal";
 import { listProcesses, killProcess, launchAnyApp, setScreenBrightness, executeDailyRoutine } from "./processMaestro";
+import { buildProject, getProjectFileContent, listBuiltProjects, type ProjectTemplate } from "./projectBuilder";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, "..", "public");
@@ -150,6 +151,53 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
     const result = await createFullProject({ projectName, files, baseFolder, openInVsCode });
     sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/project/build") {
+    const body = await readJsonBody(req);
+    const projectName = String(body.projectName || `project_${Date.now()}`).trim();
+    const template = body.template as ProjectTemplate | undefined;
+    const description = body.description ? String(body.description) : undefined;
+    const files = Array.isArray(body.files) ? (body.files as any[]) : undefined;
+    const baseFolder = body.baseFolder as any;
+    const openInVsCode = body.openInVsCode !== false;
+    const result = await buildProject({
+      projectName,
+      template,
+      description,
+      files,
+      baseFolder,
+      openInVsCode,
+    });
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/project/preview") {
+    const projectName = url.searchParams.get("project") || "";
+    const file = url.searchParams.get("file") || "index.html";
+    if (!projectName) {
+      sendJson(res, 400, { error: "يرجى تحديد اسم المشروع للمعاينه" });
+      return;
+    }
+    const fileResult = await getProjectFileContent(projectName, file);
+    if (!fileResult.found) {
+      res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`<h3>الملف غير موجود (${file})</h3>`);
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": fileResult.contentType,
+      "Cache-Control": "no-cache",
+    });
+    res.end(fileResult.content);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/project/list") {
+    const projects = await listBuiltProjects();
+    sendJson(res, 200, { success: true, projects });
     return;
   }
 

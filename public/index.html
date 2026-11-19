@@ -2008,6 +2008,7 @@
           <button class="island-pill-btn" id="islandRoutineMorningBtn" type="button" title="بدء روتين العمل اليومي">🌅 ابدأ العمل</button>
           <button class="island-pill-btn" id="islandRoutineFocusBtn" type="button" title="تفعيل وضع التركيز الصامت">🎯 تركيز</button>
           <button class="island-pill-btn" id="islandRoutineWrapupBtn" type="button" title="إنهاء العمل وتنظيف الجهاز">🌙 نهاية العمل</button>
+          <button class="island-pill-btn" id="islandProjectsBtn" type="button" title="معاينة المشاريع وتطبيقات الويب الحية">🚀 المشاريع الحية</button>
           <button class="island-pill-btn primary" id="islandToggleModeBtn" type="button">🖥️ تبديل العرض الكامل</button>
         </div>
       </div>
@@ -2156,6 +2157,11 @@
           <button class="jarvis-voice-btn" id="desktopManagerBtn" type="button" title="إدارة وأتمتة سطح المكتب وتصنيف الملفات">
             <span>🧹</span>
             <span>سطح المكتب</span>
+          </button>
+
+          <button class="jarvis-voice-btn" id="projectPreviewBtn" type="button" title="معاينة المشاريع البرمجية الحية وتطبيقات الويب">
+            <span>🚀</span>
+            <span>المشاريع الحية</span>
           </button>
 
           <button class="jarvis-voice-btn" id="toggleIslandBtn" type="button" title="وضع الكبسولة العائمة الذكية (Dynamic Island)">
@@ -2400,6 +2406,35 @@
       </div>
     </div>
 
+    <!-- Autonomous Project Builder & Live Web Preview Modal -->
+    <div class="memory-modal-backdrop" id="previewModalBackdrop">
+      <div class="memory-modal" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle" style="max-width: 95vw; width: 1100px; height: 88vh; max-height: 88vh; display: flex; flex-direction: column;">
+        <div class="memory-header" style="flex-shrink: 0; padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h2 id="previewModalTitle" style="margin: 0; font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span>🌐</span>
+              <span>معاينة حية:</span>
+              <span id="previewProjectName" style="color: var(--accent); font-family: monospace;"></span>
+            </h2>
+            <select id="previewProjectSelect" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; outline: none; cursor: pointer;" title="اختر مشروعاً للمعاينة"></select>
+            <div style="display: inline-flex; gap: 2px; background: var(--surface); padding: 2px 4px; border-radius: 6px; border: 1px solid var(--border);">
+              <button id="previewDesktopBtn" type="button" style="background: var(--accent); color: #fff; border: none; cursor: pointer; padding: 2px 8px; font-size: 11px; border-radius: 4px; font-weight: 600;" title="شاشة حاسوب">🖥️ حاسوب</button>
+              <button id="previewMobileBtn" type="button" style="background: transparent; color: var(--muted); border: none; cursor: pointer; padding: 2px 8px; font-size: 11px; border-radius: 4px;" title="شاشة جوال">📱 جوال</button>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="memory-add-btn" id="previewRefreshBtn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; font-size: 12px; border-radius: 6px;" title="إعادة تحميل المعاينة">🔄 تحديث</button>
+            <button class="memory-add-btn" id="previewOpenTabBtn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; font-size: 12px; border-radius: 6px;" title="فتح في تبويب مستقل">↗️ في المتصفح</button>
+            <button class="memory-add-btn" id="previewOpenCodeBtn" type="button" style="background: var(--surface); color: var(--accent); border: 1px solid var(--border); padding: 4px 10px; font-size: 12px; border-radius: 6px;" title="فتح المجلد في VS Code">💻 VS Code</button>
+            <button class="memory-close-btn" id="previewCloseBtn" type="button" aria-label="إغلاق">✕</button>
+          </div>
+        </div>
+        <div class="memory-body" style="flex: 1; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: stretch; background: #0b0f19;">
+          <iframe id="projectPreviewIframe" style="width: 100%; height: 100%; border: none; background: #ffffff; transition: width 0.25s ease;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        </div>
+      </div>
+    </div>
+
     <script>
       /* ======================= state ======================= */
 
@@ -2529,6 +2564,19 @@
       const sysRefreshBtn = document.getElementById("sysRefreshBtn");
       const sysCleanAlert = document.getElementById("sysCleanAlert");
       const sysGrid = document.getElementById("sysGrid");
+
+      const previewModalBackdrop = document.getElementById("previewModalBackdrop");
+      const previewProjectName = document.getElementById("previewProjectName");
+      const previewProjectSelect = document.getElementById("previewProjectSelect");
+      const previewDesktopBtn = document.getElementById("previewDesktopBtn");
+      const previewMobileBtn = document.getElementById("previewMobileBtn");
+      const previewRefreshBtn = document.getElementById("previewRefreshBtn");
+      const previewOpenTabBtn = document.getElementById("previewOpenTabBtn");
+      const previewOpenCodeBtn = document.getElementById("previewOpenCodeBtn");
+      const previewCloseBtn = document.getElementById("previewCloseBtn");
+      const projectPreviewIframe = document.getElementById("projectPreviewIframe");
+      const projectPreviewBtn = document.getElementById("projectPreviewBtn");
+      const islandProjectsBtn = document.getElementById("islandProjectsBtn");
 
       let currentAttachments = [];
 
@@ -4832,36 +4880,76 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             }
           }
 
-          // 2. Create Project Tool
-          if (/create_project|new_project/i.test(text)) {
+          // 2. Create Project / Autonomous Project Builder Tool
+          if (/create_project|new_project|build_project|ابن_مشروع|انشئ_مشروع/i.test(text)) {
             let projectName = "";
+            let template = "";
             let files = [];
-            const jsonMatch = text.match(/\{[\s\S]*?"projectName"[\s\S]*?\}/);
+            const jsonMatch = text.match(/\{[\s\S]*?"(?:projectName|template|name)"[\s\S]*?\}/);
             if (jsonMatch) {
               try {
                 const parsed = JSON.parse(jsonMatch[0]);
-                projectName = parsed.projectName || "";
+                projectName = parsed.projectName || parsed.name || "";
+                template = parsed.template || "";
                 files = parsed.files || [];
               } catch (_) {}
             }
-            if (projectName && files.length) {
-              const res = await fetch("/api/project/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ projectName, files, openInVsCode: true }),
-              });
-              const data = await res.json();
+            if (!projectName) {
+              const m = text.match(/"(?:projectName|name)"\s*:\s*"([^"]+)"/i);
+              if (m) projectName = m[1];
+            }
+            if (!template) {
+              const tm = text.match(/"template"\s*:\s*"([^"]+)"/i);
+              if (tm) template = tm[1];
+            }
+
+            if (projectName || template) {
+              let res, data;
+              if (template || (!files.length && projectName)) {
+                res = await fetch("/api/project/build", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    name: projectName || undefined,
+                    template: template || (text.includes("مهام") ? "task-manager" : text.includes("بايثون") ? "python-gui" : "web-dashboard"),
+                  }),
+                });
+                data = await res.json();
+                if (data.project) projectName = data.project.name;
+              } else {
+                res = await fetch("/api/project/create", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ projectName, files, openInVsCode: true }),
+                });
+                data = await res.json();
+              }
+
               const cleaned = text
                 .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
                 .replace(/<server_name>[\s\S]*?<\/server_name>/gi, "")
                 .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
                 .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
-                .replace(/\{[\s\S]*?"projectName"[\s\S]*?\}/gi, "")
+                .replace(/\{[\s\S]*?"(?:projectName|template|name)"[\s\S]*?\}/gi, "")
                 .trim();
 
-              assistant.content = `${cleaned}\n\n> 🚀 **[تم إنشاء المشروع البرمجي وتجهيزه]:**\n> 📂 **المسار:** \`${data.projectPath}\` (${data.fileCount} ملفات)\n> ⚡ *تم فتح المشروع فوراً في Visual Studio Code.*`;
+              const previewBtnHtml = `<div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" onclick="openProjectPreview('${projectName}', 'index.html')" style="background: #238636; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">🌐 معاينة المشروع حياً (Live Web Preview)</button>
+                <button type="button" onclick="fetch('/api/system/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'launch-any-app', target:'code \"c:\\\\Users\\\\mozar\\\\Desktop\\\\' + '${projectName}' + '\"' })})" style="background: var(--surface); color: var(--accent); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">💻 فتح في VS Code</button>
+              </div>`;
+
+              assistant.content = `${cleaned}\n\n> 🚀 **[المطور البرمجي الذاتي]:**\n> 📂 **المشروع:** \`${projectName}\`\n> 📁 **المسار:** \`${data.projectPath || (data.project && data.project.path) || ""}\`\n\n${previewBtnHtml}`;
               renderThread();
               saveState();
+              playSciFiSound("action");
+              if (jarvisVoiceMode) {
+                speakText(`تم إنشاء وتجهيز المشروع البرمجي ${projectName} مع المعاينة الحية.`, null, () => {
+                  if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
+                });
+              }
+              setTimeout(() => {
+                openProjectPreview(projectName, "index.html");
+              }, 800);
               return;
             }
           }
@@ -7121,6 +7209,150 @@ ${data.text}
       if (islandRoutineMorningBtn) islandRoutineMorningBtn.addEventListener("click", () => triggerDailyRoutine("morning"));
       if (islandRoutineFocusBtn) islandRoutineFocusBtn.addEventListener("click", () => triggerDailyRoutine("focus"));
       if (islandRoutineWrapupBtn) islandRoutineWrapupBtn.addEventListener("click", () => triggerDailyRoutine("wrapup"));
+
+      /* ======================= Autonomous Project Builder & Live Web Preview ======================= */
+
+      async function refreshProjectListDropdown() {
+        if (!previewProjectSelect) return;
+        try {
+          const res = await fetch("/api/project/list");
+          const data = await res.json();
+          if (data && data.projects) {
+            previewProjectSelect.innerHTML = "";
+            if (data.projects.length === 0) {
+              const opt = document.createElement("option");
+              opt.value = "";
+              opt.textContent = "لا توجد مشاريع منشأة بعد";
+              previewProjectSelect.appendChild(opt);
+              return;
+            }
+            data.projects.forEach((p) => {
+              const opt = document.createElement("option");
+              opt.value = p.name;
+              opt.textContent = `${p.name} (${p.template || "custom"})`;
+              previewProjectSelect.appendChild(opt);
+            });
+          }
+        } catch (e) {
+          console.warn("[refreshProjectListDropdown]", e);
+        }
+      }
+
+      async function openProjectPreview(projectName, file = "index.html") {
+        if (!previewModalBackdrop) return;
+        await refreshProjectListDropdown();
+        if (!projectName && previewProjectSelect && previewProjectSelect.value) {
+          projectName = previewProjectSelect.value;
+        }
+        if (!projectName) {
+          try {
+            const buildRes = await fetch("/api/project/build", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ template: "web-dashboard", name: "sanad-live-dashboard" }),
+            });
+            const buildData = await buildRes.json();
+            projectName = (buildData.project && buildData.project.name) || "sanad-live-dashboard";
+            await refreshProjectListDropdown();
+          } catch (_) {
+            projectName = "sanad-live-dashboard";
+          }
+        }
+
+        if (previewProjectName) previewProjectName.textContent = projectName;
+        if (previewProjectSelect) previewProjectSelect.value = projectName;
+        if (projectPreviewIframe) {
+          projectPreviewIframe.src = `/api/project/preview?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(file)}&t=${Date.now()}`;
+        }
+        previewModalBackdrop.dataset.activeProject = projectName;
+        previewModalBackdrop.dataset.activeFile = file;
+        previewModalBackdrop.classList.add("open");
+        playSciFiSound("action");
+      }
+      window.openProjectPreview = openProjectPreview;
+
+      function closeProjectPreview() {
+        if (!previewModalBackdrop) return;
+        previewModalBackdrop.classList.remove("open");
+        if (projectPreviewIframe) projectPreviewIframe.src = "about:blank";
+      }
+      window.closeProjectPreview = closeProjectPreview;
+
+      if (projectPreviewBtn) projectPreviewBtn.addEventListener("click", () => openProjectPreview());
+      if (islandProjectsBtn) islandProjectsBtn.addEventListener("click", () => openProjectPreview());
+      if (previewCloseBtn) previewCloseBtn.addEventListener("click", closeProjectPreview);
+      if (previewModalBackdrop) {
+        previewModalBackdrop.addEventListener("click", (e) => {
+          if (e.target === previewModalBackdrop) closeProjectPreview();
+        });
+      }
+
+      if (previewProjectSelect) {
+        previewProjectSelect.addEventListener("change", () => {
+          const sel = previewProjectSelect.value;
+          if (sel) openProjectPreview(sel, "index.html");
+        });
+      }
+
+      if (previewRefreshBtn) {
+        previewRefreshBtn.addEventListener("click", () => {
+          if (projectPreviewIframe && projectPreviewIframe.src && projectPreviewIframe.src !== "about:blank") {
+            const cur = new URL(projectPreviewIframe.src);
+            cur.searchParams.set("t", Date.now().toString());
+            projectPreviewIframe.src = cur.toString();
+            playSciFiSound("confirm");
+          }
+        });
+      }
+
+      if (previewOpenTabBtn) {
+        previewOpenTabBtn.addEventListener("click", () => {
+          if (projectPreviewIframe && projectPreviewIframe.src && projectPreviewIframe.src !== "about:blank") {
+            window.open(projectPreviewIframe.src, "_blank");
+          }
+        });
+      }
+
+      if (previewOpenCodeBtn) {
+        previewOpenCodeBtn.addEventListener("click", async () => {
+          const actProj = previewModalBackdrop ? previewModalBackdrop.dataset.activeProject : "";
+          if (actProj) {
+            try {
+              await fetch("/api/system/action", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "launch-any-app",
+                  target: `code "c:\\Users\\mozar\\Desktop\\${actProj}"`,
+                }),
+              });
+              playSciFiSound("action");
+            } catch (e) {
+              console.warn("[openInVsCode error]", e);
+            }
+          }
+        });
+      }
+
+      if (previewDesktopBtn && previewMobileBtn && projectPreviewIframe) {
+        previewDesktopBtn.addEventListener("click", () => {
+          projectPreviewIframe.style.width = "100%";
+          projectPreviewIframe.style.maxWidth = "100%";
+          previewDesktopBtn.style.background = "var(--accent)";
+          previewDesktopBtn.style.color = "#fff";
+          previewMobileBtn.style.background = "transparent";
+          previewMobileBtn.style.color = "var(--muted)";
+        });
+
+        previewMobileBtn.addEventListener("click", () => {
+          projectPreviewIframe.style.width = "375px";
+          projectPreviewIframe.style.maxWidth = "375px";
+          previewMobileBtn.style.background = "var(--accent)";
+          previewMobileBtn.style.color = "#fff";
+          previewDesktopBtn.style.background = "transparent";
+          previewDesktopBtn.style.color = "var(--muted)";
+        });
+      }
 
       /* ======================= boot ======================= */
 
