@@ -2009,6 +2009,8 @@
           <button class="island-pill-btn" id="islandRoutineFocusBtn" type="button" title="تفعيل وضع التركيز الصامت">🎯 تركيز</button>
           <button class="island-pill-btn" id="islandRoutineWrapupBtn" type="button" title="إنهاء العمل وتنظيف الجهاز">🌙 نهاية العمل</button>
           <button class="island-pill-btn" id="islandProjectsBtn" type="button" title="معاينة المشاريع وتطبيقات الويب الحية">🚀 المشاريع الحية</button>
+          <button class="island-pill-btn" id="islandRamBoostBtn" type="button" title="تحرير الذاكرة وتسريع استجابة اللابتوب فوراً">⚡ تحرير الرام</button>
+          <button class="island-pill-btn" id="islandDiskCleanBtn" type="button" title="تنظيف آمن لملفات الكاش والمؤقتة">🧹 تنظيف القرص</button>
           <button class="island-pill-btn primary" id="islandToggleModeBtn" type="button">🖥️ تبديل العرض الكامل</button>
         </div>
       </div>
@@ -2343,26 +2345,54 @@
       </div>
     </div>
 
-    <!-- System Health HUD Modal -->
+    <!-- System Health & Disk Inspector HUD Modal -->
     <div class="memory-modal-backdrop" id="sysStatsModalBackdrop">
-      <div class="memory-modal" id="sysStatsModal" role="dialog" aria-modal="true" aria-labelledby="sysStatsTitle">
-        <div class="memory-header">
-          <h2 id="sysStatsTitle">📊 نبض وموارد النظام (System Health HUD)</h2>
+      <div class="memory-modal" id="sysStatsModal" role="dialog" aria-modal="true" aria-labelledby="sysStatsTitle" style="max-width: 840px; width: 94vw; max-height: 90vh;">
+        <div class="memory-header" style="flex-shrink: 0;">
+          <h2 id="sysStatsTitle">📊 نبض وموارد النظام ومساعد القرص الذكي (Disk & Performance HUD)</h2>
           <button class="memory-close-btn" id="sysStatsCloseBtn" type="button" aria-label="إغلاق">✕</button>
         </div>
-        <div class="memory-body">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+        <div class="memory-body" style="overflow-y: auto; max-height: calc(90vh - 75px); padding: 18px 22px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
             <p class="memory-desc" style="margin: 0;" id="sysDeviceMeta">
               جاري فحص الموارد والمواصفات...
             </p>
-            <div style="display: flex; gap: 8px;">
-              <button class="memory-add-btn" id="sysCleanTempBtn" type="button" style="background: #238636;" title="حذف الملفات المؤقتة غير المستخدمة لتوفير مساحة القرص">🧹 تنظيف الكاش والملفات المؤقتة</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="memory-add-btn" id="sysOptimizeRamBtn" type="button" style="background: #8957e5; color: #fff;" title="تحرير الذاكرة العشوائية للبرامج الخاملة وتسريع اللابتوب">⚡ تحرير الرام (RAM Boost)</button>
+              <button class="memory-add-btn" id="sysCleanTempBtn" type="button" style="background: #238636; color: #fff;" title="حذف الملفات المؤقتة غير المستخدمة لتوفير مساحة القرص">🧹 تنظيف القرص الآمن</button>
               <button class="memory-add-btn" id="sysRefreshBtn" type="button" style="background: var(--bg); box-shadow: var(--raised-sm); color: var(--text);">🔄 تحديث</button>
             </div>
           </div>
-          <div id="sysCleanAlert" style="display: none; padding: 10px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 12px;"></div>
-          <div class="sys-grid" id="sysGrid">
+          <div id="sysCleanAlert" style="display: none; padding: 10px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 14px; line-height: 1.6;"></div>
+          
+          <div class="sys-grid" id="sysGrid" style="margin-bottom: 18px;">
             <!-- Rendered by JS -->
+          </div>
+
+          <!-- Hard Drives & Partitions Section -->
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+              <span>💽</span>
+              <span>أقراص ومساحات التخزين (Drives & Partitions):</span>
+            </h3>
+            <div id="sysDrivesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Large Files Inspector Section -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+              <h3 style="font-size: 14px; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <span>📁</span>
+                <span>فاحص أكبر الملفات المستهلكة للقرص (Large Files Inspector):</span>
+              </h3>
+              <button class="memory-add-btn" id="sysScanLargeFilesBtn" type="button" style="background: var(--accent); color: #fff; font-size: 12px; padding: 4px 10px;">🔍 فحص أكبر الملفات الآن</button>
+            </div>
+            <p style="font-size: 12px; color: var(--muted); margin: 0 0 10px 0;">يكتشف ملفات الفيديو، المثبتات، الحزم المضغوطة، وقواعد البيانات الكبيرة في مجلداتك لتفريغ المساحة بسهولة.</p>
+            <div id="sysLargeFilesList" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="font-size: 12px; color: var(--muted); text-align: center; padding: 12px;">اضغط "فحص أكبر الملفات الآن" لعرض قائمة أضخم الملفات المخزنة.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2564,6 +2594,12 @@
       const sysRefreshBtn = document.getElementById("sysRefreshBtn");
       const sysCleanAlert = document.getElementById("sysCleanAlert");
       const sysGrid = document.getElementById("sysGrid");
+      const sysOptimizeRamBtn = document.getElementById("sysOptimizeRamBtn");
+      const sysDrivesContainer = document.getElementById("sysDrivesContainer");
+      const sysScanLargeFilesBtn = document.getElementById("sysScanLargeFilesBtn");
+      const sysLargeFilesList = document.getElementById("sysLargeFilesList");
+      const islandRamBoostBtn = document.getElementById("islandRamBoostBtn");
+      const islandDiskCleanBtn = document.getElementById("islandDiskCleanBtn");
 
       const previewModalBackdrop = document.getElementById("previewModalBackdrop");
       const previewProjectName = document.getElementById("previewProjectName");
@@ -4636,13 +4672,96 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
         // Detect if the model outputted tool call format, tool tags, or raw tool requests
         const isToolAttempt =
-          /tool_use|tool_name|create_text_file|write_file|create_file|run_command|execute_command|create_project|web_search|search_web|open_desktop_image|open_image|open_media|launch_app|organize_desktop|workspace_preset|organize_directory|kill_process|daily_routine|routine|set_brightness/i.test(
+          /tool_use|tool_name|create_text_file|write_file|create_file|run_command|execute_command|create_project|web_search|search_web|open_desktop_image|open_image|open_media|launch_app|organize_desktop|workspace_preset|organize_directory|kill_process|daily_routine|routine|set_brightness|optimize_ram|clean_disk|inspect_disks|find_large_files/i.test(
             text,
           );
 
         if (!isToolAttempt) return;
 
         try {
+          // Optimize RAM Tool
+          if (/optimize_ram|تحرير_الرام|تنظيف_الرام|تسريع_الرام/i.test(text)) {
+            const res = await fetch("/api/system/optimize-ram", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: "{}",
+            });
+            const data = await res.json();
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .replace(/\{[\s\S]*?"optimize_ram"[\s\S]*?\}/gi, "")
+              .trim();
+            assistant.content = `${cleaned}\n\n> ⚡ **[محرر الذاكرة وتسريع اللابتوب (RAM Boost)]:**\n${data.message}`;
+            renderThread();
+            saveState();
+            playSciFiSound("action");
+            if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+            return;
+          }
+
+          // Safe Clean Disk Tool
+          if (/clean_disk|تنظيف_القرص|تنظيف_الهارد|تنظيف_الملفات_المؤقتة/i.test(text)) {
+            const res = await fetch("/api/system/clean-disk", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: "{}",
+            });
+            const data = await res.json();
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .trim();
+            assistant.content = `${cleaned}\n\n> 🧹 **[تنظيف القرص الآمن]:**\n${data.message}`;
+            renderThread();
+            saveState();
+            playSciFiSound("confirm");
+            if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+            return;
+          }
+
+          // Inspect Disks Tool
+          if (/inspect_disks|فحص_القرص|فحص_الهارد|مساحة_القرص|سعة_الهارد/i.test(text)) {
+            const res = await fetch("/api/system/disks");
+            const data = await res.json();
+            const drivesList = (data.drives || []).map(d => `* **القرص ${d.drive}** (${d.label || "محلي"}): المتوفر **${d.freeGb} GB** من إجمالي **${d.totalGb} GB** (${d.usedPercent}% مستخدم)`).join("\n");
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .trim();
+            const msg = `تم فحص أقراص اللابتوب بنجاح:\n${drivesList}`;
+            assistant.content = `${cleaned}\n\n> 💽 **[مساعد القرص الذكي]:**\n${drivesList}`;
+            renderThread();
+            saveState();
+            playSciFiSound("action");
+            if (jarvisVoiceMode) speakText(msg, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+            return;
+          }
+
+          // Find Large Files Tool
+          if (/find_large_files|الملفات_الكبيرة|أكبر_الملفات|فحص_الملفات_الضخمة/i.test(text)) {
+            const res = await fetch("/api/system/large-files", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ minSizeMb: 30, limit: 10 }),
+            });
+            const data = await res.json();
+            const filesList = (data.files || []).map(f => `* **${f.name}** (${f.sizeFormatted}) — \`${f.path}\``).join("\n");
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .trim();
+            assistant.content = `${cleaned}\n\n> 📁 **[أكبر الملفات المستهلكة للمساحة]:**\n${filesList || "لم يتم العثور على ملفات ضخمة فوق 30 ميجابايت."}`;
+            renderThread();
+            saveState();
+            playSciFiSound("action");
+            return;
+          }
+
           // Launch App Tool
           if (/launch_app|open_app|شغل_برنامج|افتح_برنامج/i.test(text)) {
             let appName = "";
@@ -6942,22 +7061,30 @@ ${data.text}
       if (islandQuickNewBtn) islandQuickNewBtn.addEventListener("click", () => triggerKeyboardAction({ keyboardAction: "hotkey", hotkey: "ctrl+n" }));
       if (islandQuickEscBtn) islandQuickEscBtn.addEventListener("click", () => triggerKeyboardAction({ keyboardAction: "press", key: "esc" }));
 
-      /* ======================= System Stats & HUD ======================= */
+      /* ======================= System Stats & Disk Inspector HUD ======================= */
 
       async function loadAndRenderSysStats() {
         if (!sysGrid) return;
         try {
-          const res = await fetch("/api/system/stats");
-          if (!res.ok) return;
-          const s = await res.json();
+          const [statsRes, disksRes, healthRes] = await Promise.all([
+            fetch("/api/system/stats"),
+            fetch("/api/system/disks").catch(() => null),
+            fetch("/api/system/health").catch(() => null),
+          ]);
+          if (!statsRes.ok) return;
+          const s = await statsRes.json();
+          const disksData = disksRes && disksRes.ok ? await disksRes.json() : null;
+          const healthData = healthRes && healthRes.ok ? await healthRes.json() : null;
+
+          const healthScore = (healthData && healthData.health && healthData.health.healthScore) || 100;
+          const healthRating = (healthData && healthData.health && healthData.health.healthRating) || "ممتاز";
 
           if (sysDeviceMeta) {
-            sysDeviceMeta.textContent = `💻 ${s.hostname} • ${s.platform} • ⏱️ يعمل منذ ${s.uptimeHours} ساعة`;
+            sysDeviceMeta.innerHTML = `💻 <strong>${s.hostname}</strong> • ${s.platform} • ⏱️ يعمل منذ ${s.uptimeHours} ساعة • <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; background: rgba(35, 134, 54, 0.2); color: #3fb950; font-size: 11.5px; font-weight: 700;">درجة الصحة: ${healthScore}% (${healthRating})</span>`;
           }
 
           const cpuClass = s.cpuUsagePercent > 85 ? "danger" : s.cpuUsagePercent > 60 ? "warning" : "";
           const ramClass = s.usedMemoryPercent > 88 ? "danger" : s.usedMemoryPercent > 70 ? "warning" : "";
-          const diskClass = s.diskUsedPercent > 92 ? "danger" : s.diskUsedPercent > 80 ? "warning" : "";
           const batClass = (s.batteryPercent || 100) < 15 ? "danger" : (s.batteryPercent || 100) < 30 ? "warning" : "";
 
           sysGrid.innerHTML = `
@@ -6987,14 +7114,14 @@ ${data.text}
 
             <div class="sys-metric-card">
               <div class="sys-metric-head">
-                <span>💽 القرص (C:)</span>
-                <span style="font-size: 11px; opacity: 0.7;">${s.diskTotalGb} GB</span>
+                <span>💽 سعة الأقراص</span>
+                <span style="font-size: 11px; opacity: 0.7;">${disksData && disksData.drives ? disksData.drives.length + " أقسام" : "C:"}</span>
               </div>
               <div class="sys-metric-val">${s.diskUsedPercent}%</div>
               <div class="sys-bar-track">
-                <div class="sys-bar-fill ${diskClass}" style="width: ${Math.min(100, s.diskUsedPercent)}%;"></div>
+                <div class="sys-bar-fill" style="width: ${Math.min(100, s.diskUsedPercent)}%;"></div>
               </div>
-              <div class="sys-metric-sub">${s.diskFreeGb} GB متوفرة للتخزين</div>
+              <div class="sys-metric-sub">${s.diskFreeGb} GB متوفرة على قرص النظام (C:)</div>
             </div>
 
             <div class="sys-metric-card">
@@ -7009,10 +7136,174 @@ ${data.text}
               <div class="sys-metric-sub">${s.batteryPercent !== null ? (s.isCharging ? "الشاحن متصل ومستقر" : "تعمل على طاقة البطارية") : "مصدر كهربائي متصل"}</div>
             </div>
           `;
+
+          // Render hard drives
+          if (sysDrivesContainer && disksData && disksData.drives) {
+            sysDrivesContainer.innerHTML = disksData.drives
+              .map((d) => {
+                const statusColor = d.status === "critical" ? "#f85149" : d.status === "warning" ? "#d29922" : "#3fb950";
+                const statusBg = d.status === "critical" ? "rgba(248,81,73,0.15)" : d.status === "warning" ? "rgba(210,153,34,0.15)" : "rgba(63,185,80,0.15)";
+                return `
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 700; font-size: 13.5px;">💽 القرص ${d.drive} ${d.label ? `(${d.label})` : ""}</span>
+                    <span style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: ${statusBg}; color: ${statusColor}; font-weight: 600;">${d.usedPercent}% مستخدم</span>
+                  </div>
+                  <div class="sys-bar-track" style="margin-bottom: 8px; height: 8px;">
+                    <div class="sys-bar-fill ${d.status === 'critical' ? 'danger' : d.status === 'warning' ? 'warning' : ''}" style="width: ${d.usedPercent}%;"></div>
+                  </div>
+                  <div style="font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between;">
+                    <span>المساحة الحرة: <strong style="color: var(--text);">${d.freeGb} GB</strong></span>
+                    <span>الإجمالي: ${d.totalGb} GB (${d.fileSystem})</span>
+                  </div>
+                </div>
+              `;
+              })
+              .join("");
+          }
         } catch (e) {
           console.warn("[sysStats error]", e);
         }
       }
+
+      async function triggerOptimizeRam() {
+        if (typeof setIslandStatus === "function") setIslandStatus("يحرر الذاكرة...", true);
+        if (sysOptimizeRamBtn) {
+          sysOptimizeRamBtn.disabled = true;
+          sysOptimizeRamBtn.textContent = "⏳ جارٍ تسريع الرام...";
+        }
+        try {
+          const res = await fetch("/api/system/optimize-ram", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          });
+          const data = await res.json();
+          playSciFiSound("action");
+          if (sysCleanAlert) {
+            sysCleanAlert.style.display = "block";
+            sysCleanAlert.style.background = "rgba(137, 87, 229, 0.15)";
+            sysCleanAlert.style.borderColor = "rgba(137, 87, 229, 0.3)";
+            sysCleanAlert.style.color = "#a371f7";
+            sysCleanAlert.innerHTML = `⚡ <strong>${data.message}</strong>`;
+          }
+          if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
+          if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+          await loadAndRenderSysStats();
+        } catch (e) {
+          alert("حدث خطأ أثناء تحرير الذاكرة: " + e.message);
+        } finally {
+          if (sysOptimizeRamBtn) {
+            sysOptimizeRamBtn.disabled = false;
+            sysOptimizeRamBtn.textContent = "⚡ تحرير الرام (RAM Boost)";
+          }
+          if (typeof setIslandStatus === "function") setIslandStatus("جاهز للأمر", false);
+        }
+      }
+      window.triggerOptimizeRam = triggerOptimizeRam;
+
+      async function triggerCleanDisk() {
+        if (typeof setIslandStatus === "function") setIslandStatus("ينظف القرص...", true);
+        if (sysCleanTempBtn) {
+          sysCleanTempBtn.disabled = true;
+          sysCleanTempBtn.textContent = "⏳ جارٍ التنظيف...";
+        }
+        try {
+          const res = await fetch("/api/system/clean-disk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          });
+          const data = await res.json();
+          playSciFiSound("action");
+          if (sysCleanAlert) {
+            sysCleanAlert.style.display = "block";
+            sysCleanAlert.style.background = "rgba(35, 134, 54, 0.15)";
+            sysCleanAlert.style.borderColor = "rgba(35, 134, 54, 0.3)";
+            sysCleanAlert.style.color = "#3fb950";
+            sysCleanAlert.innerHTML = `🧹 <strong>${data.message}</strong>`;
+          }
+          if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
+          if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+          await loadAndRenderSysStats();
+        } catch (e) {
+          alert("حدث خطأ أثناء تنظيف القرص: " + e.message);
+        } finally {
+          if (sysCleanTempBtn) {
+            sysCleanTempBtn.disabled = false;
+            sysCleanTempBtn.textContent = "🧹 تنظيف القرص الآمن";
+          }
+          if (typeof setIslandStatus === "function") setIslandStatus("جاهز للأمر", false);
+        }
+      }
+      window.triggerCleanDisk = triggerCleanDisk;
+
+      async function scanLargeFiles() {
+        if (!sysLargeFilesList) return;
+        if (sysScanLargeFilesBtn) {
+          sysScanLargeFilesBtn.disabled = true;
+          sysScanLargeFilesBtn.textContent = "⏳ جارٍ فحص القرص...";
+        }
+        sysLargeFilesList.innerHTML = `<div style="font-size: 12px; color: var(--muted); text-align: center; padding: 16px;">🔍 جاري فحص ملفات سطح المكتب والتنزيلات والمستندات لاكتشاف أكبر العناصر...</div>`;
+        try {
+          const res = await fetch("/api/system/large-files", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ minSizeMb: 30, limit: 12 }),
+          });
+          const data = await res.json();
+          playSciFiSound("confirm");
+
+          if (!data.files || data.files.length === 0) {
+            sysLargeFilesList.innerHTML = `<div style="font-size: 12px; color: var(--muted); text-align: center; padding: 12px;">✅ لم يتم العثور على ملفات ضخمة فوق 30 ميجابايت في المجلدات الرئيسية. القرص بحالة ممتازة!</div>`;
+            return;
+          }
+
+          sysLargeFilesList.innerHTML = data.files
+            .map((f) => {
+              const icon = f.category === "video" ? "🎬" : f.category === "archive" ? "📦" : f.category === "installer" ? "🚀" : f.category === "audio" ? "🎵" : f.category === "data" ? "📊" : "📄";
+              return `
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;">
+                  <span style="font-size: 16px;">${icon}</span>
+                  <div style="overflow: hidden;">
+                    <div style="font-size: 12.5px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${f.path}">${f.name}</div>
+                    <div style="font-size: 11px; color: var(--muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${f.directory}">${f.directory}</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 12px; font-weight: 700; color: #d29922; background: rgba(210,153,34,0.12); padding: 2px 8px; border-radius: 4px;">${f.sizeFormatted}</span>
+                  <button type="button" onclick="revealFileInExplorer('${f.path.replace(/\\/g, "\\\\")}')" style="background: var(--surface); color: var(--accent); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 11.5px; cursor: pointer;" title="إظهار في مستكشف الملفات">📂 إظهار</button>
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        } catch (e) {
+          sysLargeFilesList.innerHTML = `<div style="font-size: 12px; color: #f85149; text-align: center; padding: 12px;">حدث خطأ أثناء فحص الملفات: ${e.message}</div>`;
+        } finally {
+          if (sysScanLargeFilesBtn) {
+            sysScanLargeFilesBtn.disabled = false;
+            sysScanLargeFilesBtn.textContent = "🔍 فحص أكبر الملفات الآن";
+          }
+        }
+      }
+      window.scanLargeFiles = scanLargeFiles;
+
+      async function revealFileInExplorer(filePath) {
+        try {
+          const res = await fetch("/api/system/reveal-file", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePath }),
+          });
+          const data = await res.json();
+          playSciFiSound("action");
+        } catch (e) {
+          console.warn("[revealFile error]", e);
+        }
+      }
+      window.revealFileInExplorer = revealFileInExplorer;
 
       function openSysStatsModal() {
         if (sysStatsModalBackdrop) {
@@ -7036,41 +7327,13 @@ ${data.text}
         });
       }
 
-      if (sysRefreshBtn) {
-        sysRefreshBtn.addEventListener("click", () => {
-          loadAndRenderSysStats();
-        });
-      }
+      if (sysRefreshBtn) sysRefreshBtn.addEventListener("click", () => loadAndRenderSysStats());
+      if (sysCleanTempBtn) sysCleanTempBtn.addEventListener("click", triggerCleanDisk);
+      if (sysOptimizeRamBtn) sysOptimizeRamBtn.addEventListener("click", triggerOptimizeRam);
+      if (sysScanLargeFilesBtn) sysScanLargeFilesBtn.addEventListener("click", scanLargeFiles);
 
-      if (sysCleanTempBtn) {
-        sysCleanTempBtn.addEventListener("click", async () => {
-          sysCleanTempBtn.disabled = true;
-          const orig = sysCleanTempBtn.textContent;
-          sysCleanTempBtn.textContent = "⏳ جارٍ التنظيف...";
-          try {
-            const res = await fetch("/api/system/action", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "clean-temp" }),
-            });
-            const data = await res.json();
-            if (sysCleanAlert) {
-              sysCleanAlert.style.display = "block";
-              if (data.success) {
-                sysCleanAlert.innerHTML = `✅ <strong>تمت الصيانة بنجاح!</strong> تم حذف <strong>${data.filesDeleted}</strong> ملف/مجلد مؤقت وتحرير <strong>${data.freedMb}</strong> MB من القرص.`;
-              } else {
-                sysCleanAlert.innerHTML = `⚠️ ${data.message || "اكتمل الفحص"}`;
-              }
-            }
-            await loadAndRenderSysStats();
-          } catch (e) {
-            console.warn(e);
-          } finally {
-            sysCleanTempBtn.disabled = false;
-            sysCleanTempBtn.textContent = orig;
-          }
-        });
-      }
+      if (islandRamBoostBtn) islandRamBoostBtn.addEventListener("click", triggerOptimizeRam);
+      if (islandDiskCleanBtn) islandDiskCleanBtn.addEventListener("click", triggerCleanDisk);
 
       /* ======================= Desktop & Files Automation ======================= */
 

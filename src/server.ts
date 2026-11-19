@@ -18,6 +18,7 @@ import { organizeDirectory, getDirectoryStatus, setupWorkspacePreset, inspectAnd
 import { runUniversalCommand, type ShellType } from "./universalTerminal";
 import { listProcesses, killProcess, launchAnyApp, setScreenBrightness, executeDailyRoutine } from "./processMaestro";
 import { buildProject, getProjectFileContent, listBuiltProjects, type ProjectTemplate } from "./projectBuilder";
+import { getDrivesInfo, findLargeFiles, safeDeepCleanDisk, optimizeRam, revealFileInExplorer, getSystemHealthOverview } from "./diskInspector";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, "..", "public");
@@ -535,6 +536,51 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     const body = await readJsonBody(req);
     const routine = String(body.routine || "morning");
     const result = await executeDailyRoutine(routine);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/system/disks") {
+    const drives = await getDrivesInfo();
+    sendJson(res, 200, { success: true, drives });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/system/health") {
+    const health = await getSystemHealthOverview();
+    sendJson(res, 200, { success: true, health });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/large-files") {
+    const body = await readJsonBody(req);
+    const minSizeMb = typeof body.minSizeMb === "number" ? body.minSizeMb : 20;
+    const limit = typeof body.limit === "number" ? body.limit : 15;
+    const files = await findLargeFiles({ minSizeMb, limit });
+    sendJson(res, 200, { success: true, files });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/clean-disk") {
+    const result = await safeDeepCleanDisk();
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/optimize-ram") {
+    const result = await optimizeRam();
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/system/reveal-file") {
+    const body = await readJsonBody(req);
+    const filePath = typeof body.filePath === "string" ? body.filePath : "";
+    if (!filePath) {
+      sendJson(res, 400, { success: false, message: "مسار الملف مطلوب." });
+      return;
+    }
+    const result = await revealFileInExplorer(filePath);
     sendJson(res, 200, result);
     return;
   }
