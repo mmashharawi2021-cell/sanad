@@ -283,7 +283,7 @@ export async function setupWorkspacePreset(
 
   if (norm === "clean" || norm === "صفاء" || norm === "تقليل_النوافذ") {
     // Minimize all windows (Win + D)
-    await controlKeyboard({ keyboardAction: "hotkey", hotkey: "win+d" });
+    await controlKeyboard({ action: "hotkey", hotkey: "win+d" });
     return {
       success: true,
       message: "تم تنظيف الشاشة وإظهار سطح المكتب فوراً وتصغير كافة النوافذ المشتتة.",

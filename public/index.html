@@ -2341,6 +2341,44 @@
       </div>
     </div>
 
+    <!-- Desktop & Files Automation Modal -->
+    <div class="memory-modal-backdrop" id="desktopModalBackdrop">
+      <div class="memory-modal" id="desktopModal" role="dialog" aria-modal="true" aria-labelledby="desktopModalTitle" style="max-width: 680px;">
+        <div class="memory-header">
+          <h2 id="desktopModalTitle">🧹 أتمتة سطح المكتب وإدارة الملفات الذكية</h2>
+          <button class="memory-close-btn" id="desktopCloseBtn" type="button" aria-label="إغلاق">✕</button>
+        </div>
+        <div class="memory-body">
+          <p class="memory-desc">
+            يقوم «سند» بتنظيم وتصنيف ملفات سطح المكتب والتنزيلات بأمان تام دون حذف أي ملف، وتجهيز بيئات العمل كبرنامج ArcGIS Pro.
+          </p>
+
+          <div id="desktopStatusAlert" style="display: none; padding: 12px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 14px; line-height: 1.6; white-space: pre-line;"></div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
+              <h3 style="font-size: 14px; margin-bottom: 6px;">🖥️ سطح المكتب (Desktop)</h3>
+              <p style="font-size: 12px; color: var(--muted); margin-bottom: 10px;" id="desktopFilesSummary">جاري فحص الملفات...</p>
+              <button class="memory-add-btn" id="runOrganizeDesktopBtn" type="button" style="width: 100%; background: var(--accent);">🧹 فرز وترتيب سطح المكتب الآن</button>
+            </div>
+
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
+              <h3 style="font-size: 14px; margin-bottom: 6px;">📥 مجلد التنزيلات (Downloads)</h3>
+              <p style="font-size: 12px; color: var(--muted); margin-bottom: 10px;" id="downloadsFilesSummary">جاري فحص الملفات...</p>
+              <button class="memory-add-btn" id="runOrganizeDownloadsBtn" type="button" style="width: 100%; background: #238636;">📥 فرز وترتيب مجلد التنزيلات</button>
+            </div>
+          </div>
+
+          <h3 style="font-size: 14px; margin-bottom: 10px;">⚡ بيئات العمل السريعة (Workspace Presets):</h3>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="memory-add-btn" id="presetGisBtn" type="button" style="background: #1f6feb;">🗺️ بيئة GIS (ArcGIS Pro + مجلد الخرائط)</button>
+            <button class="memory-add-btn" id="presetCodingBtn" type="button" style="background: #8957e5;">💻 بيئة البرمجة والتطوير</button>
+            <button class="memory-add-btn" id="presetCleanBtn" type="button" style="background: var(--bg); box-shadow: var(--raised-sm); color: var(--text);">✨ تنظيف الشاشة (إظهار الديسكتوب)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       /* ======================= state ======================= */
 
@@ -2443,6 +2481,20 @@
       const islandQuickSaveBtn = document.getElementById("islandQuickSaveBtn");
       const islandQuickNewBtn = document.getElementById("islandQuickNewBtn");
       const islandQuickEscBtn = document.getElementById("islandQuickEscBtn");
+      const islandOrganizeDesktopBtn = document.getElementById("islandOrganizeDesktopBtn");
+      const islandGisPresetBtn = document.getElementById("islandGisPresetBtn");
+
+      const desktopManagerBtn = document.getElementById("desktopManagerBtn");
+      const desktopModalBackdrop = document.getElementById("desktopModalBackdrop");
+      const desktopCloseBtn = document.getElementById("desktopCloseBtn");
+      const desktopFilesSummary = document.getElementById("desktopFilesSummary");
+      const downloadsFilesSummary = document.getElementById("downloadsFilesSummary");
+      const runOrganizeDesktopBtn = document.getElementById("runOrganizeDesktopBtn");
+      const runOrganizeDownloadsBtn = document.getElementById("runOrganizeDownloadsBtn");
+      const desktopStatusAlert = document.getElementById("desktopStatusAlert");
+      const presetGisBtn = document.getElementById("presetGisBtn");
+      const presetCodingBtn = document.getElementById("presetCodingBtn");
+      const presetCleanBtn = document.getElementById("presetCleanBtn");
 
       const sysStatsBtn = document.getElementById("sysStatsBtn");
       const sysStatsModalBackdrop = document.getElementById("sysStatsModalBackdrop");
@@ -4511,13 +4563,84 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
         // Detect if the model outputted tool call format, tool tags, or raw tool requests
         const isToolAttempt =
-          /tool_use|tool_name|create_text_file|write_file|create_file|run_command|execute_command|create_project|web_search|search_web|open_desktop_image|open_image|open_media|launch_app/i.test(
+          /tool_use|tool_name|create_text_file|write_file|create_file|run_command|execute_command|create_project|web_search|search_web|open_desktop_image|open_image|open_media|launch_app|organize_desktop|workspace_preset|organize_directory/i.test(
             text,
           );
 
         if (!isToolAttempt) return;
 
         try {
+          // Organize Desktop / Directory Tool
+          if (/organize_desktop|organize_directory|رتب_سطح_المكتب|تنظيم_سطح_المكتب/i.test(text)) {
+            let target = "desktop";
+            const jsonMatch = text.match(/\{[\s\S]*?"target"[\s\S]*?\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.target) target = parsed.target;
+              } catch (_) {}
+            }
+            const res = await fetch("/api/desktop/organize", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ target }),
+            });
+            const data = await res.json();
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<server_name>[\s\S]*?<\/server_name>/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .replace(/\{[\s\S]*?"target"[\s\S]*?\}/gi, "")
+              .trim();
+
+            assistant.content = `${cleaned}\n\n> 🧹 **[أتمتة سطح المكتب الذكية]:** ${data.message}`;
+            renderThread();
+            saveState();
+            playSciFiSound("confirm");
+            if (jarvisVoiceMode) {
+              speakText(data.message, null, () => {
+                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
+              });
+            }
+            return;
+          }
+
+          // Workspace Preset Tool
+          if (/workspace_preset|setup_preset|جهز_بيئة/i.test(text)) {
+            let preset = "gis";
+            const jsonMatch = text.match(/\{[\s\S]*?"preset"[\s\S]*?\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.preset) preset = parsed.preset;
+              } catch (_) {}
+            }
+            const res = await fetch("/api/desktop/preset", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ preset }),
+            });
+            const data = await res.json();
+            const cleaned = text
+              .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
+              .replace(/<server_name>[\s\S]*?<\/server_name>/gi, "")
+              .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+              .replace(/<<?arguments[\s\S]*?<\/?arguments>?>?/gi, "")
+              .replace(/\{[\s\S]*?"preset"[\s\S]*?\}/gi, "")
+              .trim();
+
+            assistant.content = `${cleaned}\n\n> 🗺️ **[بيئة العمل الذكية]:** ${data.message}`;
+            renderThread();
+            saveState();
+            playSciFiSound("action");
+            if (jarvisVoiceMode) {
+              speakText(data.message, null, () => {
+                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
+              });
+            }
+            return;
+          }
           // 1. Run Terminal Command Tool
           if (/run_command|execute_command/i.test(text)) {
             let cmd = "";
@@ -6633,6 +6756,121 @@ ${data.text}
           }
         });
       }
+
+      /* ======================= Desktop & Files Automation ======================= */
+
+      async function refreshDesktopStatus() {
+        if (desktopFilesSummary) desktopFilesSummary.textContent = "جاري فحص الملفات المبعثرة...";
+        if (downloadsFilesSummary) downloadsFilesSummary.textContent = "جاري فحص التنزيلات...";
+
+        try {
+          const [dRes, dlRes] = await Promise.all([
+            fetch("/api/desktop/status?target=desktop"),
+            fetch("/api/desktop/status?target=downloads"),
+          ]);
+          if (dRes.ok) {
+            const data = await dRes.json();
+            if (desktopFilesSummary) {
+              desktopFilesSummary.textContent = `يوجد ${data.looseFilesCount || 0} ملف بحاجة لتنظيم • ${data.foldersCount || 0} مجلد • ${data.shortcutsCount || 0} اختصار`;
+            }
+          }
+          if (dlRes.ok) {
+            const data = await dlRes.json();
+            if (downloadsFilesSummary) {
+              downloadsFilesSummary.textContent = `يوجد ${data.looseFilesCount || 0} ملف في التنزيلات • ${data.foldersCount || 0} مجلد`;
+            }
+          }
+        } catch (e) {
+          console.warn("[desktop status error]", e);
+        }
+      }
+
+      function openDesktopModal() {
+        if (desktopModalBackdrop) {
+          desktopModalBackdrop.classList.add("open");
+          refreshDesktopStatus();
+        }
+      }
+
+      function closeDesktopModal() {
+        if (desktopModalBackdrop) {
+          desktopModalBackdrop.classList.remove("open");
+          if (desktopStatusAlert) desktopStatusAlert.style.display = "none";
+        }
+      }
+
+      async function triggerDesktopOrganize(target = "desktop") {
+        const btn = target === "desktop" ? runOrganizeDesktopBtn : runOrganizeDownloadsBtn;
+        const origText = btn ? btn.textContent : "";
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "جارٍ الفرز والتنظيم بأمان...";
+        }
+        if (typeof setIslandStatus === "function") setIslandStatus("ينظم الملفات...", true);
+
+        try {
+          const res = await fetch("/api/desktop/organize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ target }),
+          });
+          const data = await res.json();
+          if (desktopStatusAlert) {
+            desktopStatusAlert.textContent = data.message;
+            desktopStatusAlert.style.display = "block";
+          }
+          playSciFiSound("confirm");
+          if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
+          refreshDesktopStatus();
+        } catch (e) {
+          alert("حدث خطأ أثناء تنظيم الملفات: " + e.message);
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = origText;
+          }
+          if (typeof setIslandStatus === "function") setIslandStatus("جاهز للأمر", false);
+        }
+      }
+
+      async function triggerWorkspacePreset(preset = "gis") {
+        if (typeof setIslandStatus === "function") setIslandStatus("يجهز بيئة العمل...", true);
+        try {
+          const res = await fetch("/api/desktop/preset", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ preset }),
+          });
+          const data = await res.json();
+          if (desktopStatusAlert) {
+            desktopStatusAlert.textContent = data.message;
+            desktopStatusAlert.style.display = "block";
+          }
+          playSciFiSound("action");
+          if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
+        } catch (e) {
+          alert("حدث خطأ أثناء تجهيز بيئة العمل: " + e.message);
+        } finally {
+          if (typeof setIslandStatus === "function") setIslandStatus("جاهز للأمر", false);
+        }
+      }
+
+      if (desktopManagerBtn) desktopManagerBtn.addEventListener("click", openDesktopModal);
+      if (desktopCloseBtn) desktopCloseBtn.addEventListener("click", closeDesktopModal);
+      if (desktopModalBackdrop) {
+        desktopModalBackdrop.addEventListener("click", (e) => {
+          if (e.target === desktopModalBackdrop) closeDesktopModal();
+        });
+      }
+
+      if (runOrganizeDesktopBtn) runOrganizeDesktopBtn.addEventListener("click", () => triggerDesktopOrganize("desktop"));
+      if (runOrganizeDownloadsBtn) runOrganizeDownloadsBtn.addEventListener("click", () => triggerDesktopOrganize("downloads"));
+      if (islandOrganizeDesktopBtn) islandOrganizeDesktopBtn.addEventListener("click", () => triggerDesktopOrganize("desktop"));
+
+      if (presetGisBtn) presetGisBtn.addEventListener("click", () => triggerWorkspacePreset("gis"));
+      if (presetCodingBtn) presetCodingBtn.addEventListener("click", () => triggerWorkspacePreset("coding"));
+      if (presetCleanBtn) presetCleanBtn.addEventListener("click", () => triggerWorkspacePreset("clean"));
+      if (islandGisPresetBtn) islandGisPresetBtn.addEventListener("click", () => triggerWorkspacePreset("gis"));
 
       /* ======================= boot ======================= */
 
