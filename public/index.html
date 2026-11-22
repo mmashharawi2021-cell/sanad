@@ -15,6 +15,36 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+      <symbol id="i-command" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-radio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/></symbol>
+      <symbol id="i-island" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M2 8h20"/><path d="M6 4v4"/><path d="M10 4v4"/></symbol>
+      <symbol id="i-memory" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+      <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></symbol>
+      <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+      <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol>
+      <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="6" y="6" rx="2" fill="currentColor"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+      <symbol id="i-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+    </svg>
     <!-- Cyber Dynamic Island (الكبسولة العائمة الذكية) -->
     <div class="cyber-island floating-collapsed" id="cyberIsland" aria-label="كبسولة سند العائمة">
       <div class="island-bar" id="islandBar">
@@ -156,7 +186,7 @@
           <span>SANAD AI · سند</span>
         </div>
 
-        <button class="btn btn-primary" id="newChat" type="button">＋ محادثة جديدة</button>
+        <button class="btn btn-primary" id="newChat" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg><span>محادثة جديدة</span></button>
 
         <details class="tool-nav" id="toolNav" open>
           <summary class="tool-nav-head"><span>الأدوات</span><span class="chev" aria-hidden="true">▾</span></summary>
@@ -164,19 +194,19 @@
           <div class="tool-group-label">النظام</div>
           <div class="tool-grid">
             <button class="tool-item" id="sysStatsBtn" type="button" title="نبض وموارد النظام (CPU, RAM, Disk, Health)">
-            <span class="tool-ico">📊</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-activity"/></svg></span>
             <span class="tool-label">نبض النظام</span>
           </button>
             <button class="tool-item" id="netMaestroBtn" type="button" title="الشبكة والمنافذ (Ports, Ping, IP)">
-            <span class="tool-ico">🌐</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg></span>
             <span class="tool-label">الشبكة</span>
           </button>
             <button class="tool-item" id="desktopManagerBtn" type="button" title="إدارة وأتمتة سطح المكتب وتصنيف الملفات">
-            <span class="tool-ico">🧹</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-monitor"/></svg></span>
             <span class="tool-label">سطح المكتب</span>
           </button>
             <button class="tool-item" id="terminalBtn" type="button" title="الطرفية البرمجية المباشرة (Terminal Console)">
-            <span class="tool-ico">💻</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-terminal"/></svg></span>
             <span class="tool-label">الطرفية</span>
           </button>
           </div>
@@ -184,15 +214,15 @@
           <div class="tool-group-label">الشاشة</div>
           <div class="tool-grid">
             <button class="tool-item" id="topScreenVisionBtn" type="button" title="عيون سند: التقاط وتحليل الشاشة الحية فوراً">
-            <span class="tool-ico">👁️</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></span>
             <span class="tool-label">فحص الشاشة</span>
           </button>
             <button class="tool-item" id="liveStreamBtn" type="button" title="وضع البث المباشر للشاشة مع المساعد سند والتحكم بزر الفأرة">
-            <span class="tool-ico"><span class="live-dot-indicator"></span></span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-radio"/></svg></span>
             <span class="tool-label" id="liveStreamLabel">بث مباشر</span>
           </button>
             <button class="tool-item" id="toggleIslandBtn" type="button" title="وضع الكبسولة العائمة الذكية (Dynamic Island)">
-            <span class="tool-ico">🛸</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-island"/></svg></span>
             <span class="tool-label">الكبسولة</span>
           </button>
           </div>
@@ -200,22 +230,22 @@
           <div class="tool-group-label">الإنتاجية</div>
           <div class="tool-grid">
             <button class="tool-item" id="memoryBtn" type="button" title="الذاكرة الدائمة المحلية (Long-Term Memory)">
-            <span class="tool-ico">🧠</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-memory"/></svg></span>
             <span class="tool-label">الذاكرة</span>
             <span class="tool-count" id="memoryCount">4</span>
           </button>
             <button class="tool-item" id="tasksBtn" type="button" title="المهام المستقلة والعمل أثناء الغياب (Autonomous Tasks)">
-            <span class="tool-ico">⏰</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg></span>
             <span class="tool-label">المهام</span>
             <span class="tool-count" id="tasksCount">2</span>
           </button>
             <button class="tool-item" id="workflowsBtn" type="button" title="المسارات والإجراءات الحركية المحفوظة سريعة التنفيذ (Cached Workflows)">
-            <span class="tool-ico">⚡</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-zap"/></svg></span>
             <span class="tool-label">المسارات</span>
             <span class="tool-count" id="workflowsCount">2</span>
           </button>
             <button class="tool-item" id="projectPreviewBtn" type="button" title="معاينة المشاريع البرمجية الحية وتطبيقات الويب">
-            <span class="tool-ico">🚀</span>
+            <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-code"/></svg></span>
             <span class="tool-label">المشاريع</span>
           </button>
           </div>
@@ -226,8 +256,8 @@
         <div class="stats" id="stats"></div>
 
         <div class="side-foot">
-          <button class="btn" id="theme" type="button" title="تبديل المظهر">☾ الوضع الداكن</button>
-          <button class="icon-btn" id="closeNav" type="button" title="إغلاق القائمة" aria-label="إغلاق القائمة">✕</button>
+          <button class="btn" id="theme" type="button" title="تبديل المظهر"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg><span>الوضع الداكن</span></button>
+          <button class="icon-btn" id="closeNav" type="button" title="إغلاق القائمة" aria-label="إغلاق القائمة"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
         </div>
       </aside>
 
@@ -235,7 +265,7 @@
 
       <main class="chat">
         <header class="chat-head">
-          <button class="icon-btn menu-btn" id="openNav" type="button" aria-label="فتح المحادثات">☰</button>
+          <button class="icon-btn menu-btn" id="openNav" type="button" aria-label="فتح المحادثات"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></button>
 
           <div class="arc-reactor-hud" id="arcReactorHud" title="نواة سند العصبية (SANAD Core)">
             <div class="arc-outer-ring"></div>
@@ -255,12 +285,12 @@
           </button>
 
           <button class="jarvis-voice-btn" id="voiceModeBtn" type="button" title="وضع سند الصوتي (استيقاظ بـ «يا سند» وتحدث مستمر)">
-            <span>🎙️</span>
+            <svg class="ico" aria-hidden="true"><use href="#i-mic"/></svg>
             <span class="btn-label">وضع سند</span>
           </button>
 
           <button class="jarvis-voice-btn palette-trigger" id="paletteBtn" type="button" title="لوحة الأوامر — ابحث عن أي أداة (Ctrl+K)" aria-haspopup="dialog" aria-controls="paletteBackdrop">
-            <span>⌘</span>
+            <svg class="ico" aria-hidden="true"><use href="#i-command"/></svg>
             <span class="btn-label">الأوامر</span>
             <kbd class="kbd">Ctrl K</kbd>
           </button>
@@ -309,14 +339,14 @@
           <div class="attachment-bar hidden" id="attachmentBar"></div>
           <div class="composer-inner">
             <input type="file" id="fileInput" class="sr-only" multiple accept=".pdf,.txt,.md,.json,.js,.ts,.py,.html,.css,.csv,.log,.sql" />
-            <button class="attach-btn" id="attachBtn" type="button" aria-label="إرفاق ملف" title="إرفاق ملفات أو مستندات أو PDF من جهازك">📎</button>
-            <button class="attach-btn" id="screenVisionBtn" type="button" aria-label="فحص الشاشة" title="عيون سند: انظر إلى شاشتي وافحصها (Live Screen Vision)">👁️</button>
+            <button class="attach-btn" id="attachBtn" type="button" aria-label="إرفاق ملف" title="إرفاق ملفات أو مستندات أو PDF من جهازك"><svg class="ico" aria-hidden="true"><use href="#i-paperclip"/></svg></button>
+            <button class="attach-btn" id="screenVisionBtn" type="button" aria-label="فحص الشاشة" title="عيون سند: انظر إلى شاشتي وافحصها (Live Screen Vision)"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
             <label class="sr-only" for="prompt">رسالتك</label>
             <textarea id="prompt" rows="1" placeholder="اكتب رسالتك لسند…" title="Enter للإرسال · Shift+Enter لسطر جديد · يمكنك سحب ملف إلى هنا"></textarea>
             <div class="composer-actions">
-              <button class="mic" id="micBtn" type="button" aria-label="تحدث صوتياً" title="تحدث بالمايك (انقر للتحدث)">🎙️</button>
-              <button class="send" id="send" type="submit" aria-label="إرسال">↑</button>
-              <button class="stop hidden" id="stop" type="button" aria-label="إيقاف">■</button>
+              <button class="mic" id="micBtn" type="button" aria-label="تحدث صوتياً" title="تحدث بالمايك (انقر للتحدث)"><svg class="ico" aria-hidden="true"><use href="#i-mic"/></svg></button>
+              <button class="send" id="send" type="submit" aria-label="إرسال"><svg class="ico" aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
+              <button class="stop hidden" id="stop" type="button" aria-label="إيقاف"><svg class="ico" aria-hidden="true"><use href="#i-stop"/></svg></button>
             </div>
           </div>
           <div class="foot-note">
@@ -640,6 +670,8 @@
       </div>
     </div>
 
+    <script src="/ios-notify.js"></script>
+    <script src="/home.js"></script>
     <script>
       /* ======================= state ======================= */
 
@@ -846,7 +878,7 @@
 
       function applyTheme(theme) {
         document.documentElement.dataset.theme = theme;
-        themeBtn.textContent = theme === "dark" ? "☾ الوضع الداكن" : "☀ الوضع الفاتح";
+        themeBtn.innerHTML = theme === "dark" ? '<svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg><span>الوضع الداكن</span>' : '<svg class="ico" aria-hidden="true"><use href="#i-sun"/></svg><span>الوضع الفاتح</span>';
         try {
           localStorage.setItem(THEME_KEY, theme);
         } catch {}
@@ -1180,18 +1212,46 @@
           item.tabIndex = 0;
           item.setAttribute("role", "button");
 
+          // صف بأسلوب قائمة الرسائل في iOS: دائرة بالحرف الأول، العنوان، آخر رسالة، والوقت
+          const name = conv.title || "محادثة جديدة";
+          const avatar = document.createElement("span");
+          avatar.className = "conv-avatar";
+          avatar.dataset.hue = String([...name].reduce((h, ch) => (h + ch.codePointAt(0)) % 6, 0));
+          avatar.textContent = [...name.replace(/^[^\p{L}\p{N}]+/u, "")][0] || "س";
+
+          const main = document.createElement("span");
+          main.className = "conv-main";
+          const top = document.createElement("span");
+          top.className = "conv-top";
           const title = document.createElement("span");
           title.className = "conv-title";
-          title.textContent = conv.title || "محادثة جديدة";
+          title.textContent = name;
+          const time = document.createElement("span");
+          time.className = "conv-time";
+          time.textContent = convTimeLabel(conv.updatedAt);
+          top.append(title, time);
+          const preview = document.createElement("span");
+          preview.className = "conv-preview";
+          const last = [...conv.messages].reverse().find((m) => m.content || m.displayContent);
+          const lastText = last ? String(last.displayContent || last.content).replace(/[`*#>|_-]+/g, " ").replace(/\s+/g, " ").trim() : "";
+          preview.textContent = last ? `${last.role === "user" ? "أنت: " : ""}${lastText.slice(0, 90)}` : "لا رسائل بعد";
+          main.append(top, preview);
 
           const del = document.createElement("button");
           del.className = "conv-del";
           del.type = "button";
-          del.textContent = "✕";
+          del.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>';
           del.title = "حذف المحادثة";
-          del.addEventListener("click", (event) => {
+          del.setAttribute("aria-label", `حذف المحادثة: ${name}`);
+          del.addEventListener("click", async (event) => {
             event.stopPropagation();
-            deleteConversation(conv.id);
+            const ok = await sanadConfirm({
+              title: "حذف المحادثة؟",
+              message: `ستُحذف «${name}» نهائياً من هذا الجهاز.`,
+              confirmText: "حذف",
+              destructive: true,
+            });
+            if (ok) deleteConversation(conv.id);
           });
 
           const open = () => selectConversation(conv.id);
@@ -1203,9 +1263,22 @@
             }
           });
 
-          item.append(title, del);
+          item.append(avatar, main, del);
           convList.appendChild(item);
         }
+      }
+
+      // وقت المحادثة كما في iOS: الساعة اليوم، «أمس»، اسم اليوم خلال أسبوع، وإلا التاريخ
+      function convTimeLabel(ts) {
+        if (!ts) return "";
+        const d = new Date(ts);
+        const now = new Date();
+        const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+        const days = Math.round((startOf(now) - startOf(d)) / 86400000);
+        if (days <= 0) return d.toLocaleTimeString("ar-u-nu-latn", { hour: "numeric", minute: "2-digit" });
+        if (days === 1) return "أمس";
+        if (days < 7) return d.toLocaleDateString("ar-u-nu-latn", { weekday: "long" });
+        return d.toLocaleDateString("ar-u-nu-latn", { day: "numeric", month: "short", ...(d.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}) });
       }
 
       function renderMeta() {
@@ -1241,70 +1314,20 @@
       }
 
       function emptyState() {
-        const hero = document.createElement("div");
-        hero.className = "hero";
-
-        const mark = document.createElement("div");
-        mark.className = "hero-mark";
-        mark.setAttribute("aria-hidden", "true");
-        mark.innerHTML = '<div class="arc-reactor-hud"><div class="arc-outer-ring"></div><div class="arc-middle-ring"></div><div class="arc-inner-core"></div></div>';
-
-        const title = document.createElement("h2");
-        title.textContent = "أهلاً، أنا سند";
-
-        const sub = document.createElement("p");
-        sub.textContent = "مساعدك على ويندوز: أتحكم بالنظام، أرى شاشتك، أكتب الأكواد وأشغّلها، وأتحدث معك بالصوت.";
-
-        const cards = document.createElement("div");
-        cards.className = "hero-cards";
-
-        // prompt = النص نفسه الذي كان يُرسل سابقاً (قد تعتمد عليه مطابقة الأوامر المحلية)
-        [
-          { ico: "🎙️", title: "تحدث معي بالصوت", desc: "محادثة صوتية مستمرة", prompt: "🎙️ تحدث معي بالصوت (الوضع الصوتي)" },
-          { ico: "👁️", title: "افحص الشاشة", desc: "التقط شاشتك واشرح ما عليها", prompt: "👁️ افحص الشاشة واشرح ما تراه" },
-          { ico: "📊", title: "حالة الجهاز", desc: "المعالج والذاكرة والأقراص", prompt: "📊 كيف وضع جهازي والمعالج؟" },
-          { ico: "🧹", title: "تنظيف الجهاز", desc: "الملفات المؤقتة والكاش", prompt: "🧹 نظف الملفات المؤقتة والكاش" },
-          { ico: "💻", title: "اكتب كوداً", desc: "بايثون لاختبار سرعة خوارزمية", prompt: "💻 اكتب كود بايثون لاختبار سرعة الخوارزمية" },
-          { ico: "🧠", title: "ذاكرتي", desc: "ماذا تعرف عني؟", prompt: "🧠 ماذا تعرف عني في الذاكرة الدائمة؟" },
-        ].forEach((item) => {
-          const card = document.createElement("button");
-          card.type = "button";
-          card.className = "hero-card";
-          card.title = item.prompt;
-          const ico = document.createElement("span");
-          ico.className = "hero-card-ico";
-          ico.textContent = item.ico;
-          const text = document.createElement("span");
-          text.className = "hero-card-text";
-          const t = document.createElement("strong");
-          t.textContent = item.title;
-          const d = document.createElement("span");
-          d.textContent = item.desc;
-          text.append(t, d);
-          card.append(ico, text);
-          card.addEventListener("click", () => {
-            promptEl.value = item.prompt;
+        // الشاشة الرئيسية بأسلوب iPhone (public/home.js)
+        return window.sanadHomeScreen({
+          onSuggest(text) {
+            promptEl.value = text;
             promptEl.focus();
             autoGrow();
-          });
-          cards.appendChild(card);
+          },
         });
-
-        hero.append(mark, title, sub, cards);
-        return hero;
       }
 
       function messageEl(conv, message, index) {
         const wrap = document.createElement("article");
         wrap.className = `msg ${message.role}`;
         wrap.dataset.index = String(index);
-
-        if (message.role === "assistant") {
-          const avatar = document.createElement("div");
-          avatar.className = "avatar";
-          avatar.textContent = "س";
-          wrap.appendChild(avatar);
-        }
 
         const bubble = document.createElement("div");
         bubble.className = "bubble";
@@ -1354,12 +1377,16 @@
           bubble.appendChild(note);
         }
 
-        if (message.role === "assistant" && !message.pending && message.content) {
-          bubble.appendChild(assistantMeta(message));
-          bubble.appendChild(assistantTools(conv, index));
-        }
-
         wrap.appendChild(bubble);
+
+        // iOS: الإجراءات وسطر الموديل تحت الفقاعة لا داخلها
+        if (message.role === "assistant" && !message.pending && message.content) {
+          const foot = document.createElement("div");
+          foot.className = "msg-foot";
+          foot.appendChild(assistantTools(conv, index));
+          foot.appendChild(assistantMeta(message));
+          wrap.appendChild(foot);
+        }
         return wrap;
       }
 
@@ -1380,6 +1407,13 @@
         return span;
       }
 
+      // يضع أيقونة ووصفاً لزر أدوات الرسالة (نسخ/استماع/إعادة التوليد) حسب حالته
+      function setToolIcon(btn, icon, label) {
+        btn.innerHTML = `<svg class="ico" aria-hidden="true"><use href="#i-${icon}"/></svg>`;
+        btn.title = label;
+        btn.setAttribute("aria-label", label);
+      }
+
       function assistantTools(conv, index) {
         const tools = document.createElement("div");
         tools.className = "msg-tools";
@@ -1389,7 +1423,7 @@
         copy.className = "tool";
         copy.dataset.action = "copy-message";
         copy.dataset.index = String(index);
-        copy.textContent = "نسخ";
+        setToolIcon(copy, "copy", "نسخ");
 
         tools.appendChild(copy);
 
@@ -1398,7 +1432,7 @@
         speak.className = "tool";
         speak.dataset.action = "speak-message";
         speak.dataset.index = String(index);
-        speak.textContent = "🔊 استماع";
+        setToolIcon(speak, "volume", "استماع");
         tools.appendChild(speak);
 
         const isLast = index === conv.messages.length - 1;
@@ -1407,7 +1441,7 @@
           regen.type = "button";
           regen.className = "tool";
           regen.dataset.action = "regenerate";
-          regen.textContent = "إعادة التوليد";
+          setToolIcon(regen, "rotate", "إعادة التوليد");
           tools.appendChild(regen);
         }
 
@@ -1550,6 +1584,13 @@
           if (!line.trim()) {
             flushParagraph();
             closeList();
+            continue;
+          }
+
+          if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+            flushParagraph();
+            closeList();
+            out.push("<hr>");
             continue;
           }
 
@@ -3638,10 +3679,11 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           if (message) {
             try {
               await navigator.clipboard.writeText(message.content);
-              tool.textContent = "تم النسخ ✓";
-              setTimeout(() => (tool.textContent = "نسخ"), 1400);
+              setToolIcon(tool, "check", "تم النسخ");
+              tool.classList.add("done");
+              setTimeout(() => { setToolIcon(tool, "copy", "نسخ"); tool.classList.remove("done"); }, 1400);
             } catch {
-              tool.textContent = "تعذر النسخ";
+              setToolIcon(tool, "alert", "تعذر النسخ");
             }
           }
         }
@@ -4171,7 +4213,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           return;
         }
         if (!recognition) {
-          alert("لا يتوفر تعرف صوتي: المتصفح لا يدعمه ومحرك السماع المحلي غير مُثبَّت.");
+          sanadNotify.error("المتصفح لا يدعمه ومحرك السماع المحلي غير مُثبَّت.", "التعرف الصوتي غير متاح");
           return;
         }
         if (speechSilenceTimeout) {
@@ -4272,7 +4314,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         localTtsPlaying = true;
         if (btn) {
           currentlySpeakingBtn = btn;
-          btn.textContent = "■ إيقاف";
+          setToolIcon(btn, "stop", "إيقاف");
           btn.classList.add("speaking");
         }
         setIslandStatus("سند يتحدث (محلي)...", false);
@@ -4320,7 +4362,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           window.speechSynthesis.cancel();
         }
         if (currentlySpeakingBtn) {
-          currentlySpeakingBtn.textContent = "🔊 استماع";
+          setToolIcon(currentlySpeakingBtn, "volume", "استماع");
           currentlySpeakingBtn.classList.remove("speaking");
           currentlySpeakingBtn = null;
         }
@@ -4370,7 +4412,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
         if (btn) {
           currentlySpeakingBtn = btn;
-          btn.textContent = "■ إيقاف";
+          setToolIcon(btn, "stop", "إيقاف");
           btn.classList.add("speaking");
         }
 
@@ -4506,7 +4548,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
             if (!res.ok) {
               const err = await res.json().catch(() => ({}));
-              alert(`خطأ في قراءة ${file.name}: ${err.error || "فشل استخراج المحتوى"}`);
+              sanadNotify.error(err.error || "فشل استخراج المحتوى", `تعذّرت قراءة ${file.name}`);
               continue;
             }
 
@@ -4517,7 +4559,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           } catch (err) {
             tempPill.remove();
             console.warn(err);
-            alert(`تعذر قراءة ${file.name}`);
+            sanadNotify.error("تأكد أن الملف غير تالف ثم أعد المحاولة.", `تعذّرت قراءة ${file.name}`);
           }
         }
 
@@ -5416,7 +5458,7 @@ ${data.text}
         if (liveMediaStream) return;
         try {
           if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-            alert("المتصفح لا يدعم مشاركة وبث الشاشة المباشرة.");
+            sanadNotify.error("المتصفح لا يدعم مشاركة الشاشة وبثها مباشرة.", "البث المباشر غير متاح");
             return;
           }
           const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -5556,6 +5598,7 @@ ${data.text}
       let islandOnlyMode = false;
 
       function setIslandStatus(text, isListening = false) {
+        window.sanadIsland?.status(text, isListening); // Dynamic Island (public/ios-island.js)
         if (islandStatusText) islandStatusText.textContent = text;
         if (islandWaves) {
           if (isListening) islandWaves.classList.add("active");
@@ -5564,6 +5607,7 @@ ${data.text}
       }
 
       function updateIslandLatest(htmlOrText) {
+        window.sanadIsland?.latest(htmlOrText);
         if (islandLatestMsg) {
           islandLatestMsg.innerHTML = typeof htmlOrText === "string" ? htmlOrText.slice(0, 350) : "جاهز للأمر";
         }
@@ -5754,18 +5798,12 @@ ${data.text}
           });
           const data = await res.json();
           playSciFiSound("action");
-          if (sysCleanAlert) {
-            sysCleanAlert.style.display = "block";
-            sysCleanAlert.style.background = "rgba(137, 87, 229, 0.15)";
-            sysCleanAlert.style.borderColor = "rgba(137, 87, 229, 0.3)";
-            sysCleanAlert.style.color = "#a371f7";
-            sysCleanAlert.innerHTML = `⚡ <strong>${data.message}</strong>`;
-          }
+          sanadNotify({ type: data.success === false ? "error" : "success", title: "تحرير الذاكرة", body: data.message });
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
           if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
           await loadAndRenderSysStats();
         } catch (e) {
-          alert("حدث خطأ أثناء تحرير الذاكرة: " + e.message);
+          sanadNotify.error(e.message, "تعذّر تحرير الذاكرة");
         } finally {
           if (sysOptimizeRamBtn) {
             sysOptimizeRamBtn.disabled = false;
@@ -5790,18 +5828,12 @@ ${data.text}
           });
           const data = await res.json();
           playSciFiSound("action");
-          if (sysCleanAlert) {
-            sysCleanAlert.style.display = "block";
-            sysCleanAlert.style.background = "rgba(35, 134, 54, 0.15)";
-            sysCleanAlert.style.borderColor = "rgba(35, 134, 54, 0.3)";
-            sysCleanAlert.style.color = "#3fb950";
-            sysCleanAlert.innerHTML = `🧹 <strong>${data.message}</strong>`;
-          }
+          sanadNotify({ type: data.success === false ? "error" : "success", title: "تنظيف القرص", body: data.message });
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
           if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
           await loadAndRenderSysStats();
         } catch (e) {
-          alert("حدث خطأ أثناء تنظيف القرص: " + e.message);
+          sanadNotify.error(e.message, "تعذّر تنظيف القرص");
         } finally {
           if (sysCleanTempBtn) {
             sysCleanTempBtn.disabled = false;
@@ -6011,9 +6043,7 @@ ${data.text}
       const NET_QUALITY_COLOR = { "ممتاز": "#3fb950", "جيد": "var(--accent)", "متوسط": "#d29922", "ضعيف": "var(--danger)", "منقطع": "var(--danger)" };
 
       function showNetAlert(message, ok = true) {
-        if (!netAlert) return;
-        netAlert.className = "net-alert " + (ok ? "ok" : "err");
-        netAlert.textContent = message;
+        sanadNotify({ type: ok ? "success" : "error", title: "الشبكة والمنافذ", body: message });
       }
 
       function netSpeak(message) {
@@ -6188,7 +6218,7 @@ ${data.text}
         if (!skipConfirm) {
           const holders = netPortsCache.filter((p) => p.port === n);
           const who = holders.length ? [...new Set(holders.map((h) => `${h.processName} (PID ${h.pid})`))].join("، ") : "العملية المحتجزة";
-          if (!confirm(`هل تريد إنهاء ${who} لتحرير المنفذ ${n}؟`)) return null;
+          if (!(await sanadConfirm({ title: `تحرير المنفذ ${n}؟`, message: `سيتم إنهاء ${who}. قد تفقد أي عمل غير محفوظ فيه.`, confirmText: "إنهاء", destructive: true }))) return null;
         }
         if (typeof setIslandStatus === "function") setIslandStatus(`يحرر المنفذ ${n}...`, true);
         try {
@@ -6343,15 +6373,12 @@ ${data.text}
             body: JSON.stringify({ target }),
           });
           const data = await res.json();
-          if (desktopStatusAlert) {
-            desktopStatusAlert.textContent = data.message;
-            desktopStatusAlert.style.display = "block";
-          }
+          sanadNotify({ type: data.success === false ? "error" : "success", title: "تنظيم الملفات", body: data.message });
           playSciFiSound("confirm");
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
           refreshDesktopStatus();
         } catch (e) {
-          alert("حدث خطأ أثناء تنظيم الملفات: " + e.message);
+          sanadNotify.error(e.message, "تعذّر تنظيم الملفات");
         } finally {
           if (btn) {
             btn.disabled = false;
@@ -6370,14 +6397,11 @@ ${data.text}
             body: JSON.stringify({ preset }),
           });
           const data = await res.json();
-          if (desktopStatusAlert) {
-            desktopStatusAlert.textContent = data.message;
-            desktopStatusAlert.style.display = "block";
-          }
+          sanadNotify({ type: data.success === false ? "error" : "success", title: "بيئة العمل", body: data.message });
           playSciFiSound("action");
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
         } catch (e) {
-          alert("حدث خطأ أثناء تجهيز بيئة العمل: " + e.message);
+          sanadNotify.error(e.message, "تعذّر تجهيز بيئة العمل");
         } finally {
           if (typeof setIslandStatus === "function") setIslandStatus("جاهز للأمر", false);
         }
@@ -6412,7 +6436,7 @@ ${data.text}
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
           if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
         } catch (e) {
-          alert("حدث خطأ أثناء تشغيل الروتين: " + e.message);
+          sanadNotify.error(e.message, "تعذّر تشغيل الروتين");
         } finally {
           if (typeof setIslandStatus === "function") setIslandStatus("جاهز للأمر", false);
         }
@@ -6581,5 +6605,10 @@ ${data.text}
       promptEl.focus();
     </script>
     <script src="/palette.js" defer></script>
+  <script src="/ios.js" defer></script>
+  <script src="/ios-island.js" defer></script>
+  <script src="/ios-control.js" defer></script>
+  <script src="/ios-apps.js" defer></script>
+  <script src="/ios-list.js" defer></script>
   </body>
 </html>

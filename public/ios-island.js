@@ -1,0 +1,211 @@
+/* سند — شريط الحالة و Dynamic Island بأسلوب iPhone
+   - تستقبل الجزيرة حالتها من setIslandStatus/updateIslandLatest الموجودتين (عبر window.sanadIsland).
+   - «يفكر» تُستنتج من ظهور زر إيقاف التوليد (#stop).
+   - شريط الحالة: الساعة، الشبكة (navigator.onLine)، البطارية من /api/system/stats. */
+(() => {
+  const svg = (id) => `<svg class="ico" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  /* ======================= Status bar ======================= */
+  const bar = el("div", "ios-statusbar");
+  bar.setAttribute("aria-hidden", "true"); // معلومات تكميلية؛ لا داعي لقراءتها صوتياً
+  const sbTime = el("span", "sb-time");
+  const sbRight = el("span", "sb-right");
+  const sbWifi = el("span", "sb-wifi");
+  sbWifi.innerHTML =
+    '<svg viewBox="0 0 18 13" aria-hidden="true"><path d="M9 12.2 6.6 9.8a3.4 3.4 0 0 1 4.8 0z"/><path class="w2" d="M4.4 7.6a6.5 6.5 0 0 1 9.2 0l-1.1 1.1a5 5 0 0 0-7 0z"/><path class="w3" d="M2.2 5.4a9.6 9.6 0 0 1 13.6 0l-1.1 1.1a8 8 0 0 0-11.4 0z"/></svg>';
+  const sbBattery = el("span", "sb-battery");
+  const sbPct = el("span", "sb-pct", "");
+  const sbCell = el("span", "sb-cell");
+  const sbFill = el("span", "sb-fill");
+  const sbBolt = el("span", "sb-bolt");
+  sbBolt.innerHTML = '<svg viewBox="0 0 10 14" aria-hidden="true"><path d="M6 0 0 8h4l-1 6 6-8H5z"/></svg>';
+  sbCell.append(sbFill, sbBolt);
+  sbBattery.append(sbPct, sbCell);
+  sbRight.append(sbWifi, sbBattery);
+  bar.append(sbTime, sbRight);
+
+  function tickTime() {
+    sbTime.textContent = new Date().toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true }).replace(/\s?[ap]m$/i, "");
+  }
+  function updateNet() {
+    bar.classList.toggle("offline", !navigator.onLine);
+  }
+  async function updateBattery() {
+    try {
+      const res = await fetch("/api/system/stats", { cache: "no-store" });
+      const s = await res.json();
+      if (typeof s.batteryPercent !== "number") { sbBattery.hidden = true; return; }
+      sbBattery.hidden = false;
+      sbPct.textContent = String(s.batteryPercent);
+      sbFill.style.width = `${Math.max(4, s.batteryPercent)}%`;
+      sbBattery.classList.toggle("low", s.batteryPercent <= 20 && !s.isCharging);
+      sbBattery.classList.toggle("charging", !!s.isCharging);
+    } catch {
+      /* يبقى آخر قيمة معروفة */
+    }
+  }
+
+  /* ======================= Dynamic Island ======================= */
+  const island = el("div", "dyn-island state-idle");
+  island.setAttribute("role", "status");
+  island.setAttribute("aria-live", "polite");
+  island.tabIndex = 0;
+  island.title = "سند — انقر للتوسيع";
+
+  const lead = el("span", "di-lead");
+  const text = el("span", "di-text");
+  const trail = el("span", "di-trail");
+  const waves = el("span", "di-waves");
+  for (let i = 0; i < 5; i++) waves.append(el("i"));
+  const compact = el("div", "di-compact");
+  compact.append(lead, text, trail);
+
+  const expanded = el("div", "di-expanded");
+  const exHead = el("div", "di-ex-head");
+  const exIcon = el("span", "di-ex-icon");
+  exIcon.innerHTML = '<span class="di-orb"></span>';
+  const exTitle = el("div", "di-ex-title", "سند");
+  const exStatus = el("div", "di-ex-status", "جاهز للأمر");
+  const exTitles = el("div", "di-ex-titles");
+  exTitles.append(exTitle, exStatus);
+  exHead.append(exIcon, exTitles);
+  const exLatest = el("div", "di-ex-latest", "اسألني أي شيء، أو قل «يا سند».");
+  const exActions = el("div", "di-ex-actions");
+  const action = (icon, label, fn, cls = "") => {
+    const b = el("button", `di-act ${cls}`);
+    b.type = "button";
+    b.innerHTML = svg(icon);
+    b.append(el("span", null, label));
+    b.addEventListener("click", (e) => { e.stopPropagation(); fn(); collapse(); });
+    return b;
+  };
+  const stopAct = action("stop", "إيقاف", () => stopCurrent(), "danger");
+  exActions.append(
+    action("mic", "تحدث", () => document.getElementById("micBtn")?.click()),
+    action("radio", "حوار صوتي", () => document.getElementById("voiceModeBtn")?.click()),
+    action("command", "الأوامر", () => document.getElementById("paletteBtn")?.click()),
+    stopAct,
+  );
+  expanded.append(exHead, exLatest, exActions);
+  island.append(compact, expanded);
+
+  let state = "idle";
+  let statusText = "جاهز للأمر";
+  let thinking = false;
+  let errorTimer = null;
+
+  function modelName() {
+    return document.getElementById("modelBtnName")?.textContent.trim() || "";
+  }
+
+  function stopCurrent() {
+    if (state === "speaking" && typeof window.stopSpeaking === "function") return window.stopSpeaking();
+    if (state === "listening" && typeof window.stopListening === "function") return window.stopListening();
+    const stop = document.getElementById("stop");
+    if (stop && !stop.classList.contains("hidden")) stop.click();
+  }
+
+  function render() {
+    const effective = thinking && (state === "idle" || state === "working") ? "thinking" : state;
+    island.className = `dyn-island state-${effective}${island.classList.contains("expanded") ? " expanded" : ""}`;
+    lead.innerHTML = "";
+    trail.innerHTML = "";
+    text.textContent = "";
+    switch (effective) {
+      case "listening":
+        lead.innerHTML = svg("mic");
+        text.textContent = "يستمع";
+        trail.append(waves);
+        break;
+      case "speaking":
+        lead.innerHTML = svg("volume");
+        text.textContent = "يتحدث";
+        trail.append(waves);
+        break;
+      case "thinking":
+        lead.innerHTML = svg("sparkles");
+        text.textContent = "يفكر";
+        trail.append(el("span", "di-dots", "•••"));
+        break;
+      case "working":
+        lead.append(el("span", "di-spinner"));
+        text.textContent = statusText.replace(/\.{2,}|…$/u, "");
+        break;
+      case "error":
+        lead.innerHTML = svg("alert");
+        text.textContent = statusText;
+        break;
+      default:
+        lead.append(el("span", "di-orb"));
+    }
+    const label = effective === "thinking" ? `يفكر${modelName() ? ` · ${modelName()}` : ""}` : statusText;
+    exStatus.textContent = label;
+    stopAct.hidden = !["listening", "speaking", "thinking"].includes(effective);
+  }
+
+  function classify(t) {
+    if (/يتحدث/.test(t)) return "speaking";
+    if (/استمع|أسمع|اسمع|يستمع|حوار صوتي|يحلل الصوت/.test(t)) return "listening";
+    if (/^جاهز|الكبسولة نشطة/.test(t)) return "idle";
+    if (/تعذر|تعذّر|يحتاج إنترنت/.test(t)) return "error";
+    return "working";
+  }
+
+  function setStatus(t) {
+    statusText = String(t || "جاهز للأمر").trim();
+    state = classify(statusText);
+    clearTimeout(errorTimer);
+    if (state === "error") errorTimer = setTimeout(() => { state = "idle"; statusText = "جاهز للأمر"; render(); }, 3500);
+    render();
+  }
+
+  function setLatest(htmlOrText) {
+    // قد تكون HTML؛ نعرض نصها فقط
+    const tmp = document.createElement("div");
+    tmp.innerHTML = typeof htmlOrText === "string" ? htmlOrText : "";
+    const plain = (tmp.textContent || "").replace(/\s+/g, " ").trim();
+    if (plain) exLatest.textContent = plain.length > 220 ? `${plain.slice(0, 220)}…` : plain;
+  }
+
+  function expand() { island.classList.add("expanded"); }
+  function collapse() { island.classList.remove("expanded"); }
+  island.addEventListener("click", (e) => {
+    if (e.target.closest(".di-act")) return;
+    island.classList.toggle("expanded");
+  });
+  island.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); island.classList.toggle("expanded"); }
+    if (e.key === "Escape") collapse();
+  });
+  document.addEventListener("click", (e) => { if (!island.contains(e.target)) collapse(); });
+
+  // «يفكر»: زر الإيقاف ظاهر أثناء التوليد
+  const stopBtn = document.getElementById("stop");
+  if (stopBtn) {
+    const sync = () => { thinking = !stopBtn.classList.contains("hidden"); render(); };
+    new MutationObserver(sync).observe(stopBtn, { attributes: true, attributeFilter: ["class"] });
+    sync();
+  }
+
+  window.sanadIsland = { status: setStatus, latest: setLatest, expand, collapse };
+
+  document.body.prepend(bar);
+  // عنصر مستقل: شريط الحالة مخفي عن قارئ الشاشة، أما الجزيرة فتعلن الحالة
+  document.body.prepend(island);
+  document.documentElement.classList.add("has-statusbar");
+
+  tickTime();
+  updateNet();
+  updateBattery();
+  render();
+  setInterval(tickTime, 15000);
+  setInterval(() => { if (!document.hidden) updateBattery(); }, 30000);
+  window.addEventListener("online", updateNet);
+  window.addEventListener("offline", updateNet);
+})();

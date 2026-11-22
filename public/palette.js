@@ -22,11 +22,12 @@
   }
 
   /* ---------- Commands ---------- */
+  const svg = (id) => `<svg class="ico" aria-hidden="true"><use href="#i-${id}"/></svg>`;
   const fixed = [
-    { group: "عام", ico: "＋", label: "محادثة جديدة", target: "newChat" },
-    { group: "عام", ico: "🎙️", label: "وضع سند الصوتي", target: "voiceModeBtn" },
-    { group: "عام", ico: "🤖", label: "اختيار الموديل", target: "modelBtn" },
-    { group: "عام", ico: "☾", label: "تبديل المظهر", target: "theme" },
+    { group: "عام", icon: svg("plus"), label: "محادثة جديدة", target: "newChat" },
+    { group: "عام", icon: svg("mic"), label: "وضع سند الصوتي", target: "voiceModeBtn" },
+    { group: "عام", icon: svg("bot"), label: "اختيار الموديل", target: "modelBtn" },
+    { group: "عام", icon: svg("moon"), label: "تبديل المظهر", target: "theme" },
   ];
 
   function commands() {
@@ -36,8 +37,9 @@
       for (const el of toolNav.querySelectorAll(".tool-group-label, .tool-item")) {
         if (el.classList.contains("tool-group-label")) { group = el.textContent.trim(); continue; }
         const label = el.querySelector(".tool-label")?.textContent.trim() || el.id;
-        const ico = el.querySelector(".tool-ico")?.textContent.trim();
-        out.push({ group, ico: ico || "📡", label, target: el.id, hint: el.title });
+        // .tool-ico holds static markup from index.html (an <svg><use>), safe to reuse
+        const icon = el.querySelector(".tool-ico")?.innerHTML.trim() || svg("zap");
+        out.push({ group, icon, label, target: el.id, hint: el.title });
       }
     }
     // الإجراءات السريعة من درج الكبسولة (تبقى متاحة حتى والكبسولة مخفية)
@@ -90,7 +92,8 @@
       b.setAttribute("aria-selected", String(i === selected));
       const ico = document.createElement("span");
       ico.className = "tool-ico";
-      ico.textContent = c.ico;
+      if (c.icon) ico.innerHTML = c.icon;
+      else ico.textContent = c.ico;
       const label = document.createElement("span");
       label.textContent = c.label;
       b.append(ico, label);
