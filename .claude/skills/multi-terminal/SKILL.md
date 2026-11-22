@@ -23,4 +23,4 @@ description: تنفيذ وتشخيص أوامر الطرفيات المتعدد�
 
 ## الملف المسؤول:
 - `src/universalTerminal.ts`
-- الـ API: `POST /api/terminal/universal`
+- الـ API: `POST /api/terminal/run` (الجسم: `command`، `shell`، `cwd`، `timeoutMs`) — يستدعي `runUniversalCommand`

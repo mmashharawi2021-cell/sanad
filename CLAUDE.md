@@ -47,7 +47,7 @@ npm.cmd run models:refresh
 - `src/taskScheduler.ts`: الجدولة الزمنية للمهام اليومية والتنبيهات الدورية.
 - `src/systemTools.ts`: أدوات النظام الأصلية (التحكم بالماوس والكيبورد، الصوت، القفل، إنشاء وقراءة الملفات).
 - `src/fileReader.ts`: استخراج وقراءة النصوص من ملفات PDF، Markdown، نصوص، CSV، إلخ.
-- `src/memory.ts`: إدارة ذاكرة سند الدائمة (`data/memories.json`).
+- `src/memory.ts`: إدارة ذاكرة سند الدائمة (`data/memory.json`).
 - `src/openrouter.ts`: عميل OpenRouter SDK مع البث المباشر ومعالجة الأخطاء.
 - `src/ollama.ts`: عميل النماذج المحلية الذاتي عبر خادم Ollama (`http://127.0.0.1:11434`).
 - `src/models.ts`: فهرس ونماذج الذكاء الاصطناعي المجانية والمحلية.
@@ -85,7 +85,7 @@ npm.cmd run models:refresh
 | `POST /api/project/build` | POST | توليد وبناء مشروع برمجي جديد من القوالب |
 | `GET /api/project/preview` | GET | خدمة ملفات المشروع للمعاينة الحية داخل المتصفح |
 | `GET /api/project/list` | GET | قائمة بالمشاريع المنشأة وحالة المعاينة |
-| `POST /api/terminal/universal` | POST | تنفيذ أمر في الطرفية المحددة (powershell, cmd, python, node, git) |
+| `POST /api/terminal/run` | POST | تنفيذ أمر في الطرفية المحددة (powershell, cmd, python, node, git) |
 | `GET /api/system/processes` | GET | قائمة البرامج الأكثر استهلاكاً للموارد |
 | `POST /api/system/kill-process` | POST | إغلاق أو إنهاء عملية أو برنامج |
 | `POST /api/system/brightness` | POST | تعديل سطوع الشاشة عبر WMI |
