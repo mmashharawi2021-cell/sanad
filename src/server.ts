@@ -8,7 +8,7 @@ import { ask, askStream, toAppError, type Answer, type ChatTurn } from "./openro
 import { getSystemStats, launchApp, openFolder, openMediaFile, openFileDirectly, createOrWriteTextFile, cleanTemporaryFiles, setVolume, lockWorkstation, controlMouse, controlKeyboard } from "./systemTools";
 import { askOllama, askOllamaStream, getOllamaChatModels, getOllamaStatus, isOllamaModel } from "./ollama";
 import { extractTextFromBuffer, extractTextFromLocalPath } from "./fileReader";
-import { getMemories, addMemory, deleteMemory, getSystemPromptWithMemory } from "./memory";
+import { getMemories, addMemory, deleteMemory, getSystemPromptWithMemory, getLocalSystemPromptWithMemory } from "./memory";
 import { executeTerminalCommand, createFullProject, readProjectTree } from "./codeRunner";
 import { searchWeb, fetchPageContent } from "./webSearch";
 import { getTasks, createTask, toggleTask, deleteTask, runTaskNow, initTaskScheduler } from "./taskScheduler";
@@ -19,6 +19,11 @@ import { runUniversalCommand, type ShellType } from "./universalTerminal";
 import { listProcesses, killProcess, launchAnyApp, setScreenBrightness, executeDailyRoutine } from "./processMaestro";
 import { buildProject, getProjectFileContent, listBuiltProjects, type ProjectTemplate } from "./projectBuilder";
 import { getDrivesInfo, findLargeFiles, safeDeepCleanDisk, optimizeRam, revealFileInExplorer, getSystemHealthOverview } from "./diskInspector";
+import { listListeningPorts, checkPort, killPort, pingHost, getNetworkInfo } from "./networkMaestro";
+import { ensureOllamaRunning, getBrainStatus, getSanadMode, initOfflineBrain, isNetworkError, isOnline, markOffline, requireLocalModel, resolveLocalModel } from "./offlineBrain";
+import { cleanOllamaModelName } from "./ollama";
+import { getSpeechStatus, transcribeWav } from "./localSpeech";
+import { getVoiceStatus, synthesizeSpeech } from "./localVoice";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, "..", "public");
@@ -540,6 +545,69 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/voice/status") {
+    const status = await getSpeechStatus();
+    sendJson(res, 200, { success: true, ...status, tts: getVoiceStatus() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/voice/speak") {
+    const body = await readJsonBody(req, 64 * 1024);
+    const wav = await synthesizeSpeech(String(body.text ?? ""));
+    res.writeHead(200, { "Content-Type": "audio/wav", "Content-Length": wav.length, "Cache-Control": "no-store" });
+    res.end(wav);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/voice/transcribe") {
+    const wav = await readRawBody(req, 8 * 1024 * 1024); // ~4 min of 16 kHz mono PCM
+    const lang = url.searchParams.get("lang") || "ar";
+    const result = await transcribeWav(wav, lang);
+    sendJson(res, 200, { success: true, ...result });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/brain/status") {
+    const status = await getBrainStatus(url.searchParams.get("force") === "1");
+    sendJson(res, 200, { success: true, ...status });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/network/ports") {
+    const includeUdp = url.searchParams.get("udp") !== "0";
+    const ports = await listListeningPorts({ includeUdp });
+    sendJson(res, 200, { success: true, count: ports.length, ports });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/network/port/check") {
+    const result = await checkPort(url.searchParams.get("port"));
+    sendJson(res, 200, { success: true, ...result });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/network/kill-port") {
+    const body = await readJsonBody(req);
+    const result = await killPort(body.port);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/network/ping") {
+    const body = await readJsonBody(req);
+    const host = typeof body.host === "string" && body.host.trim() ? body.host : undefined;
+    const count = typeof body.count === "number" ? body.count : 4;
+    const result = await pingHost(host, count);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/network/info") {
+    const info = await getNetworkInfo();
+    sendJson(res, 200, { success: true, ...info });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/system/disks") {
     const drives = await getDrivesInfo();
     sendJson(res, 200, { success: true, drives });
@@ -652,33 +720,79 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   sendJson(res, 405, { error: "Method not allowed." });
 }
 
+function offlineNotice(localModel: string): string {
+  return `🔌 لا يوجد اتصال بالإنترنت — تم التحويل تلقائياً إلى العقل المحلي (${cleanOllamaModelName(localModel)}).`;
+}
+
+type ChatRoute = { kind: "local"; model: string; notice?: string } | { kind: "cloud"; fallbackToLocal: boolean };
+
+/**
+ * Decide where a chat goes, honouring SANAD_MODE:
+ * - offline: always the local brain (cloud is never contacted);
+ * - cloud:   always OpenRouter (no local fallback);
+ * - auto:    OpenRouter when online, local brain when offline or on a network failure.
+ */
+async function decideChatRoute(model: string | undefined): Promise<ChatRoute> {
+  if (model && isOllamaModel(model)) return { kind: "local", model };
+  const setting = getSanadMode();
+  if (setting === "offline") {
+    const localModel = await requireLocalModel();
+    const notice = model ? `🔒 وضع أوفلاين مفعّل — تم استخدام العقل المحلي (${cleanOllamaModelName(localModel)}) بدل الموديل السحابي.` : undefined;
+    return { kind: "local", model: localModel, notice };
+  }
+  if (setting === "cloud") return { kind: "cloud", fallbackToLocal: false };
+  if (!(await isOnline())) {
+    const localModel = await requireLocalModel();
+    return { kind: "local", model: localModel, notice: offlineNotice(localModel) };
+  }
+  return { kind: "cloud", fallbackToLocal: true };
+}
+
 async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const { prompt, model, messages } = await readChatRequest(req);
-  const systemPrompt = await getSystemPromptWithMemory();
-
-  if (isOllamaModel(model)) {
+  const askLocal = async (localModel: string, notice?: string): Promise<void> => {
+    await ensureOllamaRunning();
     const answer: Answer = await askOllama(prompt, {
-      model,
+      model: localModel,
       messages,
-      system: systemPrompt,
+      system: await getLocalSystemPromptWithMemory(),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-    sendJson(res, 200, answer);
+    sendJson(res, 200, notice ? { ...answer, notice } : answer);
+  };
+
+  const route = await decideChatRoute(model);
+  if (route.kind === "local") {
+    await askLocal(route.model, route.notice);
     return;
   }
 
-  const answer: Answer = await ask(prompt, {
-    model,
-    messages,
-    system: systemPrompt,
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-
-  sendJson(res, 200, answer);
+  try {
+    const answer: Answer = await ask(prompt, {
+      model,
+      messages,
+      system: await getSystemPromptWithMemory(),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    sendJson(res, 200, answer);
+  } catch (error) {
+    if (!route.fallbackToLocal || !isNetworkError(error)) throw error;
+    markOffline();
+    const localModel = await requireLocalModel();
+    await askLocal(localModel, offlineNotice(localModel));
+  }
 }
 
 /** All free text-chat models for the UI picker, cached for 10 minutes. */
 async function handleModels(res: ServerResponse): Promise<void> {
+  if (getSanadMode() === "offline") {
+    // Offline mode: only local models, never contact OpenRouter.
+    const local = await getOllamaChatModels();
+    const localModel = await resolveLocalModel();
+    sendJson(res, 200, { default: localModel ?? "", source: "catalog", count: local.length, models: local });
+    return;
+  }
+
   const result = await resolveModels();
 
   sendJson(res, 200, {
@@ -786,17 +900,34 @@ async function handleStream(req: IncomingMessage, res: ServerResponse): Promise<
 
   try {
     const signal = AbortSignal.any([clientGone.signal, AbortSignal.timeout(STREAM_TIMEOUT_MS)]);
-    const systemPrompt = await getSystemPromptWithMemory();
-
-    if (isOllamaModel(model)) {
-      for await (const event of askOllamaStream(prompt, { model, messages, system: systemPrompt, signal })) {
+    const streamLocal = async (localModel: string, notice?: string): Promise<void> => {
+      if (notice) write(res, frame("notice", { message: notice, model: localModel }));
+      await ensureOllamaRunning();
+      const system = await getLocalSystemPromptWithMemory();
+      for await (const event of askOllamaStream(prompt, { model: localModel, messages, system, signal })) {
         if (clientGone.signal.aborted) break;
         write(res, frame(event.type, event));
       }
+    };
+
+    const route = await decideChatRoute(model);
+    if (route.kind === "local") {
+      await streamLocal(route.model, route.notice);
     } else {
-      for await (const event of askStream(prompt, { model, messages, system: systemPrompt, signal })) {
-        if (clientGone.signal.aborted) break;
-        write(res, frame(event.type, event));
+      let sentDeltas = 0;
+      try {
+        const system = await getSystemPromptWithMemory();
+        for await (const event of askStream(prompt, { model, messages, system, signal })) {
+          if (clientGone.signal.aborted) break;
+          if (event.type === "delta") sentDeltas++;
+          write(res, frame(event.type, event));
+        }
+      } catch (error) {
+        // Only fall back when nothing was streamed yet and the failure is connectivity, not an API error.
+        if (!route.fallbackToLocal || sentDeltas > 0 || clientGone.signal.aborted || !isNetworkError(error)) throw error;
+        markOffline();
+        const localModel = await requireLocalModel();
+        await streamLocal(localModel, offlineNotice(localModel));
       }
     }
   } catch (error) {
@@ -870,7 +1001,7 @@ function write(res: ServerResponse, chunk: string): void {
   res.write(chunk);
 }
 
-async function readJsonBody(req: IncomingMessage, maxBytes: number = MAX_BODY_BYTES): Promise<Record<string, unknown>> {
+async function readRawBody(req: IncomingMessage, maxBytes: number = MAX_BODY_BYTES): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
 
@@ -885,10 +1016,15 @@ async function readJsonBody(req: IncomingMessage, maxBytes: number = MAX_BODY_BY
     chunks.push(Buffer.from(chunk));
   }
 
-  if (chunks.length === 0) return {};
+  return Buffer.concat(chunks);
+}
+
+async function readJsonBody(req: IncomingMessage, maxBytes: number = MAX_BODY_BYTES): Promise<Record<string, unknown>> {
+  const raw = await readRawBody(req, maxBytes);
+  if (raw.length === 0) return {};
 
   try {
-    const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const parsed: unknown = JSON.parse(raw.toString("utf8"));
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new Error("not an object");
     }
@@ -930,6 +1066,7 @@ function sendJson(res: ServerResponse, status: number, payload: unknown): void {
 }
 
 server.listen(PORT, () => {
+  initOfflineBrain();
   try {
     const config = getConfig();
     console.log(`OpenRouter demo running at http://localhost:${PORT}`);

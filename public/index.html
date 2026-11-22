@@ -9,1953 +9,10 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>سند · المساعد الذكي المستقل</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        --bg: #070b12;
-        --bg-surface: rgba(13, 20, 34, 0.72);
-        --bg-glass: rgba(16, 25, 42, 0.65);
-        --text: #f0f6fc;
-        --muted: #8496ae;
-        --accent: #00f2fe;
-        --accent-cyan: #00f2fe;
-        --accent-blue: #0072ff;
-        --accent-soft: rgba(0, 242, 254, 0.12);
-        --danger: #ff5252;
-        --ok: #00e676;
-
-        --border-glass: rgba(0, 242, 254, 0.16);
-        --border-glass-bright: rgba(0, 242, 254, 0.5);
-
-        --shadow-dark: rgba(0, 0, 0, 0.65);
-        --shadow-light: rgba(0, 242, 254, 0.05);
-
-        --raised: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--border-glass);
-        --raised-sm: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-glass);
-        --inset: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-glass);
-        --inset-sm: inset 0 1px 4px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-glass);
-
-        --radius-lg: 24px;
-        --radius: 16px;
-        --radius-sm: 12px;
-      }
-
-      :root[data-theme="light"] {
-        color-scheme: light;
-        --bg: #e6ebf2;
-        --text: #2b3442;
-        --muted: #68758c;
-        --accent: #0088cc;
-        --accent-soft: rgba(0, 136, 204, 0.12);
-        --danger: #c0392b;
-        --ok: #1f9d63;
-        --border-glass: rgba(0, 136, 204, 0.2);
-        --border-glass-bright: rgba(0, 136, 204, 0.5);
-        --shadow-dark: #c2cad7;
-        --shadow-light: #ffffff;
-      }
-
-      * { box-sizing: border-box; }
-
-      html, body { height: 100%; }
-
-      body {
-        margin: 0;
-        background: radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.08) 0%, transparent 60%),
-                    radial-gradient(circle at 10% 40%, rgba(0, 114, 255, 0.06) 0%, transparent 45%),
-                    #070b12;
-        color: var(--text);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Kufi Arabic", sans-serif;
-        overflow: hidden;
-        background-attachment: fixed;
-      }
-
-      button, select, textarea, input { font: inherit; color: inherit; }
-
-      .sr-only {
-        position: absolute;
-        width: 1px; height: 1px;
-        padding: 0; margin: -1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-        white-space: nowrap; border: 0;
-      }
-
-      /* ---------------- shell ---------------- */
-
-      .app {
-        display: grid;
-        grid-template-columns: 312px 1fr;
-        height: 100vh;
-      }
-
-      /* ---------------- sidebar ---------------- */
-
-      .sidebar {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        padding: 22px 18px;
-        min-height: 0;
-        background: rgba(10, 15, 26, 0.78);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-inline-end: 1px solid var(--border-glass);
-        box-shadow: 10px 0 35px rgba(0, 0, 0, 0.5);
-        z-index: 30;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: var(--accent);
-        text-shadow: 0 0 12px rgba(0, 242, 254, 0.6);
-        padding-inline: 4px;
-      }
-
-      .dot {
-        width: 10px; height: 10px;
-        border-radius: 50%;
-        background: rgba(0, 242, 254, 0.2);
-        border: 1px solid rgba(0, 242, 254, 0.6);
-        position: relative;
-        flex: 0 0 auto;
-        box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
-      }
-
-      .dot::after {
-        content: "";
-        position: absolute;
-        inset: 2px;
-        border-radius: 50%;
-        background: var(--ok);
-        box-shadow: 0 0 9px var(--ok);
-      }
-
-      .btn {
-        border: 1px solid var(--border-glass);
-        border-radius: var(--radius-sm);
-        background: rgba(16, 25, 42, 0.65);
-        color: var(--text);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        cursor: pointer;
-        transition: all .18s ease;
-      }
-
-      .btn:hover:not(:disabled) {
-        border-color: var(--border-glass-bright);
-        box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
-        color: var(--accent);
-      }
-
-      .btn:active:not(:disabled) {
-        transform: scale(0.98);
-        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
-      }
-      .btn:disabled { color: var(--muted); cursor: not-allowed; opacity: 0.6; }
-
-      .btn-primary {
-        padding: 13px 18px;
-        font-weight: 700;
-        font-size: 13.5px;
-        color: #00f2fe;
-        background: linear-gradient(135deg, rgba(0, 114, 255, 0.28), rgba(0, 242, 254, 0.16));
-        border: 1px solid rgba(0, 242, 254, 0.4);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 242, 254, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all .2s ease;
-      }
-
-      .btn-primary:hover {
-        border-color: #00f2fe;
-        box-shadow: 0 0 22px rgba(0, 242, 254, 0.45);
-        transform: translateY(-1px);
-        color: #fff;
-      }
-
-      .conv-list {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 4px;
-        scrollbar-width: thin;
-        scrollbar-color: var(--border-glass) transparent;
-      }
-
-      .conv {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 12px;
-        border-radius: var(--radius-sm);
-        color: var(--muted);
-        font-size: 13px;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: all .16s ease;
-      }
-
-      .conv:hover {
-        color: var(--text);
-        background: rgba(0, 242, 254, 0.06);
-        border-color: rgba(0, 242, 254, 0.2);
-      }
-      .conv.active {
-        color: var(--text);
-        background: linear-gradient(90deg, rgba(0, 242, 254, 0.14), rgba(0, 114, 255, 0.08));
-        border-color: rgba(0, 242, 254, 0.35);
-        box-shadow: inset 0 0 12px rgba(0, 242, 254, 0.1);
-      }
-
-      .conv-title {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .conv-del {
-        border: 0;
-        background: transparent;
-        color: var(--muted);
-        cursor: pointer;
-        font-size: 15px;
-        line-height: 1;
-        padding: 3px 5px;
-        border-radius: 8px;
-        opacity: 0;
-        transition: opacity .15s ease, color .15s ease;
-      }
-
-      .conv:hover .conv-del,
-      .conv.active .conv-del { opacity: 1; }
-      .conv-del:hover { color: var(--danger); }
-
-      .side-empty {
-        color: var(--muted);
-        font-size: 12.5px;
-        text-align: center;
-        padding: 18px 10px;
-        line-height: 1.9;
-      }
-
-      .stats {
-        padding: 12px 14px;
-        border-radius: var(--radius-sm);
-        box-shadow: var(--inset-sm);
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.9;
-      }
-
-      .stats b { color: var(--text); font-weight: 600; }
-
-      .side-foot {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .side-foot .btn {
-        flex: 1;
-        padding: 10px 12px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      #closeNav { display: none; }
-
-      .icon-btn {
-        width: 42px;
-        height: 42px;
-        padding: 0;
-        border: 1px solid var(--border-glass);
-        border-radius: 50%;
-        background: rgba(16, 25, 42, 0.65);
-        color: var(--muted);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-        cursor: pointer;
-        font-size: 17px;
-        display: grid;
-        place-items: center;
-        backdrop-filter: blur(10px);
-        transition: all .18s ease;
-      }
-
-      .icon-btn:hover {
-        border-color: var(--border-glass-bright);
-        color: var(--accent);
-        box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
-      }
-      .icon-btn:active { transform: scale(0.95); }
-
-      /* ---------------- chat ---------------- */
-
-      .chat {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        min-height: 0;
-      }
-
-      .chat-head {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 16px 26px 14px;
-        flex-wrap: wrap;
-        border-bottom: 1px solid var(--border-glass);
-        background: rgba(10, 15, 26, 0.45);
-        backdrop-filter: blur(16px);
-      }
-
-      .menu-btn { display: none; }
-
-      .head-titles { flex: 1; min-width: 0; }
-
-      .head-titles h1 {
-        margin: 0;
-        font-size: 17px;
-        font-weight: 700;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        background: linear-gradient(135deg, #ffffff 40%, #00f2fe 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      .head-titles p {
-        margin: 4px 0 0;
-        font-size: 11.5px;
-        color: var(--muted);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .model-picker {
-        position: relative;
-      }
-
-      .model-btn {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        max-width: 320px;
-        border: 1px solid var(--border-glass);
-        border-radius: var(--radius-sm);
-        background: rgba(16, 25, 42, 0.7);
-        color: var(--text);
-        padding: 8px 14px;
-        backdrop-filter: blur(12px);
-        cursor: pointer;
-        text-align: start;
-        transition: all .2s ease;
-      }
-
-      .model-btn:hover {
-        border-color: var(--border-glass-bright);
-        box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
-      }
-
-      .model-btn:hover .model-btn-name { color: var(--accent); }
-
-      .model-btn-text {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-      }
-
-      .model-btn-name {
-        font-size: 12.5px;
-        font-weight: 700;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        transition: color .16s ease;
-      }
-
-      .model-btn-meta {
-        font-size: 10.5px;
-        color: var(--muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .chev {
-        color: var(--muted);
-        font-size: 10px;
-        transition: transform .18s ease;
-      }
-
-      .model-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
-
-      .model-panel {
-        position: absolute;
-        top: calc(100% + 10px);
-        inset-inline-end: 0;
-        z-index: 40;
-        width: min(390px, calc(100vw - 40px));
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 14px;
-        border-radius: var(--radius);
-        background: rgba(10, 15, 26, 0.94);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border: 1px solid var(--border-glass-bright);
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.75), 0 0 24px rgba(0, 242, 254, 0.16);
-      }
-
-      .model-search {
-        border: 1px solid var(--border-glass);
-        outline: none;
-        border-radius: 11px;
-        background: rgba(16, 25, 42, 0.6);
-        color: var(--text);
-        font-size: 12.5px;
-        padding: 10px 12px;
-        transition: border-color .18s ease;
-      }
-
-      .model-search::placeholder { color: var(--muted); opacity: .8; }
-
-      .model-search:focus {
-        border-color: var(--border-glass-bright);
-        box-shadow: 0 0 12px rgba(0, 242, 254, 0.2);
-      }
-
-      .model-list {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        max-height: min(52vh, 420px);
-        overflow-y: auto;
-        padding: 2px;
-        scrollbar-width: thin;
-        scrollbar-color: var(--shadow-dark) transparent;
-      }
-
-      .model-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        border: 0;
-        border-radius: 12px;
-        background: transparent;
-        color: var(--text);
-        text-align: start;
-        padding: 9px 10px;
-        cursor: pointer;
-      }
-
-      .model-item:hover,
-      .model-item.active { box-shadow: var(--raised-sm); }
-
-      .model-item.selected { box-shadow: var(--inset-sm); }
-
-      .model-item-text {
-        min-width: 0;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-
-      .model-item-name {
-        font-size: 12.5px;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .model-item-meta {
-        font-size: 10.5px;
-        color: var(--muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .model-item-check {
-        color: var(--accent);
-        font-size: 12px;
-        opacity: 0;
-      }
-
-      .model-item.selected .model-item-check { opacity: 1; }
-
-      .model-tag {
-        flex: 0 0 auto;
-        font-size: 9.5px;
-        color: var(--muted);
-        border-radius: 999px;
-        padding: 2px 7px;
-        box-shadow: var(--inset-sm);
-        white-space: nowrap;
-      }
-
-      .model-empty {
-        color: var(--muted);
-        font-size: 12px;
-        text-align: center;
-        padding: 20px 8px;
-        line-height: 1.8;
-      }
-
-      .model-foot {
-        color: var(--muted);
-        font-size: 10.5px;
-        line-height: 1.8;
-        padding: 0 3px;
-      }
-
-      .model-foot a { color: var(--accent); }
-
-      /* ---------------- thread ---------------- */
-
-      .thread {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px 26px 26px;
-        scroll-behavior: smooth;
-        scrollbar-width: thin;
-        scrollbar-color: var(--shadow-dark) transparent;
-      }
-
-      .thread-inner {
-        width: min(820px, 100%);
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-      }
-
-      .hero {
-        text-align: center;
-        padding: 8vh 10px 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .hero h2 {
-        margin: 0;
-        font-size: clamp(24px, 3.2vw, 34px);
-        background: linear-gradient(135deg, #ffffff 40%, #00f2fe 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      .hero p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.9; max-width: 52ch; }
-
-      .hero-chips {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 18px;
-      }
-
-      .pill {
-        border: 1px solid var(--border-glass);
-        border-radius: 999px;
-        padding: 9px 16px;
-        background: rgba(16, 25, 42, 0.65);
-        color: var(--muted);
-        font-size: 12.5px;
-        backdrop-filter: blur(10px);
-        cursor: pointer;
-        transition: all .16s ease;
-      }
-
-      .pill:hover {
-        border-color: var(--border-glass-bright);
-        color: var(--accent);
-        box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
-      }
-      .pill:active { transform: scale(0.97); }
-
-      .msg { display: flex; gap: 10px; }
-
-      .msg.user { justify-content: flex-end; }
-
-      .bubble {
-        max-width: min(660px, 90%);
-        border-radius: var(--radius);
-        padding: 13px 17px;
-        font-size: 14.5px;
-        line-height: 1.9;
-        overflow-wrap: anywhere;
-      }
-
-      .msg.user .bubble {
-        background: linear-gradient(135deg, rgba(0, 114, 255, 0.22), rgba(0, 242, 254, 0.12));
-        border: 1px solid rgba(0, 242, 254, 0.35);
-        box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4), 0 0 10px rgba(0, 242, 254, 0.12);
-        border-start-end-radius: 4px;
-        backdrop-filter: blur(12px);
-      }
-
-      .msg.assistant { align-items: flex-start; }
-
-      .avatar {
-        flex: 0 0 auto;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 242, 254, 0.25) 0%, rgba(10, 15, 26, 0.95) 80%);
-        border: 1px solid rgba(0, 242, 254, 0.4);
-        box-shadow: 0 0 14px rgba(0, 242, 254, 0.3);
-        display: grid;
-        place-items: center;
-        font-size: 11px;
-        font-weight: 800;
-        color: #00f2fe;
-      }
-
-      .msg.assistant .bubble {
-        background: rgba(14, 21, 35, 0.72);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 6px 26px rgba(0, 0, 0, 0.45);
-        border-start-start-radius: 4px;
-        backdrop-filter: blur(16px);
-        max-width: min(720px, 94%);
-        padding: 16px 18px;
-      }
-
-      .bubble-body > :first-child { margin-top: 0; }
-      .bubble-body > :last-child { margin-bottom: 0; }
-      .bubble-body p { margin: 0 0 10px; }
-      .bubble-body ul, .bubble-body ol { margin: 0 0 10px; padding-inline-start: 22px; }
-      .bubble-body li { margin: 4px 0; }
-      .bubble-body h3, .bubble-body h4, .bubble-body h5 { margin: 14px 0 8px; font-size: 15px; }
-      .bubble-body a { color: var(--accent); }
-      .bubble-body code {
-        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
-        font-size: 12.8px;
-        background: var(--accent-soft);
-        padding: 2px 6px;
-        border-radius: 6px;
-      }
-
-      .bubble-body pre {
-        margin: 10px 0;
-        padding: 12px 14px;
-        border-radius: 12px;
-        overflow-x: auto;
-        background: rgba(6, 10, 18, 0.85);
-        border: 1px solid rgba(0, 242, 254, 0.15);
-        direction: ltr;
-        text-align: left;
-      }
-
-      .bubble-body pre code {
-        background: transparent;
-        padding: 0;
-        font-size: 12.6px;
-        line-height: 1.75;
-      }
-
-      .code {
-        margin: 12px 0;
-        border-radius: var(--radius-sm);
-        border: 1px solid rgba(0, 242, 254, 0.18);
-        background: rgba(6, 10, 18, 0.85);
-        overflow: hidden;
-      }
-
-      .code-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 8px 14px;
-        font-size: 11px;
-        color: var(--muted);
-        background: rgba(0, 242, 254, 0.05);
-        border-bottom: 1px solid rgba(0, 242, 254, 0.1);
-        direction: ltr;
-      }
-
-      .code-head button {
-        border: 0;
-        background: transparent;
-        color: var(--muted);
-        cursor: pointer;
-        font-size: 11.5px;
-        padding: 4px 8px;
-        border-radius: 7px;
-      }
-
-      .code-head button:hover { color: var(--accent); box-shadow: var(--raised-sm); }
-
-      .code pre { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 14px 14px !important; }
-
-      .msg-meta {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-top: 12px;
-        font-size: 10.5px;
-        color: var(--muted);
-      }
-
-      .msg-meta span { padding: 5px 9px; border-radius: 999px; box-shadow: var(--inset-sm); }
-      .msg-meta b { color: var(--text); font-weight: 600; }
-
-      .msg-tools {
-        display: flex;
-        gap: 6px;
-        margin-top: 10px;
-      }
-
-      .tool {
-        border: 0;
-        background: transparent;
-        color: var(--muted);
-        font-size: 11.5px;
-        padding: 5px 10px;
-        border-radius: 8px;
-        cursor: pointer;
-      }
-
-      .tool:hover { color: var(--accent); box-shadow: var(--raised-sm); }
-      .tool.speaking { color: var(--ok); box-shadow: var(--inset-sm); }
-
-      .typing { display: inline-flex; gap: 5px; align-items: center; height: 20px; }
-
-      .typing i {
-        width: 6px; height: 6px;
-        border-radius: 50%;
-        background: var(--muted);
-        animation: bounce 1.1s infinite ease-in-out;
-      }
-
-      .typing i:nth-child(2) { animation-delay: .15s; }
-      .typing i:nth-child(3) { animation-delay: .3s; }
-
-      @keyframes bounce {
-        0%, 60%, 100% { transform: translateY(0); opacity: .5; }
-        30% { transform: translateY(-4px); opacity: 1; }
-      }
-
-      .bubble-body.streaming::after {
-        content: "▍";
-        color: var(--accent);
-        margin-inline-start: 2px;
-        animation: blink 1s steps(1) infinite;
-      }
-
-      @keyframes blink { 50% { opacity: 0; } }
-
-      .error-card {
-        margin-top: 10px;
-        padding: 12px 14px;
-        border-radius: var(--radius-sm);
-        box-shadow: inset 0 0 0 1px rgba(255, 138, 138, .35), var(--inset-sm);
-        font-size: 13px;
-        line-height: 1.8;
-      }
-
-      .error-card strong { color: var(--danger); }
-      .error-card .hint { display: block; color: var(--muted); margin-top: 4px; font-size: 12px; }
-      .error-card .retry { margin-top: 10px; }
-
-      .note { color: var(--muted); font-size: 11.5px; margin-top: 8px; }
-
-      /* ---------------- composer ---------------- */
-
-      .composer { padding: 6px 26px 22px; }
-
-      .composer-inner {
-        width: min(840px, 100%);
-        margin: 0 auto;
-        display: flex;
-        align-items: flex-end;
-        gap: 10px;
-        padding: 10px 14px;
-        border-radius: 26px;
-        background: rgba(12, 18, 30, 0.82);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid var(--border-glass);
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 242, 254, 0.04);
-        transition: border-color .2s ease, box-shadow .2s ease;
-      }
-
-      .composer-inner:focus-within {
-        border-color: var(--border-glass-bright);
-        box-shadow: 0 12px 45px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 254, 0.25);
-      }
-
-      .composer textarea {
-        flex: 1;
-        min-height: 46px;
-        max-height: 190px;
-        resize: none;
-        border: 0;
-        outline: none;
-        background: transparent;
-        padding: 11px 8px;
-        font-size: 14.5px;
-        line-height: 1.7;
-        color: var(--text);
-      }
-
-      .composer textarea::placeholder { color: var(--muted); opacity: .8; }
-
-      .composer-actions { display: flex; align-items: center; gap: 8px; padding-bottom: 3px; }
-
-      .mic {
-        width: 44px;
-        height: 44px;
-        border: 1px solid var(--border-glass);
-        border-radius: 50%;
-        background: rgba(16, 25, 42, 0.7);
-        color: var(--muted);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-        cursor: pointer;
-        display: grid;
-        place-items: center;
-        font-size: 18px;
-        transition: all .2s ease;
-      }
-
-      .mic:hover {
-        border-color: var(--border-glass-bright);
-        color: var(--accent);
-        box-shadow: 0 0 16px rgba(0, 242, 254, 0.35);
-      }
-
-      .mic.recording {
-        color: #ff3838;
-        border-color: #ff3838;
-        background: rgba(255, 56, 56, 0.15);
-        box-shadow: 0 0 24px rgba(255, 56, 56, 0.6);
-        animation: pulse-red 1.2s infinite ease-in-out;
-      }
-
-      @keyframes pulse-red {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(255, 56, 56, 0.4); }
-        50% { transform: scale(1.08); box-shadow: 0 0 24px rgba(255, 56, 56, 0.8); }
-      }
-
-      .jarvis-voice-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 14px;
-        border: 1px solid var(--border-glass);
-        border-radius: var(--radius-sm);
-        background: rgba(16, 25, 42, 0.65);
-        color: var(--muted);
-        font-size: 12.5px;
-        font-weight: 600;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-        cursor: pointer;
-        transition: all .2s ease;
-      }
-
-      .jarvis-voice-btn:hover {
-        border-color: var(--border-glass-bright);
-        color: var(--text);
-        box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
-      }
-
-      .jarvis-voice-btn.active {
-        color: #00e676;
-        border-color: rgba(0, 230, 118, 0.6);
-        box-shadow: 0 0 16px rgba(0, 230, 118, 0.35), inset 0 0 8px rgba(0, 230, 118, 0.15);
-      }
-
-      /* Arc Reactor HUD */
-      .arc-reactor-hud {
-        position: relative;
-        width: 36px;
-        height: 36px;
-        flex: 0 0 auto;
-        display: grid;
-        place-items: center;
-        cursor: pointer;
-        margin-inline-end: 4px;
-      }
-      .arc-outer-ring {
-        position: absolute;
-        inset: 0;
-        border-radius: 50%;
-        border: 2px dashed rgba(0, 242, 254, 0.45);
-        animation: arcSpin 14s linear infinite;
-      }
-      .arc-middle-ring {
-        position: absolute;
-        inset: 4px;
-        border-radius: 50%;
-        border: 2px solid rgba(0, 242, 254, 0.2);
-        border-top-color: #00f2fe;
-        border-bottom-color: #38ef7d;
-        animation: arcSpinRev 6s linear infinite;
-      }
-      .arc-inner-core {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: radial-gradient(circle, #ffffff 10%, #00f2fe 80%);
-        box-shadow: 0 0 10px #00f2fe;
-        animation: arcCorePulse 2.5s ease-in-out infinite;
-      }
-      .arc-pulse-wave {
-        position: absolute;
-        inset: -4px;
-        border-radius: 50%;
-        border: 1px solid rgba(0, 242, 254, 0.6);
-        opacity: 0;
-        transform: scale(0.8);
-      }
-      .arc-reactor-hud.active .arc-outer-ring {
-        border-color: #00f2fe;
-        animation: arcSpin 3s linear infinite;
-      }
-      .arc-reactor-hud.active .arc-middle-ring {
-        border-top-color: #38ef7d;
-        border-bottom-color: #00f2fe;
-        animation: arcSpinRev 1.8s linear infinite;
-      }
-      .arc-reactor-hud.active .arc-inner-core {
-        background: radial-gradient(circle, #ffffff 20%, #38ef7d 80%);
-        box-shadow: 0 0 16px #38ef7d, 0 0 28px rgba(0, 242, 254, 0.8);
-        animation: arcCorePulse 0.9s ease-in-out infinite;
-      }
-      .arc-reactor-hud.active .arc-pulse-wave {
-        animation: arcPulseExpand 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
-      }
-
-      @keyframes arcSpin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-      @keyframes arcSpinRev {
-        from { transform: rotate(360deg); }
-        to { transform: rotate(0deg); }
-      }
-      @keyframes arcCorePulse {
-        0%, 100% { transform: scale(1); opacity: 0.85; }
-        50% { transform: scale(1.18); opacity: 1; }
-      }
-      @keyframes arcPulseExpand {
-        0% { transform: scale(0.7); opacity: 0.9; }
-        100% { transform: scale(1.7); opacity: 0; }
-      }
-
-      /* Memory Modal & UI */
-      .memory-modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(10, 14, 20, 0.72);
-        backdrop-filter: blur(8px);
-        display: none;
-        place-items: center;
-        z-index: 1000;
-        padding: 20px;
-        animation: fadeIn .18s ease;
-      }
-      .memory-modal-backdrop.open { display: grid; }
-      .memory-modal {
-        width: min(680px, 94vw);
-        max-height: 85vh;
-        background: var(--bg);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--raised-lg);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      .memory-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px 22px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      }
-      .memory-header h2 {
-        font-size: 15.5px;
-        font-weight: 700;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--text);
-      }
-      .memory-close-btn {
-        background: transparent;
-        border: 0;
-        color: var(--muted);
-        font-size: 17px;
-        cursor: pointer;
-        padding: 6px 10px;
-        border-radius: var(--radius-sm);
-        transition: color .2s, box-shadow .2s;
-      }
-      .memory-close-btn:hover { color: var(--text); box-shadow: var(--raised-sm); }
-      .memory-body {
-        padding: 20px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .memory-desc {
-        margin: 0;
-        font-size: 13px;
-        color: var(--muted);
-        line-height: 1.6;
-      }
-      .memory-desc code {
-        color: var(--accent);
-        background: rgba(255, 255, 255, 0.04);
-        padding: 2px 6px;
-        border-radius: 4px;
-      }
-      .memory-input-row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-      .memory-input {
-        flex: 1 1 240px;
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        border: 0;
-        background: var(--bg);
-        box-shadow: var(--inset-sm);
-        color: var(--text);
-        font-family: inherit;
-        font-size: 13px;
-      }
-      .memory-input:focus { outline: none; box-shadow: var(--inset-sm), 0 0 0 1px var(--primary); }
-      .memory-select {
-        padding: 10px 12px;
-        border-radius: var(--radius-sm);
-        border: 0;
-        background: var(--bg);
-        box-shadow: var(--raised-sm);
-        color: var(--text);
-        font-family: inherit;
-        font-size: 12.5px;
-        cursor: pointer;
-      }
-      .memory-add-btn {
-        padding: 10px 18px;
-        border-radius: var(--radius-sm);
-        border: 0;
-        background: var(--primary);
-        color: white;
-        font-weight: 600;
-        font-size: 13px;
-        cursor: pointer;
-        box-shadow: var(--raised-sm);
-        transition: transform .15s, opacity .15s;
-      }
-      .memory-add-btn:hover { opacity: 0.9; }
-      .memory-add-btn:active { transform: scale(0.97); }
-      .memory-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 4px;
-      }
-      .memory-card {
-        padding: 12px 16px;
-        border-radius: var(--radius-sm);
-        background: var(--bg);
-        box-shadow: var(--raised-sm);
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-      }
-      .memory-card-content {
-        flex: 1;
-        font-size: 13.5px;
-        line-height: 1.5;
-        color: var(--text);
-      }
-      .memory-card-meta {
-        font-size: 11px;
-        color: var(--muted);
-        margin-top: 5px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .memory-tag {
-        display: inline-block;
-        padding: 1px 7px;
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.05);
-        font-size: 10.5px;
-        font-weight: 600;
-      }
-      .memory-del-btn {
-        background: transparent;
-        border: 0;
-        color: var(--muted);
-        cursor: pointer;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 14px;
-        transition: color .2s, background .2s;
-      }
-      .memory-del-btn:hover { color: #ff6b6b; background: rgba(255, 107, 107, 0.1); }
-      .memory-empty {
-        text-align: center;
-        padding: 24px 10px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      /* Terminal Console Modal */
-      .terminal-modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(10, 14, 20, 0.75);
-        backdrop-filter: blur(8px);
-        display: none;
-        place-items: center;
-        z-index: 1000;
-        padding: 20px;
-        animation: fadeIn .18s ease;
-      }
-      .terminal-modal-backdrop.open { display: grid; }
-      .terminal-modal {
-        width: min(820px, 95vw);
-        height: 520px;
-        max-height: 85vh;
-        background: #0d1117;
-        border-radius: var(--radius-lg);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        color: #e6edf3;
-        font-family: 'Consolas', 'Fira Code', monospace;
-      }
-      .terminal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 18px;
-        background: #161b22;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      .terminal-dots {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .dot {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        display: inline-block;
-      }
-      .dot.red { background: #ff5f56; }
-      .dot.yellow { background: #ffbd2e; }
-      .dot.green { background: #27c93f; }
-      .terminal-title {
-        font-size: 13px;
-        font-weight: 600;
-        margin-inline-start: 10px;
-        color: #8b949e;
-      }
-      .terminal-body {
-        flex: 1;
-        padding: 16px;
-        overflow-y: auto;
-        font-size: 13px;
-        line-height: 1.6;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .terminal-welcome {
-        color: #8b949e;
-        font-size: 12px;
-        padding-bottom: 10px;
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-      }
-      .terminal-welcome code {
-        color: #58a6ff;
-        background: rgba(88, 166, 255, 0.1);
-        padding: 1px 5px;
-        border-radius: 4px;
-      }
-      .terminal-logs {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .terminal-entry {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .terminal-cmd-line {
-        color: #58a6ff;
-        font-weight: 600;
-      }
-      .terminal-output {
-        white-space: pre-wrap;
-        word-break: break-all;
-        background: rgba(255, 255, 255, 0.03);
-        padding: 8px 12px;
-        border-radius: 6px;
-        color: #c9d1d9;
-      }
-      .terminal-output.error {
-        color: #f85149;
-        background: rgba(248, 81, 73, 0.1);
-      }
-      .terminal-input-bar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        background: #161b22;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      .terminal-prompt-symbol {
-        color: #27c93f;
-        font-weight: 700;
-        font-size: 16px;
-      }
-      .terminal-input {
-        flex: 1;
-        background: transparent;
-        border: 0;
-        color: #fff;
-        font-family: inherit;
-        font-size: 13.5px;
-        outline: none;
-      }
-      .terminal-run-btn {
-        background: #238636;
-        color: white;
-        border: 0;
-        padding: 6px 14px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 12.5px;
-        cursor: pointer;
-        transition: background .2s;
-      }
-      .terminal-run-btn:hover { background: #2ea043; }
-
-      /* Tasks & Scheduler UI */
-      .task-card {
-        padding: 14px 18px;
-        border-radius: var(--radius-sm);
-        background: var(--bg);
-        box-shadow: var(--raised-sm);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.04);
-      }
-      .task-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-      .task-card-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .task-status-badge {
-        font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-weight: 600;
-      }
-      .task-status-badge.active { background: rgba(39, 201, 63, 0.15); color: #27c93f; }
-      .task-status-badge.paused { background: rgba(255, 189, 46, 0.15); color: #ffbd2e; }
-      .task-card-meta {
-        font-size: 11.5px;
-        color: var(--muted);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-      }
-      .task-actions-row {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 4px;
-      }
-      .task-btn {
-        padding: 4px 10px;
-        border-radius: var(--radius-sm);
-        border: 0;
-        background: var(--bg);
-        box-shadow: var(--raised-sm);
-        color: var(--text);
-        font-size: 11.5px;
-        cursor: pointer;
-        transition: all .15s;
-      }
-      .task-btn:hover { box-shadow: var(--inset-sm); color: var(--accent); }
-      .task-log-output {
-        font-family: 'Consolas', monospace;
-        font-size: 11.5px;
-        background: rgba(0, 0, 0, 0.25);
-        padding: 8px 12px;
-        border-radius: 6px;
-        white-space: pre-wrap;
-        color: #c9d1d9;
-        margin-top: 6px;
-      }
-
-      /* System HUD Modal */
-      .sys-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-        gap: 12px;
-        margin-top: 14px;
-      }
-      .sys-metric-card {
-        padding: 14px 16px;
-        border-radius: var(--radius-sm);
-        background: var(--bg);
-        box-shadow: var(--raised-sm);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .sys-metric-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-      }
-      .sys-metric-val {
-        font-size: 22px;
-        font-weight: 800;
-        color: var(--accent);
-        font-family: monospace;
-      }
-      .sys-metric-sub {
-        font-size: 11.5px;
-        color: var(--muted);
-      }
-      .sys-bar-track {
-        height: 6px;
-        border-radius: 3px;
-        background: rgba(255, 255, 255, 0.08);
-        overflow: hidden;
-        margin-top: 4px;
-      }
-      .sys-bar-fill {
-        height: 100%;
-        border-radius: 3px;
-        background: #2ea043;
-        transition: width 0.4s ease, background 0.3s ease;
-      }
-      .sys-bar-fill.warning { background: #d29922; }
-      .sys-bar-fill.danger { background: #f85149; }
-
-      .attach-btn {
-        width: 44px;
-        height: 44px;
-        border: 0;
-        border-radius: 50%;
-        background: transparent;
-        color: var(--muted);
-        font-size: 19px;
-        cursor: pointer;
-        display: grid;
-        place-items: center;
-        transition: color .2s ease, box-shadow .2s ease;
-        flex: 0 0 auto;
-        margin-bottom: 2px;
-      }
-      .attach-btn:hover {
-        color: var(--accent);
-        box-shadow: var(--raised-sm);
-      }
-      .attach-btn:active {
-        box-shadow: var(--inset-sm);
-      }
-
-      .attachment-bar {
-        width: min(820px, 100%);
-        margin: 0 auto 10px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding-inline: 4px;
-      }
-
-      .attachment-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
-        background: var(--bg);
-        border-radius: 999px;
-        font-size: 12px;
-        color: var(--text);
-        box-shadow: var(--raised-sm);
-        border: 1px solid var(--accent-soft);
-      }
-
-      .attachment-pill .del-attach {
-        border: 0;
-        background: transparent;
-        color: var(--muted);
-        font-size: 11px;
-        cursor: pointer;
-        padding: 0 3px;
-        border-radius: 50%;
-      }
-      .attachment-pill .del-attach:hover {
-        color: var(--danger);
-      }
-
-      .drop-overlay {
-        position: absolute;
-        inset: 16px;
-        border: 2px dashed var(--accent);
-        border-radius: var(--radius-lg);
-        background: rgba(31, 37, 48, 0.9);
-        backdrop-filter: blur(5px);
-        display: grid;
-        place-items: center;
-        z-index: 100;
-        font-size: 19px;
-        font-weight: 700;
-        color: var(--accent);
-        pointer-events: none;
-      }
-
-      :root[data-theme="light"] .drop-overlay {
-        background: rgba(230, 235, 242, 0.92);
-      }
-
-      .msg-attachments {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 8px;
-      }
-
-      .msg-attachment-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 11px;
-        color: var(--accent);
-        background: var(--accent-soft);
-        padding: 3px 8px;
-        border-radius: 6px;
-        direction: ltr;
-      }
-
-      .send {
-        width: 44px;
-        height: 44px;
-        border: 1px solid var(--border-glass);
-        border-radius: 50%;
-        background: linear-gradient(135deg, rgba(0, 114, 255, 0.45), rgba(0, 242, 254, 0.35));
-        color: #ffffff;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 242, 254, 0.25);
-        cursor: pointer;
-        display: grid;
-        place-items: center;
-        font-size: 17px;
-        transition: all .2s ease;
-      }
-
-      .send:hover:not(:disabled) {
-        border-color: #00f2fe;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);
-        transform: scale(1.05);
-      }
-
-      .send:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-        box-shadow: none;
-      }
-
-      .stop {
-        width: 46px;
-        height: 46px;
-        border: 0;
-        border-radius: 50%;
-        background: var(--bg);
-        color: var(--danger);
-        box-shadow: var(--raised-sm);
-        cursor: pointer;
-        display: grid;
-        place-items: center;
-        font-size: 13px;
-      }
-
-      .foot-note {
-        width: min(820px, 100%);
-        margin: 10px auto 0;
-        text-align: center;
-        color: var(--muted);
-        font-size: 11px;
-      }
-
-      .hidden { display: none !important; }
-
-      .backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, .45);
-        backdrop-filter: blur(2px);
-        z-index: 25;
-      }
-
-      /* ---------------- cases ---------------- */
-
-      :root[data-theme="light"] .backdrop { background: rgba(30, 40, 55, .28); }
-
-      @media (max-width: 900px) {
-        .app { grid-template-columns: 1fr; }
-
-        .sidebar {
-          position: fixed;
-          top: 0;
-          bottom: 0;
-          inset-inline-start: 0;
-          width: min(320px, 86vw);
-          background: var(--bg);
-          transform: translateX(105%);
-          transition: transform .24s ease;
-          box-shadow: -10px 0 30px -18px rgba(0, 0, 0, .55);
-        }
-
-        :root[dir="rtl"] .sidebar { transform: translateX(105%); }
-
-        .app.nav-open .sidebar { transform: translateX(0); }
-
-        .menu-btn { display: grid; }
-
-        #closeNav { display: grid; flex: 0 0 auto; }
-
-        .chat-head { padding: 14px 16px 10px; gap: 10px; }
-
-        .model-btn { max-width: 200px; }
-
-        .model-panel {
-          position: fixed;
-          top: 70px;
-          inset-inline: 12px;
-          width: auto;
-        }
-
-        .thread { padding: 8px 14px 18px; }
-
-        .composer { padding: 6px 14px 16px; }
-
-        .bubble { max-width: 100%; }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        * { animation-duration: .001s !important; transition-duration: .001s !important; scroll-behavior: auto !important; }
-      }
-
-      /* Live Stream HUD Floating Panel */
-      .live-stream-hud {
-        position: fixed;
-        bottom: 24px;
-        inset-inline-end: 24px;
-        width: 320px;
-        background: rgba(10, 16, 28, 0.94);
-        border: 1px solid rgba(0, 242, 254, 0.4);
-        border-radius: 16px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(0, 242, 254, 0.2);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        z-index: 1000;
-        display: none;
-        flex-direction: column;
-        overflow: hidden;
-        animation: hudSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .live-stream-hud.active {
-        display: flex;
-      }
-
-      @keyframes hudSlideUp {
-        from { opacity: 0; transform: translateY(20px) scale(0.96); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
-      }
-
-      .live-hud-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 9px 13px;
-        background: rgba(0, 242, 254, 0.08);
-        border-bottom: 1px solid rgba(0, 242, 254, 0.15);
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      .live-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: #ff5252;
-      }
-
-      .live-badge-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #ff5252;
-        box-shadow: 0 0 10px #ff5252;
-        animation: livePulse 1.2s infinite;
-      }
-
-      @keyframes livePulse {
-        0% { transform: scale(0.9); opacity: 0.6; }
-        50% { transform: scale(1.2); opacity: 1; }
-        100% { transform: scale(0.9); opacity: 0.6; }
-      }
-
-      .live-hud-video-wrap {
-        position: relative;
-        width: 100%;
-        height: 180px;
-        background: #000;
-        overflow: hidden;
-      }
-
-      .live-hud-video {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: block;
-      }
-
-      .live-hud-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px;
-        background: rgba(0, 0, 0, 0.35);
-      }
-
-      .live-hud-btn-row {
-        display: flex;
-        gap: 6px;
-      }
-
-      .live-hud-btn {
-        flex: 1;
-        padding: 7px 8px;
-        border-radius: 8px;
-        border: 1px solid rgba(0, 242, 254, 0.25);
-        background: rgba(16, 25, 42, 0.85);
-        color: var(--text);
-        font-size: 11.5px;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        transition: all 0.2s ease;
-      }
-
-      .live-hud-btn:hover {
-        background: rgba(0, 242, 254, 0.18);
-        border-color: var(--accent);
-        box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
-      }
-
-      .live-hud-btn-primary {
-        background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(0, 114, 255, 0.3));
-        border-color: var(--accent);
-        font-weight: 700;
-      }
-
-      .live-dot-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #ff5252;
-        display: inline-block;
-      }
-      .jarvis-voice-btn.active .live-dot-indicator {
-        box-shadow: 0 0 8px #ff5252;
-        animation: livePulse 1.2s infinite;
-      }
-
-      /* ======================= Cyber Dynamic Island CSS ======================= */
-      .cyber-island {
-        position: fixed;
-        top: 14px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(540px, 94vw);
-        background: rgba(10, 16, 28, 0.94);
-        border: 1px solid rgba(0, 242, 254, 0.45);
-        border-radius: 28px;
-        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(0, 242, 254, 0.22);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        z-index: 9999;
-        overflow: hidden;
-        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-        display: flex;
-        flex-direction: column;
-      }
-
-      .cyber-island.floating-collapsed {
-        width: min(390px, 92vw);
-        border-radius: 999px;
-      }
-
-      .cyber-island.floating-collapsed .island-drawer {
-        display: none;
-      }
-
-      .island-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 6px 14px;
-        min-height: 44px;
-        user-select: none;
-      }
-
-      .island-left {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 0 0 auto;
-        cursor: pointer;
-      }
-
-      .arc-reactor-hud.mini {
-        width: 24px;
-        height: 24px;
-        margin: 0;
-      }
-
-      .island-status-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-      }
-
-      .island-brand {
-        font-weight: 800;
-        color: var(--accent);
-        letter-spacing: 0.5px;
-      }
-
-      .island-status-text {
-        color: var(--muted);
-        font-size: 11px;
-        max-width: 95px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .island-waves {
-        display: none;
-        align-items: center;
-        gap: 2px;
-        height: 14px;
-      }
-
-      .island-waves.active {
-        display: inline-flex;
-      }
-
-      .wave-bar {
-        width: 3px;
-        height: 6px;
-        border-radius: 2px;
-        background: #00e676;
-        animation: waveBarBounce 0.8s ease-in-out infinite alternate;
-      }
-      .wave-bar:nth-child(2) { animation-delay: 0.15s; height: 12px; }
-      .wave-bar:nth-child(3) { animation-delay: 0.3s; height: 10px; }
-      .wave-bar:nth-child(4) { animation-delay: 0.45s; height: 7px; }
-
-      @keyframes waveBarBounce {
-        from { transform: scaleY(0.4); opacity: 0.5; }
-        to { transform: scaleY(1.4); opacity: 1; }
-      }
-
-      .island-center {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .island-form {
-        display: flex;
-        width: 100%;
-        margin: 0;
-      }
-
-      .island-input {
-        width: 100%;
-        padding: 5px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(0, 242, 254, 0.25);
-        background: rgba(0, 0, 0, 0.45);
-        color: var(--text);
-        font-size: 11.5px;
-        outline: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      .island-input:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
-      }
-
-      .island-right {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex: 0 0 auto;
-      }
-
-      .island-icon-btn {
-        background: none;
-        border: none;
-        color: var(--muted);
-        padding: 4px 6px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-        transition: all 0.2s ease;
-      }
-
-      .island-icon-btn:hover {
-        color: var(--text);
-        background: rgba(0, 242, 254, 0.15);
-      }
-
-      .island-icon-btn.active {
-        color: #ff5252;
-        text-shadow: 0 0 8px #ff5252;
-      }
-
-      .island-icon-btn#islandDuplexBtn.active {
-        color: #00ff88;
-        text-shadow: 0 0 10px #00ff88, 0 0 20px rgba(0, 255, 136, 0.6);
-        animation: duplexPulse 1.2s infinite alternate ease-in-out;
-      }
-
-      @keyframes duplexPulse {
-        0% { transform: scale(1); opacity: 0.85; }
-        100% { transform: scale(1.18); opacity: 1; }
-      }
-
-      .island-drawer {
-        padding: 8px 14px 12px;
-        border-top: 1px solid rgba(0, 242, 254, 0.15);
-        background: rgba(0, 0, 0, 0.3);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .island-latest-msg {
-        font-size: 12px;
-        color: var(--text);
-        line-height: 1.5;
-        max-height: 120px;
-        overflow-y: auto;
-        padding: 6px 10px;
-        background: rgba(16, 25, 42, 0.65);
-        border-radius: 8px;
-        border: 1px solid var(--border-glass);
-      }
-
-      .island-quick-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .island-pill-btn {
-        padding: 4px 10px;
-        border-radius: 999px;
-        border: 1px solid rgba(0, 242, 254, 0.25);
-        background: rgba(16, 25, 42, 0.85);
-        color: var(--text);
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .island-pill-btn:hover {
-        background: rgba(0, 242, 254, 0.2);
-        border-color: var(--accent);
-      }
-
-      .island-pill-btn.primary {
-        background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(0, 114, 255, 0.3));
-        border-color: var(--accent);
-      }
-
-      body.island-only-mode .app {
-        opacity: 0.08;
-        pointer-events: none;
-        filter: blur(14px);
-        transition: all 0.3s ease;
-      }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <!-- Cyber Dynamic Island (الكبسولة العائمة الذكية) -->
@@ -1969,6 +26,7 @@
           </div>
           <div class="island-status-group">
             <span class="island-brand">سند</span>
+            <span class="island-brain-dot" id="islandBrainDot" title="حالة العقل: جارٍ الفحص..."></span>
             <div class="island-waves" id="islandWaves">
               <span class="wave-bar"></span>
               <span class="wave-bar"></span>
@@ -1989,6 +47,7 @@
           <button class="island-icon-btn" id="islandDuplexBtn" type="button" title="وضع المحادثة الصوتية الحية المستمرة (Full-Duplex Live Voice)">🔴</button>
           <button class="island-icon-btn" id="islandMicBtn" type="button" title="استماع صوتي">🎙️</button>
           <button class="island-icon-btn" id="islandVisionBtn" type="button" title="فحص الشاشة">👁️</button>
+          <button class="island-icon-btn" id="islandNetBtn" type="button" title="الشبكة والمنافذ — زمن الاستجابة">🌐<span class="island-latency-badge" id="islandLatencyBadge"></span></button>
           <button class="island-icon-btn" id="islandExpandBtn" type="button" title="توسيع / طي الكبسولة">▾</button>
         </div>
       </div>
@@ -2011,6 +70,8 @@
           <button class="island-pill-btn" id="islandProjectsBtn" type="button" title="معاينة المشاريع وتطبيقات الويب الحية">🚀 المشاريع الحية</button>
           <button class="island-pill-btn" id="islandRamBoostBtn" type="button" title="تحرير الذاكرة وتسريع استجابة اللابتوب فوراً">⚡ تحرير الرام</button>
           <button class="island-pill-btn" id="islandDiskCleanBtn" type="button" title="تنظيف آمن لملفات الكاش والمؤقتة">🧹 تنظيف القرص</button>
+          <button class="island-pill-btn" id="islandPortsBtn" type="button" title="عرض المنافذ المفتوحة وتحرير المحجوز منها">🔌 المنافذ</button>
+          <button class="island-pill-btn" id="islandPingBtn" type="button" title="فحص زمن الاستجابة للإنترنت">📶 فحص النت</button>
           <button class="island-pill-btn primary" id="islandToggleModeBtn" type="button">🖥️ تبديل العرض الكامل</button>
         </div>
       </div>
@@ -2075,6 +136,15 @@
       </div>
     </div>
 
+    <!-- Command Palette (لوحة الأوامر) -->
+    <div class="palette-backdrop hidden" id="paletteBackdrop" role="dialog" aria-modal="true" aria-label="لوحة الأوامر">
+      <div class="palette">
+        <input class="palette-input" id="paletteInput" type="search" placeholder="ابحث عن أداة أو أمر…" autocomplete="off" aria-controls="paletteList" />
+        <div class="palette-list" id="paletteList" role="listbox"></div>
+        <div class="palette-foot"><span><kbd class="kbd">↑↓</kbd> تنقّل</span><span><kbd class="kbd">Enter</kbd> تنفيذ</span><span><kbd class="kbd">Esc</kbd> إغلاق</span></div>
+      </div>
+    </div>
+
     <div class="app" id="app">
       <aside class="sidebar" id="sidebar" aria-label="المحادثات">
         <div class="brand">
@@ -2087,6 +157,69 @@
         </div>
 
         <button class="btn btn-primary" id="newChat" type="button">＋ محادثة جديدة</button>
+
+        <details class="tool-nav" id="toolNav" open>
+          <summary class="tool-nav-head"><span>الأدوات</span><span class="chev" aria-hidden="true">▾</span></summary>
+
+          <div class="tool-group-label">النظام</div>
+          <div class="tool-grid">
+            <button class="tool-item" id="sysStatsBtn" type="button" title="نبض وموارد النظام (CPU, RAM, Disk, Health)">
+            <span class="tool-ico">📊</span>
+            <span class="tool-label">نبض النظام</span>
+          </button>
+            <button class="tool-item" id="netMaestroBtn" type="button" title="الشبكة والمنافذ (Ports, Ping, IP)">
+            <span class="tool-ico">🌐</span>
+            <span class="tool-label">الشبكة</span>
+          </button>
+            <button class="tool-item" id="desktopManagerBtn" type="button" title="إدارة وأتمتة سطح المكتب وتصنيف الملفات">
+            <span class="tool-ico">🧹</span>
+            <span class="tool-label">سطح المكتب</span>
+          </button>
+            <button class="tool-item" id="terminalBtn" type="button" title="الطرفية البرمجية المباشرة (Terminal Console)">
+            <span class="tool-ico">💻</span>
+            <span class="tool-label">الطرفية</span>
+          </button>
+          </div>
+
+          <div class="tool-group-label">الشاشة</div>
+          <div class="tool-grid">
+            <button class="tool-item" id="topScreenVisionBtn" type="button" title="عيون سند: التقاط وتحليل الشاشة الحية فوراً">
+            <span class="tool-ico">👁️</span>
+            <span class="tool-label">فحص الشاشة</span>
+          </button>
+            <button class="tool-item" id="liveStreamBtn" type="button" title="وضع البث المباشر للشاشة مع المساعد سند والتحكم بزر الفأرة">
+            <span class="tool-ico"><span class="live-dot-indicator"></span></span>
+            <span class="tool-label" id="liveStreamLabel">بث مباشر</span>
+          </button>
+            <button class="tool-item" id="toggleIslandBtn" type="button" title="وضع الكبسولة العائمة الذكية (Dynamic Island)">
+            <span class="tool-ico">🛸</span>
+            <span class="tool-label">الكبسولة</span>
+          </button>
+          </div>
+
+          <div class="tool-group-label">الإنتاجية</div>
+          <div class="tool-grid">
+            <button class="tool-item" id="memoryBtn" type="button" title="الذاكرة الدائمة المحلية (Long-Term Memory)">
+            <span class="tool-ico">🧠</span>
+            <span class="tool-label">الذاكرة</span>
+            <span class="tool-count" id="memoryCount">4</span>
+          </button>
+            <button class="tool-item" id="tasksBtn" type="button" title="المهام المستقلة والعمل أثناء الغياب (Autonomous Tasks)">
+            <span class="tool-ico">⏰</span>
+            <span class="tool-label">المهام</span>
+            <span class="tool-count" id="tasksCount">2</span>
+          </button>
+            <button class="tool-item" id="workflowsBtn" type="button" title="المسارات والإجراءات الحركية المحفوظة سريعة التنفيذ (Cached Workflows)">
+            <span class="tool-ico">⚡</span>
+            <span class="tool-label">المسارات</span>
+            <span class="tool-count" id="workflowsCount">2</span>
+          </button>
+            <button class="tool-item" id="projectPreviewBtn" type="button" title="معاينة المشاريع البرمجية الحية وتطبيقات الويب">
+            <span class="tool-ico">🚀</span>
+            <span class="tool-label">المشاريع</span>
+          </button>
+          </div>
+        </details>
 
         <nav class="conv-list" id="convList" aria-label="قائمة المحادثات"></nav>
 
@@ -2104,7 +237,7 @@
         <header class="chat-head">
           <button class="icon-btn menu-btn" id="openNav" type="button" aria-label="فتح المحادثات">☰</button>
 
-          <div class="arc-reactor-hud" id="arcReactorHud" title="مفاعل جارفيس العصبي (JARVIS Arc Reactor)">
+          <div class="arc-reactor-hud" id="arcReactorHud" title="نواة سند العصبية (SANAD Core)">
             <div class="arc-outer-ring"></div>
             <div class="arc-middle-ring"></div>
             <div class="arc-inner-core"></div>
@@ -2116,60 +249,22 @@
             <p id="convMeta">جاهز لتنفيذ الأوامر وتقديم الدعم المباشر</p>
           </div>
 
+          <button class="jarvis-voice-btn brain-badge" id="brainBadge" type="button" title="حالة العقل — انقر لإعادة الفحص">
+            <span class="brain-dot" id="brainBadgeDot"></span>
+            <span class="btn-label" id="brainBadgeText">جارٍ الفحص...</span>
+          </button>
+
           <button class="jarvis-voice-btn" id="voiceModeBtn" type="button" title="وضع سند الصوتي (استيقاظ بـ «يا سند» وتحدث مستمر)">
             <span>🎙️</span>
-            <span>وضع سند</span>
+            <span class="btn-label">وضع سند</span>
           </button>
 
-          <button class="jarvis-voice-btn" id="memoryBtn" type="button" title="الذاكرة الدائمة المحلية (Long-Term Memory)">
-            <span>🧠</span>
-            <span>الذاكرة (<span id="memoryCount">4</span>)</span>
+          <button class="jarvis-voice-btn palette-trigger" id="paletteBtn" type="button" title="لوحة الأوامر — ابحث عن أي أداة (Ctrl+K)" aria-haspopup="dialog" aria-controls="paletteBackdrop">
+            <span>⌘</span>
+            <span class="btn-label">الأوامر</span>
+            <kbd class="kbd">Ctrl K</kbd>
           </button>
 
-          <button class="jarvis-voice-btn" id="terminalBtn" type="button" title="الطرفية البرمجية المباشرة (Terminal Console)">
-            <span>💻</span>
-            <span>الطرفية</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="tasksBtn" type="button" title="المهام المستقلة والعمل أثناء الغياب (Autonomous Tasks)">
-            <span>⏰</span>
-            <span>المهام (<span id="tasksCount">2</span>)</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="workflowsBtn" type="button" title="المسارات والإجراءات الحركية المحفوظة سريعة التنفيذ (Cached Workflows)">
-            <span>⚡</span>
-            <span>المسارات (<span id="workflowsCount">2</span>)</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="topScreenVisionBtn" type="button" title="عيون سند: التقاط وتحليل الشاشة الحية فوراً">
-            <span>👁️</span>
-            <span>فحص الشاشة</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="liveStreamBtn" type="button" title="وضع البث المباشر للشاشة مع المساعد سند والتحكم بزر الفأرة">
-            <span class="live-dot-indicator"></span>
-            <span id="liveStreamLabel">🔴 بث مباشر</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="sysStatsBtn" type="button" title="نبض وموارد النظام (CPU, RAM, Disk, Health)">
-            <span>📊</span>
-            <span>نبض النظام</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="desktopManagerBtn" type="button" title="إدارة وأتمتة سطح المكتب وتصنيف الملفات">
-            <span>🧹</span>
-            <span>سطح المكتب</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="projectPreviewBtn" type="button" title="معاينة المشاريع البرمجية الحية وتطبيقات الويب">
-            <span>🚀</span>
-            <span>المشاريع الحية</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="toggleIslandBtn" type="button" title="وضع الكبسولة العائمة الذكية (Dynamic Island)">
-            <span>🛸</span>
-            <span>الكبسولة</span>
-          </button>
 
           <div class="model-picker" id="modelPicker">
             <button
@@ -2203,7 +298,7 @@
         </header>
 
         <div class="drop-overlay hidden" id="dropOverlay">
-          <span>📄 أفلت الملفات هنا ليقرأها جارفيس</span>
+          <span>📄 أفلت الملفات هنا ليقرأها سند</span>
         </div>
 
         <div class="thread" id="thread" role="log" aria-label="المحادثة"></div>
@@ -2215,9 +310,9 @@
           <div class="composer-inner">
             <input type="file" id="fileInput" class="sr-only" multiple accept=".pdf,.txt,.md,.json,.js,.ts,.py,.html,.css,.csv,.log,.sql" />
             <button class="attach-btn" id="attachBtn" type="button" aria-label="إرفاق ملف" title="إرفاق ملفات أو مستندات أو PDF من جهازك">📎</button>
-            <button class="attach-btn" id="screenVisionBtn" type="button" aria-label="فحص الشاشة" title="عيون جارفيس: انظر إلى شاشتي وافحصها (Live Screen Vision)">👁️</button>
+            <button class="attach-btn" id="screenVisionBtn" type="button" aria-label="فحص الشاشة" title="عيون سند: انظر إلى شاشتي وافحصها (Live Screen Vision)">👁️</button>
             <label class="sr-only" for="prompt">رسالتك</label>
-            <textarea id="prompt" rows="1" placeholder="اكتب رسالتك أو اسحب ملفاً إلى هنا… (Enter للإرسال)"></textarea>
+            <textarea id="prompt" rows="1" placeholder="اكتب رسالتك لسند…" title="Enter للإرسال · Shift+Enter لسطر جديد · يمكنك سحب ملف إلى هنا"></textarea>
             <div class="composer-actions">
               <button class="mic" id="micBtn" type="button" aria-label="تحدث صوتياً" title="تحدث بالمايك (انقر للتحدث)">🎙️</button>
               <button class="send" id="send" type="submit" aria-label="إرسال">↑</button>
@@ -2237,7 +332,7 @@
     <div class="memory-modal-backdrop" id="memoryModalBackdrop">
       <div class="memory-modal" id="memoryModal" role="dialog" aria-modal="true" aria-labelledby="memoryTitle">
         <div class="memory-header">
-          <h2 id="memoryTitle">🧠 الذاكرة الدائمة المحلية (JARVIS Memory)</h2>
+          <h2 id="memoryTitle">🧠 الذاكرة الدائمة المحلية (SANAD Memory)</h2>
           <button class="memory-close-btn" id="memoryCloseBtn" type="button" aria-label="إغلاق">✕</button>
         </div>
         <div class="memory-body">
@@ -2276,14 +371,14 @@
         </div>
         <div class="terminal-body" id="terminalBody">
           <div class="terminal-welcome">
-            مرحباً بك في الطرفية البرمجية المباشرة لجارفيس.<br />
+            مرحباً بك في الطرفية البرمجية المباشرة لسند.<br />
             البيئة الحالية: <b>Node.js</b> · <b>Python 3.14</b> · <b>Git</b> · <b>PowerShell</b><br />
             المجلد الافتراضي: <code>سطح المكتب (Desktop)</code>. جرب كتابة <code>python --version</code> أو <code>git status</code> أو <code>dir</code>.
           </div>
           <div class="terminal-logs" id="terminalLogs"></div>
         </div>
         <div class="terminal-input-bar">
-          <select id="terminalShellSelect" style="background: rgba(0,0,0,0.6); color: var(--accent); border: 1px solid var(--border-glass); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; outline: none;">
+          <select id="terminalShellSelect" class="terminal-shell-select" aria-label="نوع الطرفية">
             <option value="powershell">⚡ PowerShell</option>
             <option value="cmd">💻 CMD</option>
             <option value="python">🐍 Python 3.14</option>
@@ -2306,7 +401,7 @@
         </div>
         <div class="memory-body">
           <p class="memory-desc">
-            يقوم جارفيس بتشغيل هذه المهام تلقائياً في الخلفية أثناء غيابك أو عملك، سواء كانت أوامر صيانة، نسخ احتياطي، أو مراقبة ملفات.
+            يقوم سند بتشغيل هذه المهام تلقائياً في الخلفية أثناء غيابك أو عملك، سواء كانت أوامر صيانة، نسخ احتياطي، أو مراقبة ملفات.
           </p>
           <div class="memory-input-row">
             <input type="text" class="memory-input" id="newTaskTitle" placeholder="عنوان المهمة (مثلاً: نسخ احتياطي لمشاريعي)..." />
@@ -2358,9 +453,9 @@
               جاري فحص الموارد والمواصفات...
             </p>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="memory-add-btn" id="sysOptimizeRamBtn" type="button" style="background: #8957e5; color: #fff;" title="تحرير الذاكرة العشوائية للبرامج الخاملة وتسريع اللابتوب">⚡ تحرير الرام (RAM Boost)</button>
-              <button class="memory-add-btn" id="sysCleanTempBtn" type="button" style="background: #238636; color: #fff;" title="حذف الملفات المؤقتة غير المستخدمة لتوفير مساحة القرص">🧹 تنظيف القرص الآمن</button>
-              <button class="memory-add-btn" id="sysRefreshBtn" type="button" style="background: var(--bg); box-shadow: var(--raised-sm); color: var(--text);">🔄 تحديث</button>
+              <button class="memory-add-btn v-primary" id="sysOptimizeRamBtn" type="button" title="تحرير الذاكرة العشوائية للبرامج الخاملة وتسريع اللابتوب">⚡ تحرير الرام (RAM Boost)</button>
+              <button class="memory-add-btn v-secondary" id="sysCleanTempBtn" type="button" title="حذف الملفات المؤقتة غير المستخدمة لتوفير مساحة القرص">🧹 تنظيف القرص الآمن</button>
+              <button class="memory-add-btn v-quiet" id="sysRefreshBtn" type="button">🔄 تحديث</button>
             </div>
           </div>
           <div id="sysCleanAlert" style="display: none; padding: 10px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 14px; line-height: 1.6;"></div>
@@ -2387,11 +482,91 @@
                 <span>📁</span>
                 <span>فاحص أكبر الملفات المستهلكة للقرص (Large Files Inspector):</span>
               </h3>
-              <button class="memory-add-btn" id="sysScanLargeFilesBtn" type="button" style="background: var(--accent); color: #fff; font-size: 12px; padding: 4px 10px;">🔍 فحص أكبر الملفات الآن</button>
+              <button class="memory-add-btn v-primary v-sm" id="sysScanLargeFilesBtn" type="button">🔍 فحص أكبر الملفات الآن</button>
             </div>
             <p style="font-size: 12px; color: var(--muted); margin: 0 0 10px 0;">يكتشف ملفات الفيديو، المثبتات، الحزم المضغوطة، وقواعد البيانات الكبيرة في مجلداتك لتفريغ المساحة بسهولة.</p>
             <div id="sysLargeFilesList" style="display: flex; flex-direction: column; gap: 8px;">
               <div style="font-size: 12px; color: var(--muted); text-align: center; padding: 12px;">اضغط "فحص أكبر الملفات الآن" لعرض قائمة أضخم الملفات المخزنة.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network & Ports Maestro Modal -->
+    <div class="memory-modal-backdrop" id="networkModalBackdrop">
+      <div class="memory-modal" id="networkModal" role="dialog" aria-modal="true" aria-labelledby="networkModalTitle" style="max-width: 900px; width: 94vw; max-height: 90vh;">
+        <div class="memory-header" style="flex-shrink: 0;">
+          <h2 id="networkModalTitle">🌐 مدير الشبكة والمنافذ (Network & Ports Maestro)</h2>
+          <button class="memory-close-btn" id="netCloseBtn" type="button" aria-label="إغلاق">✕</button>
+        </div>
+        <div class="memory-body" style="overflow-y: auto; max-height: calc(90vh - 75px); padding: 18px 22px;">
+          <div class="net-alert" id="netAlert"></div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 14px;">
+            <!-- Connection card -->
+            <div class="net-card">
+              <h3>
+                <span>📡</span><span>الاتصال الحالي</span>
+                <button class="net-chip" id="netInfoRefreshBtn" type="button" style="margin-inline-start: auto;">🔄</button>
+              </h3>
+              <div id="netInfoSummary" style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">جاري فحص بطاقة الشبكة...</div>
+              <dl class="net-kv" id="netInfoKv"></dl>
+            </div>
+
+            <!-- Latency card -->
+            <div class="net-card">
+              <h3><span>📶</span><span>زمن الاستجابة (Ping)</span></h3>
+              <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <input class="net-input" id="netPingHost" type="text" value="8.8.8.8" spellcheck="false" aria-label="المضيف" />
+                <button class="memory-add-btn v-primary v-sm" id="netPingBtn" type="button">فحص</button>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px;">
+                <button class="net-chip" type="button" data-ping-host="8.8.8.8">Google DNS</button>
+                <button class="net-chip" type="button" data-ping-host="1.1.1.1">Cloudflare</button>
+                <button class="net-chip" type="button" data-ping-host="github.com">GitHub</button>
+                <button class="net-chip" type="button" data-ping-host="registry.npmjs.org">npm</button>
+              </div>
+              <div class="net-ping-value" id="netPingValue">—</div>
+              <div style="text-align: center; margin-bottom: 4px;"><span class="net-quality" id="netPingQuality"></span></div>
+              <div id="netPingDetails" style="font-size: 12px; color: var(--muted); text-align: center;">اضغط «فحص» لقياس سرعة الاستجابة.</div>
+            </div>
+          </div>
+
+          <!-- Free a port -->
+          <div class="net-card" style="margin-bottom: 14px;">
+            <h3><span>🔌</span><span>تحرير منفذ محجوز (حل مشكلة EADDRINUSE)</span></h3>
+            <form id="netFreePortForm" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <input class="net-input" id="netFreePortInput" type="number" min="1" max="65535" placeholder="مثال: 3000" style="max-width: 160px;" aria-label="رقم المنفذ" />
+              <button class="memory-add-btn v-secondary v-sm" type="button" id="netCheckPortBtn">🔍 من يحجزه؟</button>
+              <button class="memory-add-btn v-danger v-sm" type="submit">🛑 حرّر المنفذ</button>
+            </form>
+          </div>
+
+          <!-- Listening ports table -->
+          <div class="net-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+              <h3 style="margin: 0;"><span>📋</span><span>المنافذ المفتوحة (Listening Ports)</span> <span id="netPortsCount" style="color: var(--muted); font-weight: 400; font-size: 12px;"></span></h3>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input class="net-input" id="netPortsSearch" type="search" placeholder="بحث: منفذ / برنامج / PID" style="max-width: 200px; direction: rtl; font-family: inherit;" />
+                <label style="font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="checkbox" id="netDevOnly" /> منافذ التطوير فقط
+                </label>
+                <label style="font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="checkbox" id="netShowUdp" /> UDP
+                </label>
+                <button class="net-chip" id="netPortsRefreshBtn" type="button">🔄 تحديث</button>
+              </div>
+            </div>
+            <div class="net-table-wrap">
+              <table class="net-table">
+                <thead>
+                  <tr><th>المنفذ</th><th>البروتوكول</th><th>البرنامج</th><th>PID</th><th>العنوان</th><th>الإجراء</th></tr>
+                </thead>
+                <tbody id="netPortsBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 16px;">جاري فحص المنافذ...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -2416,21 +591,21 @@
             <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
               <h3 style="font-size: 14px; margin-bottom: 6px;">🖥️ سطح المكتب (Desktop)</h3>
               <p style="font-size: 12px; color: var(--muted); margin-bottom: 10px;" id="desktopFilesSummary">جاري فحص الملفات...</p>
-              <button class="memory-add-btn" id="runOrganizeDesktopBtn" type="button" style="width: 100%; background: var(--accent);">🧹 فرز وترتيب سطح المكتب الآن</button>
+              <button class="memory-add-btn v-primary v-block" id="runOrganizeDesktopBtn" type="button">🧹 فرز وترتيب سطح المكتب الآن</button>
             </div>
 
             <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
               <h3 style="font-size: 14px; margin-bottom: 6px;">📥 مجلد التنزيلات (Downloads)</h3>
               <p style="font-size: 12px; color: var(--muted); margin-bottom: 10px;" id="downloadsFilesSummary">جاري فحص الملفات...</p>
-              <button class="memory-add-btn" id="runOrganizeDownloadsBtn" type="button" style="width: 100%; background: #238636;">📥 فرز وترتيب مجلد التنزيلات</button>
+              <button class="memory-add-btn v-primary v-block" id="runOrganizeDownloadsBtn" type="button">📥 فرز وترتيب مجلد التنزيلات</button>
             </div>
           </div>
 
           <h3 style="font-size: 14px; margin-bottom: 10px;">⚡ بيئات العمل السريعة (Workspace Presets):</h3>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="memory-add-btn" id="presetGisBtn" type="button" style="background: #1f6feb;">🗺️ بيئة GIS (ArcGIS Pro + مجلد الخرائط)</button>
-            <button class="memory-add-btn" id="presetCodingBtn" type="button" style="background: #8957e5;">💻 بيئة البرمجة والتطوير</button>
-            <button class="memory-add-btn" id="presetCleanBtn" type="button" style="background: var(--bg); box-shadow: var(--raised-sm); color: var(--text);">✨ تنظيف الشاشة (إظهار الديسكتوب)</button>
+            <button class="memory-add-btn v-secondary" id="presetGisBtn" type="button">🗺️ بيئة GIS (ArcGIS Pro + مجلد الخرائط)</button>
+            <button class="memory-add-btn v-secondary" id="presetCodingBtn" type="button">💻 بيئة البرمجة والتطوير</button>
+            <button class="memory-add-btn v-secondary" id="presetCleanBtn" type="button">✨ تنظيف الشاشة (إظهار الديسكتوب)</button>
           </div>
         </div>
       </div>
@@ -2448,14 +623,14 @@
             </h2>
             <select id="previewProjectSelect" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; outline: none; cursor: pointer;" title="اختر مشروعاً للمعاينة"></select>
             <div style="display: inline-flex; gap: 2px; background: var(--surface); padding: 2px 4px; border-radius: 6px; border: 1px solid var(--border);">
-              <button id="previewDesktopBtn" type="button" style="background: var(--accent); color: #fff; border: none; cursor: pointer; padding: 2px 8px; font-size: 11px; border-radius: 4px; font-weight: 600;" title="شاشة حاسوب">🖥️ حاسوب</button>
+              <button id="previewDesktopBtn" type="button" style="background: var(--brand); color: var(--on-brand); border: none; cursor: pointer; padding: 2px 8px; font-size: 11px; border-radius: 4px; font-weight: 600;" title="شاشة حاسوب">🖥️ حاسوب</button>
               <button id="previewMobileBtn" type="button" style="background: transparent; color: var(--muted); border: none; cursor: pointer; padding: 2px 8px; font-size: 11px; border-radius: 4px;" title="شاشة جوال">📱 جوال</button>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="memory-add-btn" id="previewRefreshBtn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; font-size: 12px; border-radius: 6px;" title="إعادة تحميل المعاينة">🔄 تحديث</button>
-            <button class="memory-add-btn" id="previewOpenTabBtn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 4px 10px; font-size: 12px; border-radius: 6px;" title="فتح في تبويب مستقل">↗️ في المتصفح</button>
-            <button class="memory-add-btn" id="previewOpenCodeBtn" type="button" style="background: var(--surface); color: var(--accent); border: 1px solid var(--border); padding: 4px 10px; font-size: 12px; border-radius: 6px;" title="فتح المجلد في VS Code">💻 VS Code</button>
+            <button class="memory-add-btn v-secondary v-sm" id="previewRefreshBtn" type="button" title="إعادة تحميل المعاينة">🔄 تحديث</button>
+            <button class="memory-add-btn v-secondary v-sm" id="previewOpenTabBtn" type="button" title="فتح في تبويب مستقل">↗️ في المتصفح</button>
+            <button class="memory-add-btn v-secondary v-sm" id="previewOpenCodeBtn" type="button" title="فتح المجلد في VS Code">💻 VS Code</button>
             <button class="memory-close-btn" id="previewCloseBtn" type="button" aria-label="إغلاق">✕</button>
           </div>
         </div>
@@ -2868,7 +1043,7 @@
         const hasOllama = models.some((m) => m.id.startsWith("ollama:"));
         const ollamaNote = hasOllama
           ? `<div style="margin-top:6px; color:var(--ok)">💻 تم اكتشاف نماذج Ollama المحلية وتعمل بدون إنترنت</div>`
-          : `<div style="margin-top:6px; font-size:10.5px; opacity:.85">💡 للعمل أوفلاين: شغّل Ollama على جهازك وسيتعرف عليها جارفيس تلقائياً</div>`;
+          : `<div style="margin-top:6px; font-size:10.5px; opacity:.85">💡 للعمل أوفلاين: شغّل Ollama على جهازك وسيتعرف عليها سند تلقائياً</div>`;
 
         if (modelsSource === "catalog") {
           const date = modelsGeneratedAt ? new Date(modelsGeneratedAt) : null;
@@ -3069,36 +1244,53 @@
         const hero = document.createElement("div");
         hero.className = "hero";
 
+        const mark = document.createElement("div");
+        mark.className = "hero-mark";
+        mark.setAttribute("aria-hidden", "true");
+        mark.innerHTML = '<div class="arc-reactor-hud"><div class="arc-outer-ring"></div><div class="arc-middle-ring"></div><div class="arc-inner-core"></div></div>';
+
         const title = document.createElement("h2");
-        title.textContent = "جارفيس متصل وجاهز · JARVIS Online";
+        title.textContent = "أهلاً، أنا سند";
 
         const sub = document.createElement("p");
-        sub.textContent = "المساعد الذكي المستقل: تحكم بنظام ويندوز، رؤية بصرية حية للشاشة، تشغيل وتوليد الأكواد، وتفاعل صوتي مباشر.";
+        sub.textContent = "مساعدك على ويندوز: أتحكم بالنظام، أرى شاشتك، أكتب الأكواد وأشغّلها، وأتحدث معك بالصوت.";
 
-        const chips = document.createElement("div");
-        chips.className = "hero-chips";
+        const cards = document.createElement("div");
+        cards.className = "hero-cards";
 
+        // prompt = النص نفسه الذي كان يُرسل سابقاً (قد تعتمد عليه مطابقة الأوامر المحلية)
         [
-          "🎙️ تحدث معي بالصوت (وضع جارفيس)",
-          "👁️ افحص الشاشة واشرح ما تراه",
-          "📊 كيف وضع جهازي والمعالج؟",
-          "🧹 نظف الملفات المؤقتة والكاش",
-          "💻 اكتب كود بايثون لاختبار سرعة الخوارزمية",
-          "🧠 ماذا تعرف عني في الذاكرة الدائمة؟",
-        ].forEach((text) => {
-          const chip = document.createElement("button");
-          chip.type = "button";
-          chip.className = "pill";
-          chip.textContent = text;
-          chip.addEventListener("click", () => {
-            promptEl.value = text;
+          { ico: "🎙️", title: "تحدث معي بالصوت", desc: "محادثة صوتية مستمرة", prompt: "🎙️ تحدث معي بالصوت (الوضع الصوتي)" },
+          { ico: "👁️", title: "افحص الشاشة", desc: "التقط شاشتك واشرح ما عليها", prompt: "👁️ افحص الشاشة واشرح ما تراه" },
+          { ico: "📊", title: "حالة الجهاز", desc: "المعالج والذاكرة والأقراص", prompt: "📊 كيف وضع جهازي والمعالج؟" },
+          { ico: "🧹", title: "تنظيف الجهاز", desc: "الملفات المؤقتة والكاش", prompt: "🧹 نظف الملفات المؤقتة والكاش" },
+          { ico: "💻", title: "اكتب كوداً", desc: "بايثون لاختبار سرعة خوارزمية", prompt: "💻 اكتب كود بايثون لاختبار سرعة الخوارزمية" },
+          { ico: "🧠", title: "ذاكرتي", desc: "ماذا تعرف عني؟", prompt: "🧠 ماذا تعرف عني في الذاكرة الدائمة؟" },
+        ].forEach((item) => {
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "hero-card";
+          card.title = item.prompt;
+          const ico = document.createElement("span");
+          ico.className = "hero-card-ico";
+          ico.textContent = item.ico;
+          const text = document.createElement("span");
+          text.className = "hero-card-text";
+          const t = document.createElement("strong");
+          t.textContent = item.title;
+          const d = document.createElement("span");
+          d.textContent = item.desc;
+          text.append(t, d);
+          card.append(ico, text);
+          card.addEventListener("click", () => {
+            promptEl.value = item.prompt;
             promptEl.focus();
             autoGrow();
           });
-          chips.appendChild(chip);
+          cards.appendChild(card);
         });
 
-        hero.append(title, sub, chips);
+        hero.append(mark, title, sub, cards);
         return hero;
       }
 
@@ -3110,7 +1302,7 @@
         if (message.role === "assistant") {
           const avatar = document.createElement("div");
           avatar.className = "avatar";
-          avatar.textContent = "AI";
+          avatar.textContent = "س";
           wrap.appendChild(avatar);
         }
 
@@ -3140,6 +1332,13 @@
         } else {
           body.innerHTML = renderMarkdown(message.content || "");
           if (message.pending) body.classList.add("streaming");
+        }
+
+        if (message.notice) {
+          const notice = document.createElement("div");
+          notice.className = "note brain-notice";
+          notice.textContent = message.notice;
+          bubble.appendChild(notice);
         }
 
         bubble.appendChild(body);
@@ -3284,9 +1483,57 @@
           }
         };
 
+        // Tables (| a | b |) and blockquotes (> …). Source is already HTML-escaped,
+        // so ">" arrives as "&gt;" and cell text goes through inline() only.
+        let tableRows = [];
+        let quote = [];
+        const splitRow = (row) => row.trim().replace(/^\||\|$/g, "").split("|").map((cell) => cell.trim());
+        const flushTable = () => {
+          if (!tableRows.length) return;
+          const rows = tableRows;
+          tableRows = [];
+          const isSep = (row) => /^\|?[\s:|-]+\|?$/.test(row) && row.includes("-");
+          if (rows.length >= 2 && isSep(rows[1])) {
+            const head = splitRow(rows[0]);
+            const body = rows.slice(2).map(splitRow);
+            out.push(
+              `<div class="md-table-wrap"><table class="md-table"><thead><tr>` +
+                head.map((c) => `<th>${inline(c)}</th>`).join("") +
+                `</tr></thead><tbody>` +
+                body.map((r) => `<tr>${head.map((_, i) => `<td>${inline(r[i] ?? "")}</td>`).join("")}</tr>`).join("") +
+                `</tbody></table></div>`,
+            );
+          } else {
+            paragraph.push(...rows);
+          }
+        };
+        const flushQuote = () => {
+          if (!quote.length) return;
+          out.push(`<blockquote>${inline(quote.join(" "))}</blockquote>`);
+          quote = [];
+        };
+
         for (const rawLine of text.split("\n")) {
           const line = rawLine.trimEnd();
           const placeholder = /^\u0000B(\d+)\u0000$/.exec(line.trim());
+
+          if (/^\s*\|.*\|\s*$/.test(line)) {
+            flushParagraph();
+            closeList();
+            flushQuote();
+            tableRows.push(line.trim());
+            continue;
+          }
+          flushTable();
+
+          const quoteLine = /^\s*&gt;\s?(.*)$/.exec(line);
+          if (quoteLine) {
+            flushParagraph();
+            closeList();
+            quote.push(quoteLine[1]);
+            continue;
+          }
+          flushQuote();
 
           if (placeholder) {
             flushParagraph();
@@ -3343,6 +1590,8 @@
           paragraph.push(line.trim());
         }
 
+        flushTable();
+        flushQuote();
         flushParagraph();
         closeList();
 
@@ -3480,11 +1729,11 @@
           query.includes("ماذا يمكنك ان تفعل") ||
           query.includes("ايش تقدر تسوي")
         ) {
-          const msg = `### 🤖 نعم بكل تأكيد! أنا جارفيس المدمج في لابتوبك.\n\nأستطيع مساعدتك والتحكم في العديد من المهام على نظامك بنجاح:\n\n1. ⚡ **تشغيل البرامج فوراً:** قل لي *«افتح فيجوال ستوديو»* أو *«افتح المفكرة»* أو *«افتح المتصفح»* وسأقوم بتشغيلها فوراً على جهازك.\n2. 📁 **استعراض وتصفح المجلدات:** مثل *«افتح مجلد التنزيلات»* أو *«افتح سطح المكتب»*.\n3. 📄 **قراءة وتحليل الأكواد والملفات:** اسحب أي ملف برمجي أو PDF إلى هنا وسأفحصه وأعدل عليه أو أكتب لك كوداً جديداً لمشاريعك.\n4. 🔋 **مراقبة أداء اللابتوب:** مثل فحص البطارية، الرام، وحالة النظام.\n\n**هل تريد مني فتح Visual Studio Code الآن؟ قل لي فقط: «افتح فيجوال ستوديو»!**`;
+          const msg = `### 🤖 نعم بكل تأكيد! أنا سند المدمج في لابتوبك.\n\nأستطيع مساعدتك والتحكم في العديد من المهام على نظامك بنجاح:\n\n1. ⚡ **تشغيل البرامج فوراً:** قل لي *«افتح فيجوال ستوديو»* أو *«افتح المفكرة»* أو *«افتح المتصفح»* وسأقوم بتشغيلها فوراً على جهازك.\n2. 📁 **استعراض وتصفح المجلدات:** مثل *«افتح مجلد التنزيلات»* أو *«افتح سطح المكتب»*.\n3. 📄 **قراءة وتحليل الأكواد والملفات:** اسحب أي ملف برمجي أو PDF إلى هنا وسأفحصه وأعدل عليه أو أكتب لك كوداً جديداً لمشاريعك.\n4. 🔋 **مراقبة أداء اللابتوب:** مثل فحص البطارية، الرام، وحالة النظام.\n\n**هل تريد مني فتح Visual Studio Code الآن؟ قل لي فقط: «افتح فيجوال ستوديو»!**`;
           
           assistant.content = msg;
           assistant.pending = false;
-          assistant.model = "JARVIS Local Engine";
+          assistant.model = "SANAD Local Engine";
           assistant.latencyMs = 10;
           saveState();
           renderThread();
@@ -3809,7 +2058,7 @@
           try {
             const res = await fetch("/api/system/stats");
             const data = await res.json();
-            let msg = `### 💻 تقرير حالة اللابتوب (جارفيس):\n\n`;
+            let msg = `### 💻 تقرير حالة اللابتوب (سند):\n\n`;
             if (data.batteryPercent !== null) {
               msg += `- 🔋 **نسبة البطارية:** ${data.batteryPercent}% (${data.isCharging ? "⚡ موصول بالشاحن" : "🔋 يعمل على البطارية"})\n`;
             }
@@ -3820,7 +2069,7 @@
 
             assistant.content = msg;
             assistant.pending = false;
-            assistant.model = "JARVIS Local Engine";
+            assistant.model = "SANAD Local Engine";
             assistant.latencyMs = 15;
             saveState();
             renderThread();
@@ -3902,7 +2151,7 @@
               const data = await res.json();
               assistant.content = `📁 **${data.message || `تم فتح مجلد ${f.name}`}**`;
               assistant.pending = false;
-              assistant.model = "JARVIS Local Engine";
+              assistant.model = "SANAD Local Engine";
               assistant.latencyMs = 20;
               saveState();
               renderThread();
@@ -3959,7 +2208,7 @@
               assistant.content = `⚠️ **${data.message || "لم أتمكن من العثور على أي ملف متوافق"}**`;
             }
             assistant.pending = false;
-            assistant.model = "JARVIS Local Engine";
+            assistant.model = "SANAD Local Engine";
             assistant.latencyMs = 20;
             saveState();
             renderThread();
@@ -4040,7 +2289,7 @@
 
             assistant.content = `📝 **${data.message}**\n\n- 📂 **المسار الكامل:** \`${data.fullPath}\`\n- ✍️ **المحتوى:** ${content ? `«${content}»` : "*(فارغ)*"}\n\n⚡ *تم حفظ الملف وفتحه لك الآن في المفكرة.*`;
             assistant.pending = false;
-            assistant.model = "JARVIS Local Engine";
+            assistant.model = "SANAD Local Engine";
             assistant.latencyMs = 20;
             saveState();
             renderThread();
@@ -4085,7 +2334,7 @@
 
             assistant.content = msg;
             assistant.pending = false;
-            assistant.model = "JARVIS Local Engine";
+            assistant.model = "SANAD Local Engine";
             assistant.latencyMs = 15;
             saveState();
             renderThread();
@@ -4142,7 +2391,7 @@
             }
 
             assistant.pending = false;
-            assistant.model = "JARVIS Local Engine";
+            assistant.model = "SANAD Local Engine";
             assistant.latencyMs = 20;
             saveState();
             renderThread();
@@ -4184,7 +2433,7 @@
 
               assistant.content = `💻 **[تم تنفيذ أمر الطرفية على لابتوبك]:**\n\n\`\`\`powershell\n> ${data.command}\n${output}\n\`\`\`\n\n*(رمز الخروج: ${data.exitCode} | الاستغراق: ${data.durationMs}ms | مجلد العمل: \`${data.cwd}\`)*`;
               assistant.pending = false;
-              assistant.model = "JARVIS Terminal Engine";
+              assistant.model = "SANAD Terminal Engine";
               assistant.latencyMs = data.durationMs;
               saveState();
               renderThread();
@@ -4220,7 +2469,7 @@
 
             assistant.content = `### 💻 تقرير بيئة التطوير والبرمجة على لابتوبك:\n\n- 🟢 **Node.js:** \`${nodeRes.stdout || "غير متاح"}\`\n- 🐍 **Python:** \`${pyRes.stdout || "غير متاح"}\` *(عبر مُشغّل Py Launcher 3.14)*\n- 🐙 **Git:** \`${gitRes.stdout || "غير متاح"}\`\n- ⚡ **Visual Studio Code:** متاح ومرتبط تلقائياً\n- 🧠 **Ollama:** متاح محلياً أوفلاين مع \`qwen2.5-coder:7b\`\n\n💡 *بيئة التطوير جاهزة بالكامل لكتابة وتشغيل ومتابعة مشاريعك تلقائياً!*`;
             assistant.pending = false;
-            assistant.model = "JARVIS Terminal Engine";
+            assistant.model = "SANAD Terminal Engine";
             assistant.latencyMs = 30;
             saveState();
             renderThread();
@@ -4271,7 +2520,7 @@
 
               assistant.content = msg;
               assistant.pending = false;
-              assistant.model = "JARVIS Web Engine";
+              assistant.model = "SANAD Web Engine";
               assistant.latencyMs = 50;
               saveState();
               renderThread();
@@ -4310,7 +2559,7 @@
 
             assistant.content = msg;
             assistant.pending = false;
-            assistant.model = "JARVIS Task Engine";
+            assistant.model = "SANAD Task Engine";
             assistant.latencyMs = 20;
             saveState();
             renderThread();
@@ -4367,7 +2616,7 @@
             });
             const data = await res.json();
             assistant.pending = false;
-            assistant.model = "JARVIS Maintenance Engine";
+            assistant.model = "SANAD Maintenance Engine";
             assistant.latencyMs = 120;
 
             if (data.success) {
@@ -4421,11 +2670,11 @@
             const res = await fetch("/api/system/stats");
             const s = await res.json();
             assistant.pending = false;
-            assistant.model = "JARVIS Health HUD";
+            assistant.model = "SANAD Health HUD";
             assistant.latencyMs = 100;
 
             assistant.content = `
-📊 **تقرير نبض وصحة الجهاز المباشر (JARVIS HUD):**
+📊 **تقرير نبض وصحة الجهاز المباشر (SANAD HUD):**
 - 💻 **الجهاز:** ${s.hostname} (${s.platform})
 - ⏱️ **وقت التشغيل المستمر:** ${s.uptimeHours} ساعة
 - ⚙️ **المعالج (CPU):** ${s.cpuModel} (${s.cpuCores} مسار) — **الاستهلاك:** ${s.cpuUsagePercent}%
@@ -5252,6 +3501,14 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           return false;
         }
 
+        if (eventName === "notice") {
+          assistant.notice = data.message || "";
+          if (typeof updateIslandLatest === "function") updateIslandLatest(escapeHtml(assistant.notice));
+          if (typeof refreshBrainStatus === "function") refreshBrainStatus();
+          paint();
+          return false;
+        }
+
         if (eventName === "done") {
           assistant.model = data.model || "";
           assistant.latencyMs = data.latencyMs || 0;
@@ -5406,10 +3663,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         if (event.key === "Escape") {
           closeNav();
           closeModelPicker();
-        }
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-          event.preventDefault();
-          newConversation();
         }
       });
 
@@ -5572,7 +3825,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
           // Full-Duplex Real-Time Interruption (Barge-in):
           // If SANAD is currently speaking and user speaks, immediately interrupt speech output
-          if (window.speechSynthesis && window.speechSynthesis.speaking) {
+          if (isSanadSpeaking()) {
             const lowerTranscript = text.toLowerCase();
             if (lowerTranscript.length > 2) {
               stopSpeaking();
@@ -5608,6 +3861,30 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           if (event.error !== "no-speech") {
             stopListening();
           }
+          const speechErrors = {
+            "network": "🔌 التعرف على الصوت يحتاج اتصالاً بالإنترنت (خدمة المتصفح سحابية). اكتب أمرك نصياً — العقل المحلي يعمل دون اتصال.",
+            "not-allowed": "🎙️ لم يُسمح باستخدام الميكروفون. فعّل الإذن من إعدادات المتصفح.",
+            "audio-capture": "🎙️ لم يتم العثور على ميكروفون متصل.",
+            "service-not-allowed": "🎙️ خدمة التعرف على الصوت غير متاحة في هذا المتصفح.",
+          };
+          // Cloud recognizer unreachable → switch to the local whisper engine and keep listening.
+          if (event.error === "network" && localSttAvailable) {
+            forceLocalStt = true;
+            const note = "🔌 لا يوجد إنترنت — تم التحويل إلى التعرف الصوتي المحلي (whisper).";
+            updateIslandLatest(escapeHtml(note));
+            if (typeof showBrainToast === "function") showBrainToast(note);
+            setTimeout(() => { if (!isRecording && !busy) startListening(); }, 300);
+            return;
+          }
+          const msg = speechErrors[event.error];
+          if (msg) {
+            // Stop continuous voice mode so it does not loop on repeated network errors.
+            if (event.error === "network" && jarvisVoiceMode && voiceModeBtn) voiceModeBtn.click();
+            setIslandStatus(event.error === "network" ? "الصوت يحتاج إنترنت" : "تعذر الاستماع", false);
+            updateIslandLatest(escapeHtml(msg));
+            if (announcer) announcer.textContent = msg;
+            if (typeof showBrainToast === "function") showBrainToast(msg);
+          }
         };
 
         recognition.onend = () => {
@@ -5634,6 +3911,191 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           }
         };
       }
+
+      /* ---------- Local offline speech-to-text (whisper.cpp via /api/voice/transcribe) ---------- */
+
+      let localSttAvailable = false;
+      let localTtsAvailable = false;
+      let forceLocalStt = false; // set after the cloud recognizer fails with "network"
+
+      async function refreshLocalSttStatus() {
+        try {
+          const res = await fetch("/api/voice/status");
+          const data = await res.json();
+          localSttAvailable = !!data.available;
+          localTtsAvailable = !!(data.tts && data.tts.available);
+        } catch {
+          localSttAvailable = false;
+          localTtsAvailable = false;
+        }
+        return localSttAvailable;
+      }
+      refreshLocalSttStatus();
+
+      /** Local STT when offline (or offline mode), when the cloud recognizer failed, or when the browser has none. */
+      function shouldUseLocalStt() {
+        if (!localSttAvailable) return false;
+        if (forceLocalStt || !recognition) return true;
+        return typeof lastBrainMode !== "undefined" && lastBrainMode === "local";
+      }
+
+      function encodeWav16k(float32, sampleRate) {
+        const targetRate = 16000;
+        const ratio = sampleRate / targetRate;
+        const outLen = Math.floor(float32.length / ratio);
+        const pcm = new Int16Array(outLen);
+        for (let i = 0; i < outLen; i++) {
+          // Average over the source window (simple low-pass) while downsampling.
+          const start = Math.floor(i * ratio);
+          const end = Math.min(float32.length, Math.floor((i + 1) * ratio));
+          let sum = 0;
+          for (let j = start; j < end; j++) sum += float32[j];
+          const v = Math.max(-1, Math.min(1, sum / Math.max(1, end - start)));
+          pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+        }
+        const buffer = new ArrayBuffer(44 + pcm.length * 2);
+        const view = new DataView(buffer);
+        const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+        writeStr(0, "RIFF"); view.setUint32(4, 36 + pcm.length * 2, true); writeStr(8, "WAVE");
+        writeStr(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+        view.setUint32(24, targetRate, true); view.setUint32(28, targetRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+        writeStr(36, "data"); view.setUint32(40, pcm.length * 2, true);
+        new Int16Array(buffer, 44).set(pcm);
+        return new Blob([buffer], { type: "audio/wav" });
+      }
+
+      const localStt = (() => {
+        let stream = null, ctx = null, source = null, proc = null;
+        let active = false, speaking = false;
+        let chunks = [], preRoll = [], speechMs = 0, silenceMs = 0, totalMs = 0;
+        let noiseFloor = 0.004;
+        // MAX_MS matches whisper-server's -ac 512 window (~10 s) set in src/localSpeech.ts.
+        const PRE_ROLL_MS = 400, START_MS = 120, END_SILENCE_MS = 900, MAX_MS = 10000, MIN_SPEECH_MS = 350;
+
+        function resetSegment() {
+          speaking = false; chunks = []; speechMs = 0; silenceMs = 0; totalMs = 0;
+        }
+
+        function onFrame(input) {
+          if (!active) return;
+          const frame = new Float32Array(input);
+          const frameMs = (frame.length / ctx.sampleRate) * 1000;
+          let sq = 0;
+          for (let i = 0; i < frame.length; i++) sq += frame[i] * frame[i];
+          const rms = Math.sqrt(sq / frame.length);
+          const threshold = Math.max(0.012, noiseFloor * 3.2);
+
+          if (!speaking) {
+            preRoll.push(frame);
+            let preMs = preRoll.length * frameMs;
+            while (preMs > PRE_ROLL_MS && preRoll.length > 1) { preRoll.shift(); preMs -= frameMs; }
+            if (rms > threshold) {
+              speechMs += frameMs;
+              if (speechMs >= START_MS) {
+                speaking = true;
+                chunks = preRoll.slice();
+                preRoll = [];
+                totalMs = chunks.length * frameMs;
+                silenceMs = 0;
+                // Barge-in: user started talking while SANAD speaks.
+                if (isSanadSpeaking()) stopSpeaking();
+                setIslandStatus("أسمعك... (محلي)", true);
+              }
+            } else {
+              speechMs = 0;
+              noiseFloor = noiseFloor * 0.95 + rms * 0.05; // adapt to room noise
+            }
+            return;
+          }
+
+          chunks.push(frame);
+          totalMs += frameMs;
+          silenceMs = rms > threshold ? 0 : silenceMs + frameMs;
+          if (silenceMs >= END_SILENCE_MS || totalMs >= MAX_MS) finishSegment();
+        }
+
+        async function finishSegment() {
+          const segment = chunks;
+          const segMs = totalMs - silenceMs;
+          const rate = ctx ? ctx.sampleRate : 48000;
+          resetSegment();
+          stop(); // pause the mic while transcribing (same flow as the cloud recognizer)
+
+          if (segMs < MIN_SPEECH_MS) {
+            if (jarvisVoiceMode && !busy) setTimeout(() => { if (jarvisVoiceMode && !busy && !isRecording) startListening(); }, 300);
+            return;
+          }
+
+          let length = 0;
+          for (const c of segment) length += c.length;
+          const all = new Float32Array(length);
+          let off = 0;
+          for (const c of segment) { all.set(c, off); off += c.length; }
+
+          setIslandStatus("يحلل الصوت محلياً...", true);
+          let text = "";
+          try {
+            const res = await fetch("/api/voice/transcribe?lang=ar", { method: "POST", headers: { "Content-Type": "audio/wav" }, body: encodeWav16k(all, rate) });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            text = (data.text || "").trim();
+          } catch (e) {
+            console.warn("[local-stt]", e);
+            const msg = "🎙️ تعذر التعرف على الصوت محلياً: " + e.message;
+            updateIslandLatest(escapeHtml(msg));
+            if (typeof showBrainToast === "function") showBrainToast(msg);
+          }
+          setIslandStatus("جاهز للأمر", false);
+
+          if (text && !busy) {
+            handleVoiceTranscription(text);
+          } else if (jarvisVoiceMode && !busy) {
+            setTimeout(() => { if (jarvisVoiceMode && !busy && !isRecording) startListening(); }, 300);
+          }
+        }
+
+        async function start() {
+          if (active) return;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+          } catch (e) {
+            const msg = "🎙️ لم يُسمح باستخدام الميكروفون أو لا يوجد ميكروفون متصل.";
+            updateIslandLatest(escapeHtml(msg));
+            if (typeof showBrainToast === "function") showBrainToast(msg);
+            stopListening();
+            return;
+          }
+          ctx = new (window.AudioContext || window.webkitAudioContext)();
+          source = ctx.createMediaStreamSource(stream);
+          proc = ctx.createScriptProcessor(2048, 1, 1);
+          proc.onaudioprocess = (e) => onFrame(e.inputBuffer.getChannelData(0));
+          source.connect(proc);
+          proc.connect(ctx.destination);
+          active = true;
+          resetSegment();
+          preRoll = [];
+          isRecording = true;
+          if (micBtn) {
+            micBtn.classList.add("recording");
+            micBtn.title = "يستمع محلياً دون إنترنت... تحدث وسيتم التنفيذ فور توقفك (انقر للإيقاف)";
+          }
+          if (islandMicBtn) islandMicBtn.classList.add("active");
+          setIslandStatus("يستمع (محلي)...", true);
+          announcer.textContent = "سند يستمع إليك الآن (تعرف صوتي محلي)";
+        }
+
+        function stop() {
+          active = false;
+          try { if (proc) { proc.disconnect(); proc.onaudioprocess = null; } } catch {}
+          try { if (source) source.disconnect(); } catch {}
+          try { if (ctx) ctx.close(); } catch {}
+          if (stream) stream.getTracks().forEach((t) => t.stop());
+          stream = ctx = source = proc = null;
+          preRoll = [];
+        }
+
+        return { start, stop, isActive: () => active };
+      })();
 
       function handleVoiceTranscription(text) {
         const cleanedText = normalizeArabicSpeech(text);
@@ -5696,12 +4158,20 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       }
 
       function startListening() {
-        if (!recognition) {
-          alert("متصفحك لا يدعم التعرف على الصوت. يُفضل استخدام Google Chrome أو Microsoft Edge.");
-          return;
-        }
         if (isRecording) {
           stopListening();
+          return;
+        }
+        if (shouldUseLocalStt()) {
+          if (speechSilenceTimeout) {
+            clearTimeout(speechSilenceTimeout);
+            speechSilenceTimeout = null;
+          }
+          localStt.start();
+          return;
+        }
+        if (!recognition) {
+          alert("لا يتوفر تعرف صوتي: المتصفح لا يدعمه ومحرك السماع المحلي غير مُثبَّت.");
           return;
         }
         if (speechSilenceTimeout) {
@@ -5728,6 +4198,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         }
         if (islandMicBtn) islandMicBtn.classList.remove("active");
         setIslandStatus("جاهز للأمر", false);
+        if (localStt.isActive()) localStt.stop();
         if (recognition) {
           try { recognition.stop(); } catch {}
         }
@@ -5746,7 +4217,105 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           .trim();
       }
 
+      /* ---------- Local offline Arabic TTS (Piper via /api/voice/speak) ---------- */
+
+      let localTtsToken = 0;          // bumping it cancels any in-flight local playback
+      let localTtsAudio = null;       // current HTMLAudioElement
+      let localTtsPlaying = false;
+
+      function browserHasArabicVoice() {
+        if (!window.speechSynthesis) return false;
+        return window.speechSynthesis.getVoices().some((v) => v.lang && v.lang.toLowerCase().startsWith("ar"));
+      }
+
+      /** Piper when offline (or offline mode), or when the browser has no Arabic voice at all. */
+      function shouldUseLocalTts() {
+        if (!localTtsAvailable) return false;
+        if (typeof lastBrainMode !== "undefined" && lastBrainMode === "local") return true;
+        return !browserHasArabicVoice();
+      }
+
+      function isSanadSpeaking() {
+        return localTtsPlaying || !!(window.speechSynthesis && window.speechSynthesis.speaking);
+      }
+
+      /** Group sentences into ~200-char chunks: fewer requests, and the first chunk starts playing quickly. */
+      function chunkForTts(text) {
+        const parts = text.split(/(?<=[.؟?!؛\n])\s+/).filter((s) => s.trim());
+        const chunks = [];
+        let cur = "";
+        for (const p of parts) {
+          if (cur && (cur.length + p.length > 200 || chunks.length === 0)) { chunks.push(cur); cur = p; }
+          else cur = cur ? `${cur} ${p}` : p;
+        }
+        if (cur) chunks.push(cur);
+        return chunks;
+      }
+
+      async function fetchTtsChunk(text) {
+        const res = await fetch("/api/voice/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        return URL.createObjectURL(await res.blob());
+      }
+
+      async function speakLocal(text, btn, onEndCallback) {
+        const token = ++localTtsToken;
+        const chunks = chunkForTts(text);
+        if (!chunks.length) return;
+        localTtsPlaying = true;
+        if (btn) {
+          currentlySpeakingBtn = btn;
+          btn.textContent = "■ إيقاف";
+          btn.classList.add("speaking");
+        }
+        setIslandStatus("سند يتحدث (محلي)...", false);
+
+        let next = fetchTtsChunk(chunks[0]);
+        let ok = true;
+        for (let i = 0; i < chunks.length; i++) {
+          let url;
+          try {
+            url = await next;
+          } catch (e) {
+            console.warn("[local-tts]", e);
+            ok = false;
+            break;
+          }
+          if (token !== localTtsToken) { URL.revokeObjectURL(url); return; } // cancelled
+          if (i + 1 < chunks.length) next = fetchTtsChunk(chunks[i + 1]); // prefetch while playing
+          await new Promise((resolve) => {
+            const audio = new Audio(url);
+            localTtsAudio = audio;
+            audio.onended = audio.onerror = () => resolve();
+            audio.play().catch(() => resolve());
+          });
+          URL.revokeObjectURL(url);
+          if (token !== localTtsToken) return; // stopped by barge-in / stop button
+        }
+
+        if (token !== localTtsToken) return;
+        localTtsPlaying = false;
+        localTtsAudio = null;
+        stopSpeaking();
+        setIslandStatus(jarvisVoiceMode ? "يستمع إليك مباشرة..." : "جاهز للأمر", jarvisVoiceMode);
+        if (!ok) updateIslandLatest("🔇 تعذر النطق المحلي.");
+        if (onEndCallback) onEndCallback();
+      }
+
       function stopSpeaking() {
+        localTtsToken++;
+        localTtsPlaying = false;
+        if (localTtsAudio) {
+          try { localTtsAudio.pause(); } catch {}
+          localTtsAudio = null;
+        }
         if (window.speechSynthesis) {
           window.speechSynthesis.cancel();
         }
@@ -5759,11 +4328,10 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       }
 
       function speakText(text, btn = null, onEndCallback = null) {
-        if (!window.speechSynthesis) return;
-
-        if (window.speechSynthesis.speaking) {
+        if (isSanadSpeaking()) {
+          const sameButton = btn && btn === currentlySpeakingBtn;
           stopSpeaking();
-          if (btn && btn === currentlySpeakingBtn) return;
+          if (sameButton) return;
         }
 
         const cleaned = cleanTextForSpeech(text);
@@ -5774,6 +4342,12 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         const spokenContent = (jarvisVoiceMode && sentences.length > 3)
           ? sentences.slice(0, 3).join(" ")
           : cleaned;
+
+        if (shouldUseLocalTts()) {
+          speakLocal(spokenContent, btn, onEndCallback);
+          return;
+        }
+        if (!window.speechSynthesis) return;
 
         const utterance = new SpeechSynthesisUtterance(spokenContent);
 
@@ -5875,7 +4449,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         });
       }
 
-      /* ======================= file inspector (jarvis) ======================= */
+      /* ======================= file inspector (sanad) ======================= */
 
       function renderAttachments() {
         if (!attachmentBar) return;
@@ -6011,7 +4585,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
           if (!memoryList) return;
           if (!list.length) {
-            memoryList.innerHTML = `<div class="memory-empty">لا توجد معلومات محفوظة حتى الآن.<br>أضف معلومة أعلاه أو اطلب من جارفيس «تذكر أن...» في المحادثة.</div>`;
+            memoryList.innerHTML = `<div class="memory-empty">لا توجد معلومات محفوظة حتى الآن.<br>أضف معلومة أعلاه أو اطلب من سند «تذكر أن...» في المحادثة.</div>`;
             return;
           }
 
@@ -6370,7 +4944,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
                     </div>
                   </div>
                   <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; justify-content: center; margin-inline-start: 12px;">
-                    <button class="memory-add-btn run-workflow-btn" data-goal="${encodeURIComponent(wf.goal)}" type="button" style="padding: 6px 12px; font-size: 11.5px; background: linear-gradient(135deg, rgba(0,242,254,0.3), rgba(0,230,118,0.3)); border-color: var(--accent);" title="تنفيذ هذا المسار فوراً في أجزاء من الثانية">⚡ تشغيل فوري</button>
+                    <button class="memory-add-btn run-workflow-btn v-primary v-sm" data-goal="${encodeURIComponent(wf.goal)}" type="button" title="تنفيذ هذا المسار فوراً في أجزاء من الثانية">⚡ تشغيل فوري</button>
                     <button class="memory-del-btn delete-workflow-btn" data-id="${wf.id}" type="button" title="حذف هذا المسار">🗑️ حذف</button>
                   </div>
                 </div>
@@ -6423,7 +4997,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         });
       }
 
-      /* ======================= Screen Vision (عيون جارفيس) ======================= */
+      /* ======================= Screen Vision (عيون سند) ======================= */
 
       async function captureAndAnalyzeScreen(promptText = "", targetConv = null, targetAssistant = null) {
         const conv = targetConv || ensureConversation();
@@ -6860,7 +5434,7 @@ ${data.text}
           }
           if (liveStreamHud) liveStreamHud.classList.add("active");
           if (liveStreamBtn) liveStreamBtn.classList.add("active");
-          if (liveStreamLabel) liveStreamLabel.textContent = "🔴 إيقاف البث";
+          if (liveStreamLabel) liveStreamLabel.textContent = "إيقاف البث";
           playSciFiSound("wake");
 
           const track = stream.getVideoTracks()[0];
@@ -6883,7 +5457,7 @@ ${data.text}
         if (liveStreamVideo) liveStreamVideo.srcObject = null;
         if (liveStreamHud) liveStreamHud.classList.remove("active");
         if (liveStreamBtn) liveStreamBtn.classList.remove("active");
-        if (liveStreamLabel) liveStreamLabel.textContent = "🔴 بث مباشر";
+        if (liveStreamLabel) liveStreamLabel.textContent = "بث مباشر";
       }
 
       if (liveStreamBtn) {
@@ -7335,6 +5909,382 @@ ${data.text}
       if (islandRamBoostBtn) islandRamBoostBtn.addEventListener("click", triggerOptimizeRam);
       if (islandDiskCleanBtn) islandDiskCleanBtn.addEventListener("click", triggerCleanDisk);
 
+      /* ======================= Offline Brain status ======================= */
+
+      const brainBadge = document.getElementById("brainBadge");
+      const brainBadgeDot = document.getElementById("brainBadgeDot");
+      const brainBadgeText = document.getElementById("brainBadgeText");
+      const islandBrainDot = document.getElementById("islandBrainDot");
+      let lastBrainMode = null;
+      let brainToastTimer = null;
+
+      function showBrainToast(message, ms = 6000) {
+        let toast = document.getElementById("brainToast");
+        if (!toast) {
+          toast = document.createElement("div");
+          toast.id = "brainToast";
+          toast.className = "brain-toast";
+          toast.setAttribute("role", "status");
+          document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(brainToastTimer);
+        brainToastTimer = setTimeout(() => toast.classList.remove("show"), ms);
+      }
+
+      function shortLocalName(id) {
+        return String(id || "").replace(/^ollama:/, "");
+      }
+
+      function applyBrainStatus(s) {
+        let mode = s.mode;
+        let text;
+        let title;
+        if (mode === "cloud") {
+          text = "متصل — سحابي";
+          title = s.localModel ? `متصل بالإنترنت. العقل المحلي الاحتياطي جاهز: ${shortLocalName(s.localModel)}` : "متصل بالإنترنت. لا يوجد عقل محلي احتياطي (ثبّت Ollama ونموذجاً).";
+        } else if (mode === "local") {
+          const forced = s.setting === "offline";
+          text = forced ? "🔒 أوفلاين — محلي" : "أوفلاين — محلي";
+          title = `${forced ? "وضع أوفلاين مفروض (SANAD_MODE=offline) — لا اتصال بالسحابة إطلاقاً." : "لا يوجد إنترنت."} يعمل سند بالعقل المحلي: ${shortLocalName(s.localModel)}${s.warmed ? " (محمّل في الذاكرة)" : ""}`;
+        } else {
+          text = "لا يوجد عقل";
+          title = "لا يوجد إنترنت ولا نموذج محلي. شغّل Ollama ونزّل نموذجاً وأنت متصل.";
+        }
+        [brainBadgeDot, islandBrainDot].forEach((el) => { if (el) el.setAttribute("data-brain", mode); });
+        if (brainBadgeText) brainBadgeText.textContent = text;
+        if (brainBadge) brainBadge.title = title + " — انقر لإعادة الفحص";
+        if (islandBrainDot) islandBrainDot.title = title;
+
+        if (lastBrainMode && lastBrainMode !== mode) {
+          if (mode === "local") showBrainToast(`🔌 انقطع الإنترنت — سند يعمل الآن بالعقل المحلي (${shortLocalName(s.localModel)}).`);
+          else if (mode === "cloud") showBrainToast("🌐 عاد الاتصال بالإنترنت — العودة للنماذج السحابية.");
+          else showBrainToast("⚠️ لا يوجد إنترنت ولا نموذج محلي متاح.");
+        }
+        lastBrainMode = mode;
+      }
+
+      async function refreshBrainStatus(force = false) {
+        try {
+          const res = await fetch(`/api/brain/status${force === true ? "?force=1" : ""}`);
+          const data = await res.json();
+          applyBrainStatus(data);
+          return data;
+        } catch {
+          return null;
+        }
+      }
+      window.refreshBrainStatus = refreshBrainStatus;
+
+      if (brainBadge) brainBadge.addEventListener("click", () => refreshBrainStatus(true));
+      window.addEventListener("online", () => setTimeout(() => refreshBrainStatus(true), 1500));
+      window.addEventListener("offline", () => refreshBrainStatus(true));
+      refreshBrainStatus();
+      setInterval(refreshBrainStatus, 30_000);
+
+      /* ======================= Network & Ports Maestro ======================= */
+
+      const networkModalBackdrop = document.getElementById("networkModalBackdrop");
+      const netAlert = document.getElementById("netAlert");
+      const netInfoSummary = document.getElementById("netInfoSummary");
+      const netInfoKv = document.getElementById("netInfoKv");
+      const netPingHost = document.getElementById("netPingHost");
+      const netPingBtn = document.getElementById("netPingBtn");
+      const netPingValue = document.getElementById("netPingValue");
+      const netPingQuality = document.getElementById("netPingQuality");
+      const netPingDetails = document.getElementById("netPingDetails");
+      const netFreePortForm = document.getElementById("netFreePortForm");
+      const netFreePortInput = document.getElementById("netFreePortInput");
+      const netPortsBody = document.getElementById("netPortsBody");
+      const netPortsCount = document.getElementById("netPortsCount");
+      const netPortsSearch = document.getElementById("netPortsSearch");
+      const netDevOnly = document.getElementById("netDevOnly");
+      const netShowUdp = document.getElementById("netShowUdp");
+      const islandLatencyBadge = document.getElementById("islandLatencyBadge");
+
+      let netPortsCache = [];
+      let netPublicIpRevealed = false;
+      let netLastInfo = null;
+
+      const NET_QUALITY_CLASS = { "ممتاز": "net-q-excellent", "جيد": "net-q-good", "متوسط": "net-q-medium", "ضعيف": "net-q-poor", "منقطع": "net-q-down" };
+      const NET_QUALITY_COLOR = { "ممتاز": "#3fb950", "جيد": "var(--accent)", "متوسط": "#d29922", "ضعيف": "var(--danger)", "منقطع": "var(--danger)" };
+
+      function showNetAlert(message, ok = true) {
+        if (!netAlert) return;
+        netAlert.className = "net-alert " + (ok ? "ok" : "err");
+        netAlert.textContent = message;
+      }
+
+      function netSpeak(message) {
+        if (typeof updateIslandLatest === "function") updateIslandLatest(escapeHtml(message));
+        if (jarvisVoiceMode) speakText(message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
+      }
+
+      function maskIp(ip) {
+        if (!ip) return "غير متاح";
+        if (netPublicIpRevealed) return ip;
+        const parts = ip.split(".");
+        return parts.length === 4 ? `${parts[0]}.•••.•••.${parts[3]}` : "•••• (اضغط للإظهار)";
+      }
+
+      function renderNetInfo() {
+        if (!netInfoKv || !netLastInfo) return;
+        const info = netLastInfo;
+        const primary = info.adapters.find((a) => a.ipv4.includes(info.primaryLocalIp)) || info.adapters[0];
+        if (netInfoSummary) netInfoSummary.textContent = primary ? `${primary.type === "Wi-Fi" ? "📶" : "🔗"} ${primary.networkName || primary.name}` : info.message;
+        const rows = [];
+        if (primary) {
+          rows.push(["البطاقة", primary.description || primary.name]);
+          rows.push(["النوع / السرعة", `${primary.type} — ${primary.linkSpeed}`]);
+          rows.push(["IP المحلي", info.primaryLocalIp || "—"]);
+        }
+        rows.push(["IP العام", `<span id="netPublicIpToggle" style="cursor: pointer; text-decoration: underline dotted;" title="اضغط للإظهار / الإخفاء">${escapeHtml(maskIp(info.publicIp))}</span>`, true]);
+        if (primary) {
+          rows.push(["البوابة (Gateway)", primary.gateway || "—"]);
+          rows.push(["DNS", primary.dns.join("، ") || "—"]);
+          rows.push(["MAC", primary.macAddress || "—"]);
+        }
+        rows.push(["اسم الجهاز", info.hostname || "—"]);
+        netInfoKv.innerHTML = rows.map(([k, v, raw]) => `<dt>${escapeHtml(k)}</dt><dd>${raw ? v : escapeHtml(String(v))}</dd>`).join("");
+        const toggle = document.getElementById("netPublicIpToggle");
+        if (toggle) toggle.addEventListener("click", () => { netPublicIpRevealed = !netPublicIpRevealed; renderNetInfo(); });
+      }
+
+      async function loadNetInfo() {
+        if (netInfoSummary) netInfoSummary.textContent = "جاري فحص بطاقة الشبكة...";
+        try {
+          const res = await fetch("/api/network/info");
+          netLastInfo = await res.json();
+          renderNetInfo();
+          return netLastInfo;
+        } catch (e) {
+          if (netInfoSummary) netInfoSummary.textContent = "تعذر قراءة معلومات الشبكة: " + e.message;
+          return null;
+        }
+      }
+
+      function setIslandLatency(result) {
+        if (!islandLatencyBadge) return;
+        if (!result || result.avgMs === null) {
+          islandLatencyBadge.textContent = "✕";
+          islandLatencyBadge.style.color = "var(--danger)";
+        } else {
+          islandLatencyBadge.textContent = `${result.avgMs}ms`;
+          islandLatencyBadge.style.color = NET_QUALITY_COLOR[result.quality] || "var(--muted)";
+        }
+      }
+
+      async function runNetPing(host) {
+        const target = (host || (netPingHost && netPingHost.value) || "8.8.8.8").trim();
+        if (netPingHost) netPingHost.value = target;
+        if (netPingBtn) { netPingBtn.disabled = true; netPingBtn.textContent = "⏳"; }
+        if (netPingValue) netPingValue.textContent = "…";
+        if (netPingDetails) netPingDetails.textContent = `جاري قياس زمن الاستجابة إلى ${target}...`;
+        if (typeof setIslandStatus === "function") setIslandStatus("يفحص الشبكة...", true);
+        try {
+          const res = await fetch("/api/network/ping", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ host: target }),
+          });
+          const data = await res.json();
+          if (netPingValue) netPingValue.textContent = data.avgMs !== null ? `${data.avgMs} ms` : "—";
+          if (netPingQuality) {
+            netPingQuality.className = "net-quality " + (NET_QUALITY_CLASS[data.quality] || "");
+            netPingQuality.textContent = data.quality;
+          }
+          if (netPingDetails) {
+            netPingDetails.textContent = data.avgMs !== null
+              ? `أدنى ${data.minMs}ms · أقصى ${data.maxMs}ms · فقدان ${data.lossPercent}% (${data.received}/${data.sent})`
+              : data.message;
+          }
+          setIslandLatency(data);
+          playSciFiSound(data.success ? "done" : "confirm");
+          return data;
+        } catch (e) {
+          if (netPingDetails) netPingDetails.textContent = "تعذر الفحص: " + e.message;
+          setIslandLatency(null);
+          return null;
+        } finally {
+          if (netPingBtn) { netPingBtn.disabled = false; netPingBtn.textContent = "فحص"; }
+          if (typeof setIslandStatus === "function") setIslandStatus("جاهز");
+        }
+      }
+
+      function renderNetPorts() {
+        if (!netPortsBody) return;
+        const q = ((netPortsSearch && netPortsSearch.value) || "").trim().toLowerCase();
+        const devOnly = !!(netDevOnly && netDevOnly.checked);
+        const list = netPortsCache.filter((p) => {
+          if (devOnly && !p.isDevPort) return false;
+          if (!q) return true;
+          return String(p.port).includes(q) || String(p.pid).includes(q) || p.processName.toLowerCase().includes(q) || (p.label || "").toLowerCase().includes(q);
+        });
+        if (netPortsCount) netPortsCount.textContent = `(${list.length} من ${netPortsCache.length})`;
+        if (list.length === 0) {
+          netPortsBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 16px;">لا توجد منافذ مطابقة.</td></tr>`;
+          return;
+        }
+        netPortsBody.innerHTML = list.map((p) => {
+          const action = p.isProtected
+            ? `<span class="net-lock" title="عملية نظام محمية أو خادم سند نفسه">🔒 محمي</span>`
+            : `<button class="net-kill-btn" type="button" data-kill-port="${p.port}">🛑 إنهاء</button>`;
+          const label = p.label ? `<div class="net-label">${escapeHtml(p.label)}</div>` : "";
+          return `<tr class="${p.isDevPort ? "net-dev" : ""}">
+            <td class="mono"><strong>${p.port}</strong>${label}</td>
+            <td>${p.protocol}</td>
+            <td title="${escapeHtml(p.processPath || "")}">${escapeHtml(p.processName)}</td>
+            <td class="mono">${p.pid}</td>
+            <td class="mono">${escapeHtml(p.localAddress)}</td>
+            <td>${action}</td>
+          </tr>`;
+        }).join("");
+      }
+
+      async function loadNetPorts() {
+        if (netPortsBody && netPortsCache.length === 0) {
+          netPortsBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 16px;">جاري فحص المنافذ...</td></tr>`;
+        }
+        try {
+          const udp = netShowUdp && netShowUdp.checked ? "1" : "0";
+          const res = await fetch(`/api/network/ports?udp=${udp}`);
+          const data = await res.json();
+          netPortsCache = Array.isArray(data.ports) ? data.ports : [];
+          renderNetPorts();
+          return netPortsCache;
+        } catch (e) {
+          if (netPortsBody) netPortsBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 16px;">تعذر فحص المنافذ: ${escapeHtml(e.message)}</td></tr>`;
+          return [];
+        }
+      }
+
+      async function checkNetPort(port) {
+        const n = Number(port);
+        if (!Number.isInteger(n) || n < 1 || n > 65535) {
+          showNetAlert("رقم المنفذ غير صالح (1 – 65535).", false);
+          return null;
+        }
+        try {
+          const res = await fetch(`/api/network/port/check?port=${n}`);
+          const data = await res.json();
+          showNetAlert(data.message, !data.inUse);
+          return data;
+        } catch (e) {
+          showNetAlert("تعذر فحص المنفذ: " + e.message, false);
+          return null;
+        }
+      }
+
+      /**
+       * Free a port by terminating its holder. `skipConfirm` is used by voice / chat commands.
+       */
+      async function killNetPort(port, skipConfirm = false) {
+        const n = Number(port);
+        if (!Number.isInteger(n) || n < 1 || n > 65535) {
+          showNetAlert("رقم المنفذ غير صالح (1 – 65535).", false);
+          return null;
+        }
+        if (!skipConfirm) {
+          const holders = netPortsCache.filter((p) => p.port === n);
+          const who = holders.length ? [...new Set(holders.map((h) => `${h.processName} (PID ${h.pid})`))].join("، ") : "العملية المحتجزة";
+          if (!confirm(`هل تريد إنهاء ${who} لتحرير المنفذ ${n}؟`)) return null;
+        }
+        if (typeof setIslandStatus === "function") setIslandStatus(`يحرر المنفذ ${n}...`, true);
+        try {
+          const res = await fetch("/api/network/kill-port", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ port: n }),
+          });
+          const data = await res.json();
+          showNetAlert(data.message, data.success);
+          playSciFiSound(data.success ? "done" : "confirm");
+          netSpeak(data.message);
+          await loadNetPorts();
+          return data;
+        } catch (e) {
+          showNetAlert("تعذر تحرير المنفذ: " + e.message, false);
+          return null;
+        } finally {
+          if (typeof setIslandStatus === "function") setIslandStatus("جاهز");
+        }
+      }
+
+      function openNetworkModal() {
+        if (!networkModalBackdrop) return;
+        networkModalBackdrop.classList.add("open");
+        loadNetInfo();
+        loadNetPorts();
+      }
+
+      function closeNetworkModal() {
+        if (!networkModalBackdrop) return;
+        networkModalBackdrop.classList.remove("open");
+        if (netAlert) netAlert.className = "net-alert";
+      }
+
+      window.openNetworkModal = openNetworkModal;
+      window.runNetPing = runNetPing;
+      window.killNetPort = killNetPort;
+      window.checkNetPort = checkNetPort;
+      window.loadNetInfo = loadNetInfo;
+
+      const netMaestroBtn = document.getElementById("netMaestroBtn");
+      if (netMaestroBtn) netMaestroBtn.addEventListener("click", openNetworkModal);
+      const netCloseBtn = document.getElementById("netCloseBtn");
+      if (netCloseBtn) netCloseBtn.addEventListener("click", closeNetworkModal);
+      if (networkModalBackdrop) {
+        networkModalBackdrop.addEventListener("click", (e) => { if (e.target === networkModalBackdrop) closeNetworkModal(); });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && networkModalBackdrop && networkModalBackdrop.classList.contains("open")) closeNetworkModal();
+      });
+
+      const netInfoRefreshBtn = document.getElementById("netInfoRefreshBtn");
+      if (netInfoRefreshBtn) netInfoRefreshBtn.addEventListener("click", loadNetInfo);
+      if (netPingBtn) netPingBtn.addEventListener("click", () => runNetPing());
+      if (netPingHost) netPingHost.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); runNetPing(); } });
+      document.querySelectorAll("[data-ping-host]").forEach((btn) => {
+        btn.addEventListener("click", () => runNetPing(btn.getAttribute("data-ping-host")));
+      });
+
+      if (netFreePortForm) {
+        netFreePortForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          killNetPort(netFreePortInput && netFreePortInput.value);
+        });
+      }
+      const netCheckPortBtn = document.getElementById("netCheckPortBtn");
+      if (netCheckPortBtn) netCheckPortBtn.addEventListener("click", () => checkNetPort(netFreePortInput && netFreePortInput.value));
+
+      if (netPortsBody) {
+        netPortsBody.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-kill-port]");
+          if (!btn) return;
+          btn.disabled = true;
+          killNetPort(btn.getAttribute("data-kill-port")).finally(() => { btn.disabled = false; });
+        });
+      }
+      if (netPortsSearch) netPortsSearch.addEventListener("input", renderNetPorts);
+      if (netDevOnly) netDevOnly.addEventListener("change", renderNetPorts);
+      if (netShowUdp) netShowUdp.addEventListener("change", loadNetPorts);
+      const netPortsRefreshBtn = document.getElementById("netPortsRefreshBtn");
+      if (netPortsRefreshBtn) netPortsRefreshBtn.addEventListener("click", loadNetPorts);
+
+      const islandNetBtn = document.getElementById("islandNetBtn");
+      if (islandNetBtn) islandNetBtn.addEventListener("click", openNetworkModal);
+      const islandPortsBtn = document.getElementById("islandPortsBtn");
+      if (islandPortsBtn) islandPortsBtn.addEventListener("click", () => {
+        openNetworkModal();
+        if (netDevOnly) { netDevOnly.checked = true; renderNetPorts(); }
+      });
+      const islandPingBtn = document.getElementById("islandPingBtn");
+      if (islandPingBtn) islandPingBtn.addEventListener("click", async () => {
+        const data = await runNetPing("8.8.8.8");
+        if (data) netSpeak(data.message);
+      });
+
       /* ======================= Desktop & Files Automation ======================= */
 
       async function refreshDesktopStatus() {
@@ -7448,7 +6398,6 @@ ${data.text}
       if (presetGisBtn) presetGisBtn.addEventListener("click", () => triggerWorkspacePreset("gis"));
       if (presetCodingBtn) presetCodingBtn.addEventListener("click", () => triggerWorkspacePreset("coding"));
       if (presetCleanBtn) presetCleanBtn.addEventListener("click", () => triggerWorkspacePreset("clean"));
-      if (islandGisPresetBtn) islandGisPresetBtn.addEventListener("click", () => triggerWorkspacePreset("gis"));
 
       async function triggerDailyRoutine(routine = "morning") {
         if (typeof setIslandStatus === "function") setIslandStatus("ينفذ الروتين...", true);
@@ -7601,8 +6550,8 @@ ${data.text}
         previewDesktopBtn.addEventListener("click", () => {
           projectPreviewIframe.style.width = "100%";
           projectPreviewIframe.style.maxWidth = "100%";
-          previewDesktopBtn.style.background = "var(--accent)";
-          previewDesktopBtn.style.color = "#fff";
+          previewDesktopBtn.style.background = "var(--brand)";
+          previewDesktopBtn.style.color = "var(--on-brand)";
           previewMobileBtn.style.background = "transparent";
           previewMobileBtn.style.color = "var(--muted)";
         });
@@ -7610,8 +6559,8 @@ ${data.text}
         previewMobileBtn.addEventListener("click", () => {
           projectPreviewIframe.style.width = "375px";
           projectPreviewIframe.style.maxWidth = "375px";
-          previewMobileBtn.style.background = "var(--accent)";
-          previewMobileBtn.style.color = "#fff";
+          previewMobileBtn.style.background = "var(--brand)";
+          previewMobileBtn.style.color = "var(--on-brand)";
           previewDesktopBtn.style.background = "transparent";
           previewDesktopBtn.style.color = "var(--muted)";
         });
@@ -7631,5 +6580,6 @@ ${data.text}
       autoGrow();
       promptEl.focus();
     </script>
+    <script src="/palette.js" defer></script>
   </body>
 </html>

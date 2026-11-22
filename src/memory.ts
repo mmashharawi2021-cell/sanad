@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { JARVIS_SYSTEM_PROMPT } from "./config";
+import { JARVIS_SYSTEM_PROMPT, SANAD_LOCAL_SYSTEM_PROMPT } from "./config";
 
 export type MemoryCategory = "user" | "project" | "preference" | "system" | "general";
 
@@ -32,7 +32,7 @@ const DEFAULT_MEMORIES: MemoryEntry[] = [
   },
   {
     id: "mem_init_2",
-    content: "المشروع الحالي هو OpenCode / JARVIS، يحتوي على واجهة ويب، خادم Node/TS، ومحرك أولاما أوفلاين.",
+    content: "المشروع الحالي هو سند (SANAD)، يحتوي على واجهة ويب، خادم Node/TS، ومحرك أولاما أوفلاين.",
     category: "project",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -133,18 +133,23 @@ export async function clearAllMemories(): Promise<void> {
   await saveMemories([]);
 }
 
+/** Same as getSystemPromptWithMemory, built on the compact prompt for small local models. */
+export function getLocalSystemPromptWithMemory(): Promise<string> {
+  return getSystemPromptWithMemory(SANAD_LOCAL_SYSTEM_PROMPT);
+}
+
 /** Formats the long-term memory for injection into the model's System Prompt */
-export async function getSystemPromptWithMemory(): Promise<string> {
+export async function getSystemPromptWithMemory(basePrompt: string = JARVIS_SYSTEM_PROMPT): Promise<string> {
   const memories = await getMemories();
   if (!memories.length) {
-    return JARVIS_SYSTEM_PROMPT;
+    return basePrompt;
   }
 
   const memoryBlock = memories
     .map((m, i) => `${i + 1}. [${getCategoryLabel(m.category)}] ${m.content}`)
     .join("\n");
 
-  return `${JARVIS_SYSTEM_PROMPT}
+  return `${basePrompt}
 
 ### 🧠 الذاكرة الدائمة المرجعية عن المستخدم والنظام (Long-Term Memory):
 المعلومات التالية محفوظة في ذاكرتك الدائمة من محادثات وسجلات سابقة. تذكرها واعتمد عليها دائماً دون أن تطلب من المستخدم تكرارها:

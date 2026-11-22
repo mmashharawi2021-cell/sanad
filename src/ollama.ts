@@ -1,4 +1,4 @@
-import { AppError, JARVIS_SYSTEM_PROMPT } from "./config";
+import { AppError, SANAD_LOCAL_SYSTEM_PROMPT } from "./config";
 import type { ChatModel } from "./models";
 import type { Answer, AskOptions, ChatTurn, StreamEvent, Usage } from "./openrouter";
 
@@ -22,6 +22,26 @@ export type OllamaStatus = {
   models: { id: string; name: string; sizeGb: number; parameterSize?: string }[];
   error?: string;
 };
+
+/**
+ * Runtime options shared by every Ollama request (chat + warm-up must match, or Ollama reloads the model).
+ * By default Ollama offloads as many layers as fit to the GPU; set OLLAMA_NUM_GPU=0 to force CPU only.
+ */
+export function ollamaRuntimeOptions(extra: Record<string, unknown> = {}): Record<string, unknown> {
+  // Small local models follow instructions/tool formats more reliably at a lower temperature.
+  const temp = Number(process.env.OLLAMA_TEMPERATURE);
+  const options: Record<string, unknown> = { temperature: Number.isFinite(temp) && process.env.OLLAMA_TEMPERATURE?.trim() ? temp : 0.3 };
+  const numGpu = process.env.OLLAMA_NUM_GPU?.trim();
+  if (numGpu && /^\d+$/.test(numGpu)) options.num_gpu = Number(numGpu);
+  const numCtx = process.env.OLLAMA_NUM_CTX?.trim();
+  if (numCtx && /^\d+$/.test(numCtx)) options.num_ctx = Number(numCtx);
+  return { ...options, ...extra };
+}
+
+/** How long Ollama keeps the model loaded after the last request (frees RAM/VRAM when idle). */
+export function ollamaKeepAlive(): string {
+  return process.env.OLLAMA_KEEP_ALIVE?.trim() || "10m";
+}
 
 export function isOllamaModel(model?: string): boolean {
   if (!model) return false;
@@ -91,7 +111,7 @@ export async function getOllamaChatModels(): Promise<ChatModel[]> {
 
 function resolveOllamaMessages(prompt: string, options: AskOptions): ChatTurn[] {
   const turns = options.messages?.filter((m) => m.content.trim()) || [];
-  const systemPrompt = options.system?.trim() || JARVIS_SYSTEM_PROMPT;
+  const systemPrompt = options.system?.trim() || SANAD_LOCAL_SYSTEM_PROMPT;
   const systemTurn: ChatTurn = { role: "system", content: systemPrompt };
 
   if (turns.length) {
@@ -120,10 +140,8 @@ export async function askOllama(prompt: string, options: AskOptions = {}): Promi
         model: modelName,
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
         stream: false,
-        options: {
-          num_gpu: 0,
-          temperature: 0.7,
-        },
+        keep_alive: ollamaKeepAlive(),
+        options: ollamaRuntimeOptions(),
       }),
       signal: options.signal,
     });
@@ -178,10 +196,8 @@ export async function* askOllamaStream(
         model: modelName,
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
         stream: true,
-        options: {
-          num_gpu: 0,
-          temperature: 0.7,
-        },
+        keep_alive: ollamaKeepAlive(),
+        options: ollamaRuntimeOptions(),
       }),
       signal: options.signal,
     });
