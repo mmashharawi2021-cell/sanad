@@ -26,6 +26,7 @@ import { cleanOllamaModelName } from "./ollama";
 import { getSpeechStatus, transcribeWav } from "./localSpeech";
 import { getVoiceStatus, synthesizeSpeech } from "./localVoice";
 import { assertReadable } from "./safePaths";
+import { getThroughput } from "./netMonitor";
 import { deleteExtension, installDraft, listExtensions, proposeExtension, restorePreviousVersion, setExtensionEnabled, type Generate } from "./selfDev";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -152,6 +153,12 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     }
     const memory = await addMemory(content, category);
     sendJson(res, 200, { success: true, memory });
+    return;
+  }
+
+  // سرعة الشبكة الحية (مثل مدير المهام) — قراءة فقط
+  if (req.method === "GET" && url.pathname === "/api/network/throughput") {
+    sendJson(res, 200, getThroughput());
     return;
   }
 

@@ -101,6 +101,14 @@
         if (!res.ok) throw new Error(`تعذرت قراءة حالة الجهاز (${res.status})`);
         return res.json();
       },
+      network: {
+        // سرعة الإرسال والاستقبال الآن (بايت/ثانية) + آخر 60 ثانية، مثل مدير المهام
+        async throughput() {
+          const res = await fetch("/api/network/throughput", { cache: "no-store" });
+          if (!res.ok) throw new Error(`تعذرت قراءة سرعة الشبكة (${res.status})`);
+          return res.json();
+        },
+      },
       home: {
         addToDeviceCard(render) {
           if (typeof render === "function") ext.deviceCard.push(render);

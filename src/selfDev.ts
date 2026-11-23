@@ -78,6 +78,13 @@ API available inside init(api):
 - api.css(cssText) — inject CSS. Prefix every selector with a unique class of your add-on.
 - api.storage.get(key, fallback) / api.storage.set(key, value) — this add-on's own saved values (JSON-serialisable).
 - api.stats() — Promise of { cpuUsagePercent, usedMemoryPercent, batteryPercent, isCharging, diskFreeGb, diskTotalGb }.
+- api.network.throughput() — LIVE network usage right now, like Windows Task Manager (Performance → Wi-Fi):
+  Promise of { adapter: "Wi-Fi", linkSpeed: "72.2 Mbps", rxBps, txBps, history: [{ t, rxBps, txBps }] }.
+  rxBps/txBps are BYTES per second received/sent during the last second (multiply by 8 for bits; show Kbps/Mbps like Task Manager).
+  history holds up to the last 60 one-second samples (oldest first). Call it about once per second (setInterval 1000) while visible;
+  the first call starts the monitor, so values appear after ~2 seconds. Stop polling when the container is removed from the page
+  (check container.isConnected inside the interval and clearInterval when false).
+  For a Task-Manager-like graph, draw history on a <canvas> (two lines: receive and send) scaled to the max value.
 - Normal browser APIs: fetch, performance.now(), setTimeout, AbortController. External HTTPS services may be called with fetch if they allow CORS.
   Example: Cloudflare speed test endpoints allow CORS: GET https://speed.cloudflare.com/__down?bytes=N (returns N bytes) and POST https://speed.cloudflare.com/__up (send a body).
   IMPORTANT: __down rejects N >= 100000000 with HTTP 403 and no CORS header (the browser reports "Failed to fetch"). Use N = 25000000 per request.
@@ -90,6 +97,9 @@ Design rules (iOS style):
 Correctness rules:
 - render(container) runs again every time the home screen is redrawn: restore saved values with api.storage.get(...) when rendering, so results are not lost.
 - Do not overwrite container.className — use container.classList.add(...).
+- <canvas> does NOT understand CSS variables: ctx.strokeStyle = "var(--success)" is ignored (draws black). Resolve real colours first:
+  const css = getComputedStyle(document.documentElement); const green = css.getPropertyValue("--success").trim();
+  Re-read them on every draw (the user can switch light/dark theme). Set canvas.width/height from clientWidth*devicePixelRatio, and reset the transform before scaling (ctx.setTransform(dpr,0,0,dpr,0,0)).
 - Numbers with Latin units inside Arabic text must be wrapped in <bdi> (create a "bdi" element) so "12.5 Mbps" is not reversed.
 - Measurements must be real AND work on slow and fast connections alike. Use TIME-BOXED measurement, not a fixed size:
   * Download: request 25 MB (bytes=25000000), read it with res.body.getReader(), count received bytes; if a request finishes before ~8 seconds start another one; stop (reader.cancel() + abort) when ~8 seconds have elapsed. Mbps = bytesReceived*8 / elapsedSeconds / 1e6. Never time only until fetch() resolves (that is just the headers).
