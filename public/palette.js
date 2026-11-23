@@ -43,14 +43,21 @@
       }
     }
     // الإجراءات السريعة من درج الكبسولة (تبقى متاحة حتى والكبسولة مخفية)
+    // أيقونات ثابتة لكل إجراء (الإيموجي تُزال من نصوص الكبسولة بواسطة ios-polish.js)
+    const QUICK_ICONS = {
+      islandQuickClickBtn: "eye", islandQuickEnterBtn: "arrow-up", islandQuickSaveBtn: "check",
+      islandQuickNewBtn: "plus", islandQuickEscBtn: "x", islandOrganizeDesktopBtn: "monitor",
+      islandRoutineMorningBtn: "sun", islandRoutineFocusBtn: "clock", islandRoutineWrapupBtn: "moon",
+      islandProjectsBtn: "code", islandRamBoostBtn: "zap", islandDiskCleanBtn: "sparkles",
+      islandPortsBtn: "globe", islandPingBtn: "activity",
+    };
+    const EMOJI = /[\p{Extended_Pictographic}️‍]/gu;
     for (const el of document.querySelectorAll("#islandDrawer .island-pill-btn")) {
       if (!el.id || el.id === "islandToggleModeBtn") continue;
-      const text = el.textContent.trim();
-      const sp = text.indexOf(" ");
       out.push({
         group: "إجراءات سريعة",
-        ico: sp > 0 ? text.slice(0, sp) : "•",
-        label: sp > 0 ? text.slice(sp + 1) : text,
+        icon: svg(QUICK_ICONS[el.id] || "zap"),
+        label: el.textContent.replace(EMOJI, "").trim(),
         target: el.id,
         hint: el.title,
       });

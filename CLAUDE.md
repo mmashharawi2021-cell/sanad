@@ -53,14 +53,33 @@ npm.cmd run models:refresh
 - `src/models.ts`: فهرس ونماذج الذكاء الاصطناعي المجانية والمحلية.
 - `src/config.ts`: قراءة متغيرات البيئة (`.env`) والتحقق من صحتها.
 
-### 2. الواجهة الأمامية (`public/index.html`):
-- واجهة ويب كاملة ذات كفاءة عالية مبنية بـ HTML5/CSS3/Vanilla JS بطراز **Neumorphic Glassmorphic Cyber**:
-  - **Cyber Dynamic Island (`#cyberIsland`)**: الكبسولة العائمة الذكية مع أمواج صوتية ومفاتيح سريعة وتحكم في النظام.
-  - **Full-Duplex Voice & Wake Word**: الاستماع الدائم لكلمة التنبيه ("يا سند") مع ميزة المقاطعة الحية (Barge-in).
-  - **Live Web Preview Modal (`#previewModalBackdrop`)**: إطار تفاعلي للمعاينة الحية للمشاريع مع التبديل بين شاشة حاسوب وهاتف.
-  - **Disk & Performance HUD (`#sysStatsModalBackdrop`)**: مراقب نبض النظام، بطاقات الأقراص، ومحرر الرام وفاحص أكبر الملفات.
-  - **Universal Terminal Modal (`#terminalModalBackdrop`)**: طرفية تفاعلية متعددة البيئات.
-  - **Desktop Automation Modal (`#desktopModalBackdrop`)**: منظم سطح المكتب والتنزيلات.
+### 2. الواجهة الأمامية (`public/`):
+واجهة ويب عربية (RTL) مبنية بـ HTML5/CSS3/Vanilla JS، **بأسلوب iOS على آيفون برو ماكس حديث** (Liquid Glass، عناوين كبيرة، قوائم مجمّعة، أوراق Sheets، فقاعات iMessage، إشعارات Banners، Dynamic Island، مركز التحكم). يعمل في الوضعين الداكن والفاتح (`data-theme`).
+
+| الملف | المسؤولية |
+|---|---|
+| `public/index.html` | الهيكل والمنطق الرئيسي (سكربت مضمّن) + sprite أيقونات SVG في أعلى `<body>` (`<use href="#i-…">`) |
+| `public/styles.css` | المتغيرات (`--surface-*`، `--text-*`، `--brand`، `--glass-*`، `--sheet-bg`، `--cell-bg`) وأقسام مرتبة بالمراحل؛ الأقسام الأحدث في آخر الملف |
+| `public/ios.js` | الشريط العلوي والعنوان الكبير الذي يُطوى عند التمرير، وطفو الشريط وصندوق الإدخال فوق المحادثة |
+| `public/ios-notify.js` | `sanadNotify()` (إشعارات Banners) و `sanadConfirm()` (نافذة تأكيد iOS) |
+| `public/home.js` | الشاشة الرئيسية: ودجت الساعة، حلقات حالة الجهاز، أيقونات التطبيقات، اقتراحات سند |
+| `public/ios-island.js` | شريط الحالة و Dynamic Island (`window.sanadIsland`، تُغذّى من `setIslandStatus`/`updateIslandLatest`) |
+| `public/ios-control.js` | مركز التحكم (زر في الشريط، `Ctrl+Shift+C`، أو ضغط مطوّل على الجزيرة) |
+| `public/ios-apps.js` | نوافذ الأدوات كأوراق iOS (زر «تم»، أيقونة تطبيق، أدوات مقسّمة) |
+| `public/ios-list.js` | قائمة المحادثات بأسلوب iOS مع البحث وتأكيد الحذف |
+| `public/ios-polish.js` | إزالة الإيموجي والشروح الإنجليزية من نصوص واجهة النظام (لا يلمس محتوى المستخدم) |
+| `public/palette.js` | لوحة الأوامر `Ctrl+K` |
+
+- الكبسولة القديمة `#cyberIsland` باقية فقط لـ «وضع الكبسولة»، بشكل جزيرة سوداء موسّعة.
+- الحوار الصوتي الكامل وكلمة التنبيه («يا سند») مع المقاطعة الحية (Barge-in) في منطق `index.html`.
+- النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
+
+**قواعد الواجهة:**
+- **لا تغيّر معرّفات العناصر** في `index.html`؛ المنطق ووحدات iOS تعتمد عليها. أي سلوك جديد يوضع في وحدة `public/*.js` مستقلة.
+- لا خطوط SF ولا SF Symbols ولا شعار Apple؛ استخدم أيقونات Lucide في الـ sprite وخط IBM Plex Sans Arabic.
+- لا `alert()`/`confirm()`؛ استخدم `sanadNotify` و `sanadConfirm`. النصوص القادمة من الخادم أو النموذج تُدرج عبر `textContent`.
+- الألوان من المتغيرات فقط، مع قيم للوضع الفاتح في `:root[data-theme="light"]`، وكل حركة تحترم `prefers-reduced-motion`.
+- المهارات `ios-hig` و `frontend-design` و `i18n-accessibility` في `.claude/skills/` هي المرجع للتصميم.
 
 ### 3. السكربتات المساعدة (`scripts/`):
 - `scripts/globalHotkey.py`: خادم بايثون خفيف يلتقط الاختصارات العالمية (`Ctrl + Alt + S` لفتح سند، `Ctrl + Shift + V` للصوت).
