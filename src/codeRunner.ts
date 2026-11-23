@@ -1,5 +1,6 @@
-import { exec, spawn } from "node:child_process";
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { runPowerShell, startDetached } from "./safeShell";
+import { isInside, resolveInside } from "./safePaths";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -98,35 +99,23 @@ export async function executeTerminalCommand(
     cmdToRun = cmdToRun.replace(/^npx\s+/i, "npx.cmd ");
   }
 
-  return new Promise((resolve) => {
-    // Force UTF-8 in Windows console and Python runtime
-    const psCommand = `$env:PYTHONIOENCODING='utf-8'; $env:PYTHONUTF8='1'; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; chcp 65001 >$null; ${cmdToRun}`;
-    const child = exec(
-      `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "${psCommand.replace(/"/g, '\\"')}"`,
-      {
-        cwd: workingDir,
-        timeout: timeoutMs,
-        maxBuffer: 5 * 1024 * 1024, // 5 MB output
-        windowsHide: true,
-        env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
-      },
-      (error, stdout, stderr) => {
-        const durationMs = Date.now() - startedAt;
-        const exitCode = error ? (error.code ?? 1) : 0;
-        const success = exitCode === 0;
-
-        resolve({
-          success,
-          command: trimmed,
-          cwd: workingDir,
-          stdout: stdout.trim(),
-          stderr: stderr.trim(),
-          exitCode,
-          durationMs,
-        });
-      }
-    );
+  // Force UTF-8 in Windows console and Python runtime.
+  // يُمرَّر إلى PowerShell مباشرة عبر -EncodedCommand (لا cmd.exe بينهما): كان تهريب " بـ \" يكسر الاقتباس في cmd.
+  const psCommand = `$env:PYTHONIOENCODING='utf-8'; $env:PYTHONUTF8='1'; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8; chcp 65001 >$null; ${cmdToRun}`;
+  const result = await runPowerShell(psCommand, {
+    cwd: workingDir,
+    timeoutMs,
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
   });
+  return {
+    success: result.exitCode === 0,
+    command: trimmed,
+    cwd: workingDir,
+    stdout: result.stdout.trim(),
+    stderr: result.stderr.trim(),
+    exitCode: result.exitCode,
+    durationMs: Date.now() - startedAt,
+  };
 }
 
 export async function createFullProject(options: {
@@ -140,28 +129,23 @@ export async function createFullProject(options: {
   if (options.baseFolder === "downloads") base = path.join(home, "Downloads");
   if (options.baseFolder === "documents") base = path.join(home, "Documents");
 
-  const projectPath = path.isAbsolute(options.projectName)
-    ? options.projectName
-    : path.join(base, options.projectName);
+  // اسم بسيط داخل المجلد الأساسي فقط (الاسم والملفات قد تأتي من رد نموذج)
+  const safeName = String(options.projectName || "project").trim().replace(/[\/\\:*?"<>|]/g, "_").replace(/^\.+/, "_") || "project";
+  const projectPath = path.join(base, safeName);
 
   try {
     await mkdir(projectPath, { recursive: true });
 
     let count = 0;
     for (const file of options.files) {
-      const fullFilePath = path.join(projectPath, file.relativePath);
+      const fullFilePath = resolveInside(projectPath, file.relativePath);
       await mkdir(path.dirname(fullFilePath), { recursive: true });
       await writeFile(fullFilePath, file.content, "utf8");
       count++;
     }
 
     if (options.openInVsCode !== false) {
-      const child = spawn("code.cmd", [projectPath], {
-        detached: true,
-        stdio: "ignore",
-        shell: true,
-      });
-      child.unref();
+      startDetached("code", [projectPath]);
     }
 
     return {
@@ -183,6 +167,9 @@ export async function createFullProject(options: {
 export async function readProjectTree(dirPath: string, maxDepth: number = 3): Promise<string[]> {
   const results: string[] = [];
   const target = resolveWorkingDirectory(dirPath);
+  if (!isInside(os.homedir(), target)) {
+    return ["⚠️ عرض المجلدات مسموح داخل مجلد المستخدم فقط."];
+  }
 
   async function walk(current: string, depth: number) {
     if (depth > maxDepth) return;

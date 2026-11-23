@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { dirname, extname, join, normalize } from "node:path";
+import { dirname, extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppError, getConfig } from "./config";
 import { readModelCatalog, toChatModels, type ChatModel, type OpenRouterModel } from "./models";
@@ -24,6 +25,8 @@ import { ensureOllamaRunning, getBrainStatus, getSanadMode, initOfflineBrain, is
 import { cleanOllamaModelName } from "./ollama";
 import { getSpeechStatus, transcribeWav } from "./localSpeech";
 import { getVoiceStatus, synthesizeSpeech } from "./localVoice";
+import { assertReadable } from "./safePaths";
+import { deleteExtension, installDraft, listExtensions, proposeExtension, restorePreviousVersion, setExtensionEnabled, type Generate } from "./selfDev";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, "..", "public");
@@ -35,6 +38,37 @@ const REQUEST_TIMEOUT_MS = 90_000;
 const STREAM_TIMEOUT_MS = 120_000;
 const HEARTBEAT_MS = 15_000;
 const MODELS_TTL_MS = 10 * 60_000;
+
+/* ======================= الحماية (Security gate) =======================
+   1) الخادم يستمع على 127.0.0.1 فقط (لا وصول من أجهزة الشبكة).
+   2) رأس Host يجب أن يكون localhost/127.0.0.1 على نفس المنفذ (يمنع DNS rebinding).
+   3) كل طلب يغيّر الحالة (غير GET/HEAD) يجب أن:
+      - يأتي من أصل سند نفسه إن أرسل المتصفح Origin (يمنع المواقع الأخرى / CSRF)،
+      - ويحمل X-Sanad-Token الصحيح (رمز عشوائي يُولَّد عند كل إقلاع ويُحقن في الصفحة فقط)،
+      - ويرسل Content-Type: application/json لطلبات JSON. */
+const HOST = "127.0.0.1";
+const SESSION_TOKEN = randomBytes(32).toString("hex");
+const ALLOWED_HOSTS = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`, `[::1]:${PORT}`]);
+const ALLOWED_ORIGINS = new Set([`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`]);
+
+function tokenMatches(given: string | string[] | undefined): boolean {
+  if (typeof given !== "string") return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(SESSION_TOKEN);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/** يعيد سبب الرفض، أو null إن كان الطلب مسموحاً. */
+function securityRejection(req: IncomingMessage, pathname: string): string | null {
+  const host = String(req.headers.host || "").toLowerCase();
+  if (!ALLOWED_HOSTS.has(host)) return "Host غير مسموح.";
+  const method = (req.method || "GET").toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return null;
+  const origin = req.headers.origin;
+  if (origin && !ALLOWED_ORIGINS.has(origin)) return "مصدر الطلب غير مسموح.";
+  if (pathname.startsWith("/api/") && !tokenMatches(req.headers["x-sanad-token"])) return "رمز الجلسة مفقود أو غير صحيح. أعد تحميل الصفحة.";
+  return null;
+}
 
 type ModelsResult = {
   at: number;
@@ -67,7 +101,13 @@ const server = createServer((req, res) => {
 });
 
 async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+
+  const rejection = securityRejection(req, url.pathname);
+  if (rejection) {
+    sendJson(res, 403, { success: false, error: rejection, message: rejection });
+    return;
+  }
 
   if (req.method === "POST" && url.pathname === "/api/chat") {
     await handleChat(req, res);
@@ -112,6 +152,45 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     }
     const memory = await addMemory(content, category);
     sendJson(res, 200, { success: true, memory });
+    return;
+  }
+
+  /* ---------------- مطوّر سند الذاتي والإضافات ---------------- */
+  if (req.method === "GET" && url.pathname === "/api/extensions") {
+    sendJson(res, 200, { success: true, extensions: await listExtensions() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/selfdev/propose") {
+    const body = await readJsonBody(req);
+    const model = typeof body.model === "string" && body.model.trim() ? body.model.trim() : undefined;
+    const reviseId = typeof body.reviseId === "string" && body.reviseId ? body.reviseId : undefined;
+    const result = await proposeExtension(String(body.request || ""), selfDevGenerator(model), reviseId);
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/extensions/restore") {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await restorePreviousVersion(String(body.id || "")));
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/extensions/install") {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await installDraft(String(body.draftId || "")));
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/extensions/toggle") {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await setExtensionEnabled(String(body.id || ""), body.enabled === true));
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname === "/api/extensions") {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await deleteExtension(String(body.id || url.searchParams.get("id") || "")));
     return;
   }
 
@@ -189,13 +268,17 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     }
     const fileResult = await getProjectFileContent(projectName, file);
     if (!fileResult.found) {
-      res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(`<h3>الملف غير موجود (${file})</h3>`);
+      // نص عادي: اسم الملف قادم من الرابط ولا يجوز عرضه كـ HTML
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", "X-Content-Type-Options": "nosniff" });
+      res.end(`الملف غير موجود: ${file}`);
       return;
     }
     res.writeHead(200, {
       "Content-Type": fileResult.contentType,
       "Cache-Control": "no-cache",
+      "X-Content-Type-Options": "nosniff",
+      // المشاريع المولّدة تعمل في أصل معزول (بلا allow-same-origin) فلا تقرأ رمز سند ولا تستدعي واجهته
+      "Content-Security-Policy": "sandbox allow-scripts allow-forms allow-popups allow-modals",
     });
     res.end(fileResult.content);
     return;
@@ -267,7 +350,8 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     const screenWidth = typeof body.screenWidth === "number" ? body.screenWidth : 1920;
     const screenHeight = typeof body.screenHeight === "number" ? body.screenHeight : 1080;
     const model = typeof body.model === "string" ? body.model : undefined;
-    const autoExecute = body.autoExecute !== false;
+    // التنفيذ التلقائي لخطة نموذج الرؤية يجب أن يُطلب صراحة (افتراضياً: تحليل فقط)
+    const autoExecute = body.autoExecute === true;
 
     if (!imageBase64 || !goal) {
       sendJson(res, 400, { error: "صورة الشاشة والهدف المطلوب كلاهما مطلوب للوكيل البصري." });
@@ -696,7 +780,14 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     const filePath = typeof body.filePath === "string" ? body.filePath : "";
 
     if (filePath) {
-      const result = await extractTextFromLocalPath(filePath);
+      let safePath: string;
+      try {
+        safePath = assertReadable(filePath);
+      } catch (e) {
+        sendJson(res, 403, { success: false, error: (e as Error).message, message: (e as Error).message });
+        return;
+      }
+      const result = await extractTextFromLocalPath(safePath);
       sendJson(res, 200, { success: true, file: result });
       return;
     }
@@ -746,6 +837,27 @@ async function decideChatRoute(model: string | undefined): Promise<ChatRoute> {
     return { kind: "local", model: localModel, notice: offlineNotice(localModel) };
   }
   return { kind: "cloud", fallbackToLocal: true };
+}
+
+/** مولّد نص للمطوّر الذاتي يتبع نفس توجيه المحادثة (سحابي مع احتياط محلي، أو محلي). */
+function selfDevGenerator(model: string | undefined): Generate {
+  return async (system, prompt) => {
+    const route = await decideChatRoute(model);
+    const local = async (localModel: string) => {
+      await ensureOllamaRunning();
+      const a = await askOllama(prompt, { model: localModel, system, signal: AbortSignal.timeout(180_000) });
+      return { text: a.text, model: a.model };
+    };
+    if (route.kind === "local") return local(route.model);
+    try {
+      const a = await ask(prompt, { model, system, signal: AbortSignal.timeout(150_000) });
+      return { text: a.text, model: a.model };
+    } catch (error) {
+      if (!route.fallbackToLocal || !isNetworkError(error)) throw error;
+      markOffline();
+      return local(await requireLocalModel());
+    }
+  };
 }
 
 async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -1020,6 +1132,13 @@ async function readRawBody(req: IncomingMessage, maxBytes: number = MAX_BODY_BYT
 }
 
 async function readJsonBody(req: IncomingMessage, maxBytes: number = MAX_BODY_BYTES): Promise<Record<string, unknown>> {
+  // الطلبات «البسيطة» من مواقع أخرى (text/plain) لا تمر
+  const contentType = String(req.headers["content-type"] || "").toLowerCase();
+  if (!contentType.startsWith("application/json")) {
+    // نقرأ الجسم كي لا يبقى الاتصال معلقاً، ثم نرفض
+    await readRawBody(req, maxBytes).catch(() => undefined);
+    throw new AppError("Content-Type must be application/json.", { status: 415 });
+  }
   const raw = await readRawBody(req, maxBytes);
   if (raw.length === 0) return {};
 
@@ -1038,16 +1157,22 @@ async function serveStatic(pathname: string, res: ServerResponse): Promise<void>
   const relative = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
   const filePath = normalize(join(PUBLIC_DIR, relative));
 
-  if (!filePath.startsWith(PUBLIC_DIR)) {
+  if (filePath !== PUBLIC_DIR && !filePath.startsWith(PUBLIC_DIR + sep)) {
     sendJson(res, 403, { error: "Forbidden." });
     return;
   }
 
   try {
-    const file = await readFile(filePath);
+    let file: Buffer | string = await readFile(filePath);
+    if (relative === "index.html") {
+      // نحقن رمز الجلسة في الصفحة فقط؛ لا تستطيع المواقع الأخرى قراءته (سياسة نفس الأصل)
+      file = file.toString("utf8").replace("</head>", `  <meta name="sanad-token" content="${SESSION_TOKEN}" />\n  </head>`);
+    }
     res.writeHead(200, {
       "Content-Type": CONTENT_TYPES[extname(filePath).toLowerCase()] ?? "application/octet-stream",
       "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "same-origin",
     });
     res.end(file);
   } catch {
@@ -1065,11 +1190,11 @@ function sendJson(res: ServerResponse, status: number, payload: unknown): void {
   res.end(body);
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   initOfflineBrain();
   try {
     const config = getConfig();
-    console.log(`OpenRouter demo running at http://localhost:${PORT}`);
+    console.log(`SANAD running at http://localhost:${PORT} (local only: ${HOST})`);
     console.log(`Default model: ${config.model}`);
     if (config.fallbackModels.length) console.log(`Fallbacks: ${config.fallbackModels.join(" → ")}`);
     initTaskScheduler().catch((e) => console.warn(`[scheduler error]:`, e));

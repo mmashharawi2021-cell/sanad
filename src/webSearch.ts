@@ -1,7 +1,9 @@
 /**
- * Web Search and Web Page Content Extractor for JARVIS
+ * Web Search and Web Page Content Extractor for SANAD
  * Uses DuckDuckGo HTML scraping for free, fast, zero-key web search.
  */
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 
 export type SearchResult = {
   title: string;
@@ -91,16 +93,50 @@ export async function searchWeb(query: string, limit: number = 5): Promise<Searc
   }
 }
 
+/* ---------- حماية من SSRF: لا جلب لعناوين الجهاز نفسه ولا للشبكة الداخلية ---------- */
+function isPrivateAddress(ip: string): boolean {
+  const v = ip.toLowerCase().replace(/^::ffff:/, "");
+  if (isIP(v) === 4) {
+    const [a = 0, b = 0] = v.split(".").map(Number);
+    return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+  }
+  return v === "::" || v === "::1" || v.startsWith("fc") || v.startsWith("fd") || v.startsWith("fe80");
+}
+
+async function assertPublicUrl(raw: string): Promise<URL> {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new Error("رابط غير صالح.");
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("يُسمح بروابط http و https فقط.");
+  const host = u.hostname.replace(/^\[|\]$/g, "");
+  const addrs = isIP(host) ? [host] : (await lookup(host, { all: true })).map((a) => a.address);
+  if (!addrs.length || addrs.some(isPrivateAddress)) throw new Error("لا يُسمح بقراءة عناوين الجهاز أو الشبكة الداخلية.");
+  return u;
+}
+
 export async function fetchPageContent(targetUrl: string, maxChars: number = 6000): Promise<{ title: string; content: string }> {
   try {
-    const res = await fetch(targetUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      signal: AbortSignal.timeout(15_000),
-    });
+    // نتبع التحويلات يدوياً ونفحص كل عنوان (تحويل قد يقود إلى عنوان داخلي)
+    let current = await assertPublicUrl(targetUrl);
+    let res: Response | undefined;
+    for (let hop = 0; hop < 4; hop++) {
+      res = await fetch(current, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        redirect: "manual",
+        signal: AbortSignal.timeout(15_000),
+      });
+      const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+      if (!location) break;
+      current = await assertPublicUrl(new URL(location, current).toString());
+    }
+    if (!res) throw new Error("تعذر جلب الصفحة.");
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);

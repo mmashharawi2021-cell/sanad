@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { cleanTemporaryFiles, setVolume, lockWorkstation, controlKeyboard } from "./systemTools";
+import { psQuote, runPowerShell, startDetached } from "./safeShell";
 
 const execAsync = promisify(exec);
 
@@ -104,31 +105,37 @@ export async function listProcesses(limit: number = 15): Promise<ProcessInfo[]> 
   });
 }
 
-export async function killProcess(identifier: string | number): Promise<{ success: boolean; message: string }> {
-  return new Promise((resolve) => {
-    const isPid = typeof identifier === "number" || /^\d+$/.test(String(identifier).trim());
-    const arg = isPid ? `-Id ${identifier}` : `-Name "${String(identifier).trim()}"`;
-    const psScript = `Stop-Process ${arg} -Force -ErrorAction Stop`;
+// عمليات لا يُسمح بإنهائها: النظام، الجلسة، وخادم سند نفسه (node)
+const PROTECTED_PROCESSES = new Set([
+  "system", "idle", "registry", "smss", "csrss", "wininit", "winlogon", "services", "lsass", "lsaiso",
+  "svchost", "dwm", "fontdrvhost", "explorer", "sihost", "ctfmon", "memcompression", "secure system", "node",
+]);
 
-    execFile(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", psScript],
-      { windowsHide: true },
-      (err) => {
-        if (err) {
-          resolve({
-            success: false,
-            message: `تعذر إغلاق العملية (${identifier}): ${err.message}`,
-          });
-        } else {
-          resolve({
-            success: true,
-            message: `تم بنجاح إغلاق العملية (${identifier}) وتحرير مواردها.`,
-          });
-        }
-      }
-    );
-  });
+export async function killProcess(identifier: string | number): Promise<{ success: boolean; message: string }> {
+  const raw = String(identifier).trim();
+  const isPid = typeof identifier === "number" || /^\d+$/.test(raw);
+
+  if (isPid) {
+    const pid = Number(raw);
+    if (!Number.isInteger(pid) || pid <= 4 || pid === process.pid || pid === process.ppid) {
+      return { success: false, message: `العملية (${raw}) محمية: عملية نظام أو خادم سند نفسه.` };
+    }
+  } else {
+    const name = raw.replace(/\.exe$/i, "");
+    // اسم عملية فقط: حروف وأرقام ونقطة وشرطة ومسافة — يمنع حقن أوامر PowerShell
+    if (!/^[\w.\- ]{1,64}$/.test(name)) {
+      return { success: false, message: "اسم العملية غير صالح." };
+    }
+    if (PROTECTED_PROCESSES.has(name.toLowerCase())) {
+      return { success: false, message: `العملية «${name}» محمية ولا يمكن إنهاؤها من سند.` };
+    }
+  }
+
+  const target = isPid ? `-Id ${Number(raw)}` : `-Name ${psQuote(raw.replace(/\.exe$/i, ""))}`;
+  const result = await runPowerShell(`Stop-Process ${target} -Force -ErrorAction Stop`, { timeoutMs: 15_000 });
+  return result.exitCode === 0
+    ? { success: true, message: `تم بنجاح إغلاق العملية (${raw}) وتحرير مواردها.` }
+    : { success: false, message: `تعذر إغلاق العملية (${raw}): ${result.stderr.trim().slice(0, 300)}` };
 }
 
 export async function launchAnyApp(
@@ -139,20 +146,15 @@ export async function launchAnyApp(
 
   return new Promise((resolve) => {
     try {
-      if (target.includes(":")) {
-        const child = spawn("powershell.exe", ["-NoProfile", "-Command", `Start-Process "${target}"`], {
-          detached: true,
-          stdio: "ignore",
-          windowsHide: true,
-        });
-        child.unref();
+      // Start-Process بنص حرفي: يغطي البرامج والمسارات والروابط مثل ms-settings: دون تفسير cmd.exe.
+      // صيغة «برنامج "وسيط"» (مثل code "Desktop\مشروع") تُفصل إلى برنامج ووسيط؛ المسار النسبي من مجلد المستخدم.
+      const withArg = /^([^\s"]+)\s+"([^"]+)"$/.exec(appNameOrPath.trim());
+      if (withArg) {
+        const program = APP_ALIASES[withArg[1]!.toLowerCase()] || withArg[1]!;
+        const arg = path.isAbsolute(withArg[2]!) ? withArg[2]! : path.join(os.homedir(), withArg[2]!);
+        startDetached(program, [arg]);
       } else {
-        const child = spawn("cmd.exe", ["/c", "start", "", target], {
-          detached: true,
-          stdio: "ignore",
-          windowsHide: true,
-        });
-        child.unref();
+        startDetached(target);
       }
 
       resolve({

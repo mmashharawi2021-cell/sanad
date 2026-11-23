@@ -1,5 +1,6 @@
-import { spawn } from "node:child_process";
 import fs from "node:fs";
+import { startDetached } from "./safeShell";
+import { isInside, isSecretPath, isSimpleName, resolveInside } from "./safePaths";
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -403,8 +404,9 @@ function escapeHtml(s) {
 export async function buildProject(options: BuildProjectOptions): Promise<BuildProjectResult> {
   const { projectName, template = "web-dashboard", description, baseFolder = "desktop", openInVsCode = true } = options;
   const baseDir = getProjectBasePath(baseFolder);
-  const cleanName = projectName.trim().replace(/[\/\\:*?"<>|]/g, "_");
-  const projectPath = path.isAbsolute(projectName) ? projectName : path.join(baseDir, cleanName);
+  // اسم بسيط دائماً: لا مسارات مطلقة ولا `..` (المسار قد يأتي من رد نموذج)
+  const cleanName = projectName.trim().replace(/[\/\\:*?"<>|]/g, "_").replace(/^\.+/, "_") || "project";
+  const projectPath = resolveInside(baseDir, cleanName);
 
   if (!fs.existsSync(projectPath)) {
     await mkdir(projectPath, { recursive: true });
@@ -417,7 +419,7 @@ export async function buildProject(options: BuildProjectOptions): Promise<BuildP
   const filesCreated: string[] = [];
 
   for (const f of filesToCreate) {
-    const fullPath = path.join(projectPath, f.relativePath);
+    const fullPath = resolveInside(projectPath, f.relativePath);
     await mkdir(path.dirname(fullPath), { recursive: true });
     await writeFile(fullPath, f.content, "utf8");
     filesCreated.push(f.relativePath);
@@ -426,12 +428,7 @@ export async function buildProject(options: BuildProjectOptions): Promise<BuildP
   // Open in VS Code
   if (openInVsCode) {
     try {
-      const child = spawn("cmd.exe", ["/c", "start", "", "code", projectPath], {
-        detached: true,
-        stdio: "ignore",
-        windowsHide: true,
-      });
-      child.unref();
+      startDetached("code", [projectPath]);
     } catch {}
   }
 
@@ -452,11 +449,13 @@ export async function buildProject(options: BuildProjectOptions): Promise<BuildP
 
 export async function getProjectFileContent(projectName: string, relativeFile: string = "index.html"): Promise<{ found: boolean; content: string; contentType: string }> {
   const baseDir = getProjectBasePath("desktop");
-  const projectPath = path.join(baseDir, projectName);
+  // اسم المشروع اسم مجلد بسيط فقط، والملف داخل مجلده فقط (كان `project=..` يقرأ أي ملف)
+  if (!isSimpleName(projectName)) {
+    return { found: false, content: "Access Denied", contentType: "text/plain" };
+  }
+  const projectPath = path.resolve(baseDir, projectName);
   const targetFile = path.resolve(projectPath, relativeFile);
-
-  // Security check: ensure targetFile stays within projectPath
-  if (!targetFile.startsWith(projectPath)) {
+  if (!isInside(projectPath, targetFile) || isSecretPath(targetFile)) {
     return { found: false, content: "Access Denied", contentType: "text/plain" };
   }
 

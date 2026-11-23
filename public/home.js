@@ -17,6 +17,7 @@
     { id: "projectPreviewBtn", icon: "code", label: "المشاريع", color: "purple" },
     { id: "toggleIslandBtn", icon: "island", label: "الكبسولة", color: "cyan" },
     { id: "paletteBtn", icon: "command", label: "الأوامر", color: "gray" },
+    { id: "extensionsBtn", icon: "puzzle", label: "الإضافات", color: "purple" },
   ];
 
   // النص المُرسل هو نفسه السابق (قد تعتمد عليه مطابقة الأوامر المحلية)
@@ -165,6 +166,8 @@
     const widgets = el("div", "home-widgets");
     widgets.append(clock.node, sys.node);
     home.append(widgets, appGrid(), suggestionsWidget(onSuggest));
+    // الإضافات (إن وُجدت) تضيف إلى بطاقة حالة الجهاز أو تضيف ودجتات — public/extensions-runtime.js
+    try { window.sanadExt?._decorateHome(home); } catch (e) { console.warn(e); }
 
     // تحديث حيّ يتوقف تلقائياً عند مغادرة الشاشة الرئيسية
     sys.refresh();

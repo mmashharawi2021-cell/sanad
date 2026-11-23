@@ -157,7 +157,7 @@ export async function planAndExecuteVisualAction(options: {
 
   const screenW = options.screenWidth || 1920;
   const screenH = options.screenHeight || 1080;
-  const autoExecute = options.autoExecute !== false;
+  const autoExecute = options.autoExecute === true;
 
   // 1. Fast Cache Lookup from SANAD Action Memory
   const cached = await findMatchingWorkflow(options.goal, { width: screenW, height: screenH });

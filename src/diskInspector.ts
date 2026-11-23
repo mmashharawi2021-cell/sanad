@@ -214,11 +214,18 @@ export async function safeDeepCleanDisk(): Promise<DiskCleanResult> {
   let filesDeleted = 0;
   const cleanedLocations: string[] = [];
 
+  // مسارات مطلقة فقط وبلا تكرار: إن كان LOCALAPPDATA فارغاً كان path.join("", "Temp") مساراً نسبياً من مجلد التشغيل
+  const localAppData = process.env.LOCALAPPDATA && path.isAbsolute(process.env.LOCALAPPDATA) ? process.env.LOCALAPPDATA : "";
   const tempDirsToClean = [
-    os.tmpdir(),
-    path.join(process.env.LOCALAPPDATA || "", "CrashDumps"),
-    path.join(process.env.LOCALAPPDATA || "", "Temp"),
-  ].filter(Boolean);
+    ...new Set(
+      [os.tmpdir(), localAppData && path.join(localAppData, "CrashDumps"), localAppData && path.join(localAppData, "Temp")]
+        .filter((d): d is string => Boolean(d) && path.isAbsolute(String(d)))
+        .map((d) => path.resolve(d).toLowerCase()),
+    ),
+  ];
+  // لا نحذف ما عُدّل خلال آخر 24 ساعة: قد يكون قيد الاستخدام (مثبّتات جارية، جلسات أدوات)
+  const MIN_AGE_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
 
   for (const dir of tempDirsToClean) {
     try {
@@ -228,6 +235,7 @@ export async function safeDeepCleanDisk(): Promise<DiskCleanResult> {
         const fullPath = path.join(dir, entry.name);
         try {
           const s = await stat(fullPath);
+          if (now - s.mtimeMs < MIN_AGE_MS) continue;
           if (entry.isFile()) {
             freedBytes += s.size;
             await unlink(fullPath);

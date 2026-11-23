@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { launchApp, openFolder, controlKeyboard } from "./systemTools";
 import { extractTextFromLocalPath, ExtractedFile } from "./fileReader";
+import { assertReadable, userRoots } from "./safePaths";
 
 export type OrganizeCategory = {
   key: string;
@@ -154,6 +155,20 @@ export async function organizeDirectory(
   target: "desktop" | "downloads" | string
 ): Promise<OrganizeResult> {
   const targetPath = resolveFolderPath(target);
+  // الفرز ينقل ملفات؛ يُسمح به لسطح المكتب والمستندات والتنزيلات نفسها فقط
+  // (مجلد فرعي مثل Desktop/opencode/src سيُفسد مشروعاً)
+  const allowed = userRoots().some((root) => path.resolve(root).toLowerCase() === path.resolve(targetPath).toLowerCase());
+  if (!allowed) {
+    return {
+      success: false,
+      target,
+      targetPath,
+      movedFilesCount: 0,
+      totalExamined: 0,
+      byCategory: {},
+      message: "الفرز مسموح لسطح المكتب أو المستندات أو التنزيلات فقط.",
+    };
+  }
   if (!fs.existsSync(targetPath)) {
     return {
       success: false,
@@ -300,9 +315,9 @@ export async function inspectAndSummarizeFile(
   filePath: string
 ): Promise<{ success: boolean; data?: ExtractedFile; message: string }> {
   try {
-    const resolvedPath = path.isAbsolute(filePath)
-      ? filePath
-      : path.join(os.homedir(), "Desktop", filePath);
+    const resolvedPath = assertReadable(
+      path.isAbsolute(filePath) ? filePath : path.join(os.homedir(), "Desktop", filePath),
+    );
 
     const extracted = await extractTextFromLocalPath(resolvedPath);
     return {

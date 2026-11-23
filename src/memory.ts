@@ -135,12 +135,30 @@ export async function clearAllMemories(): Promise<void> {
 
 /** Same as getSystemPromptWithMemory, built on the compact prompt for small local models. */
 export function getLocalSystemPromptWithMemory(): Promise<string> {
-  return getSystemPromptWithMemory(SANAD_LOCAL_SYSTEM_PROMPT);
+  // النموذج المحلي (Ollama) يعمل على الجهاز نفسه: الذاكرة كاملة دائماً
+  return getSystemPromptWithMemory(SANAD_LOCAL_SYSTEM_PROMPT, { cloud: false });
+}
+
+/**
+ * كم من الذاكرة يُرسل إلى النماذج السحابية (OpenRouter)؟ من .env: SANAD_CLOUD_MEMORY
+ *  - all (الافتراضي): كل الذاكرة
+ *  - no-personal: بلا فئة «عن المستخدم» (المعلومات الشخصية)
+ *  - off: لا شيء
+ */
+function cloudMemoryPolicy(): "all" | "no-personal" | "off" {
+  const v = String(process.env.SANAD_CLOUD_MEMORY || "all").trim().toLowerCase();
+  return v === "off" || v === "no-personal" ? v : "all";
 }
 
 /** Formats the long-term memory for injection into the model's System Prompt */
-export async function getSystemPromptWithMemory(basePrompt: string = JARVIS_SYSTEM_PROMPT): Promise<string> {
-  const memories = await getMemories();
+export async function getSystemPromptWithMemory(
+  basePrompt: string = JARVIS_SYSTEM_PROMPT,
+  options: { cloud?: boolean } = {},
+): Promise<string> {
+  const cloud = options.cloud !== false;
+  const policy = cloud ? cloudMemoryPolicy() : "all";
+  if (policy === "off") return basePrompt;
+  const memories = (await getMemories()).filter((m) => !(policy === "no-personal" && m.category === "user"));
   if (!memories.length) {
     return basePrompt;
   }

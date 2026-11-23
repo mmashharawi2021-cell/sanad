@@ -4,8 +4,15 @@ import { readdir, stat, unlink, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { runFile, runPowerShell, startDetached } from "./safeShell";
+import { isExecutableExtension, isInsideAny, userRoots } from "./safePaths";
 
 const execAsync = promisify(exec);
+
+// مدخلات التحكم بالفأرة ولوحة المفاتيح قد تأتي من نموذج الرؤية — قوائم بيضاء صارمة
+const MOUSE_ACTIONS = new Set(["click", "left_click", "right_click", "double_click", "move"]);
+const KEY_RE = /^[a-z0-9]{1,12}$/;
+const HOTKEY_RE = /^[a-z0-9]{1,12}(\+[a-z0-9]{1,12}){0,3}$/;
 
 export type SystemStats = {
   platform: string;
@@ -126,6 +133,8 @@ export async function cleanTemporaryFiles(): Promise<{
       const fullPath = path.join(tmpDir, entry.name);
       try {
         const s = await stat(fullPath);
+        // لا نحذف ما عُدّل خلال آخر 24 ساعة (قد يكون قيد الاستخدام)
+        if (Date.now() - s.mtimeMs < 24 * 60 * 60 * 1000) continue;
         if (entry.isFile()) {
           freedBytes += s.size;
           await unlink(fullPath);
@@ -211,16 +220,18 @@ export async function launchApp(
   let args = found?.args || [];
 
   if (!cmd) {
-    cmd = target;
+    // «برنامج وسيط» (مثل notepad file.txt): كان shell:true يفصلهما؛ نفصلهما هنا بأمان كوسيط حرفي
+    const m = /^("([^"]+)"|[^\s"]+)\s+(.+)$/.exec(target.trim());
+    if (m && !fs.existsSync(target.trim())) {
+      cmd = m[2] ?? m[1]!;
+      args = [m[3]!.replace(/^"|"$/g, "")];
+    } else {
+      cmd = target;
+    }
   }
 
   try {
-    const child = spawn("cmd.exe", ["/c", "start", "", cmd, ...args], {
-      detached: true,
-      stdio: "ignore",
-      shell: true,
-    });
-    child.unref();
+    startDetached(cmd, args);
 
     let msg = `تم تشغيل ${target} بنجاح على اللابتوب.`;
     if (key.includes("arc") || key.includes("ارك")) {
@@ -255,7 +266,6 @@ export async function openFolder(folderKey: string): Promise<{ success: boolean;
     const child = spawn("explorer.exe", [folderPath], {
       detached: true,
       stdio: "ignore",
-      shell: true,
     });
     child.unref();
     return { success: true, message: `تم فتح المجلد: ${folderPath}` };
@@ -299,12 +309,7 @@ export async function openMediaFile(
     const chosen = matched[Math.floor(Math.random() * matched.length)]!;
     const fullPath = path.join(dir, chosen);
 
-    const child = spawn("cmd.exe", ["/c", "start", "", fullPath], {
-      detached: true,
-      stdio: "ignore",
-      shell: true,
-    });
-    child.unref();
+    startDetached(fullPath);
 
     return {
       success: true,
@@ -318,12 +323,7 @@ export async function openMediaFile(
 
 export async function openFileDirectly(filePath: string): Promise<{ success: boolean; message: string }> {
   try {
-    const child = spawn("cmd.exe", ["/c", "start", "", filePath], {
-      detached: true,
-      stdio: "ignore",
-      shell: true,
-    });
-    child.unref();
+    startDetached(filePath);
     return { success: true, message: `تم فتح: ${path.basename(filePath)}` };
   } catch (err: any) {
     return { success: false, message: `تعذر فتح الملف: ${err.message}` };
@@ -371,16 +371,30 @@ export async function createOrWriteTextFile(options: {
     targetPath = path.join(targetDir, name);
   }
 
+  // الكتابة داخل سطح المكتب والمستندات والتنزيلات فقط (كان يقبل أي مسار، ومنه مجلد بدء التشغيل)
+  targetPath = path.resolve(targetPath);
+  if (!isInsideAny(userRoots(), targetPath)) {
+    return {
+      success: false,
+      message: "إنشاء الملفات مسموح داخل سطح المكتب أو المستندات أو التنزيلات فقط.",
+      fullPath: targetPath,
+    };
+  }
+  const executable = isExecutableExtension(targetPath);
+
   try {
     await writeFile(targetPath, options.content || "", "utf8");
 
-    if (options.openAfterCreate !== false) {
-      const child = spawn("cmd.exe", ["/c", "start", "", targetPath], {
-        detached: true,
-        stdio: "ignore",
-        shell: true,
-      });
-      child.unref();
+    // فتح ملف تنفيذي = تشغيله؛ لا نفعل ذلك تلقائياً أبداً
+    if (options.openAfterCreate !== false && !executable) {
+      startDetached(targetPath);
+    }
+    if (executable) {
+      return {
+        success: true,
+        message: `تم حفظ الملف ${path.basename(targetPath)} دون فتحه، لأنه ملف تنفيذي. افتحه بنفسك إن كنت تثق بمحتواه.`,
+        fullPath: targetPath,
+      };
     }
 
     return {
@@ -402,6 +416,7 @@ export async function setVolume(
   steps: number = 5,
 ): Promise<{ success: boolean; message: string }> {
   try {
+    steps = Math.max(1, Math.min(50, Math.round(Number(steps) || 5)));
     let script = "";
     if (action === "up") {
       script = `1..${steps} | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]175) }`;
@@ -415,7 +430,8 @@ export async function setVolume(
       script = `1..50 | ForEach-Object { (New-Object -ComObject WScript.Shell).SendKeys([char]174) }`;
     }
 
-    await execAsync(`powershell -NoProfile -Command "${script}"`, { timeout: 4000 });
+    if (!script) return { success: false, message: "إجراء صوت غير معروف." };
+    await runPowerShell(script, { timeoutMs: 4000 });
 
     let msg = "تم تعديل مستوى الصوت بنجاح.";
     if (action === "up") msg = "تم رفع مستوى صوت اللابتوب.";
@@ -435,7 +451,6 @@ export async function lockWorkstation(): Promise<{ success: boolean; message: st
     const child = spawn("rundll32.exe", ["user32.dll,LockWorkStation"], {
       detached: true,
       stdio: "ignore",
-      shell: true,
     });
     child.unref();
     return { success: true, message: "تم قفل شاشة اللابتوب بنجاح لحماية خصوصيتك." };
@@ -451,11 +466,12 @@ export async function controlMouse(options: {
 }): Promise<{ success: boolean; message: string; x?: number; y?: number }> {
   try {
     const action = options.action || "click";
-    const xArg = typeof options.x === "number" ? String(Math.round(options.x)) : "-1";
-    const yArg = typeof options.y === "number" ? String(Math.round(options.y)) : "-1";
+    if (!MOUSE_ACTIONS.has(action)) return { success: false, message: `إجراء فأرة غير مسموح: ${String(action).slice(0, 30)}` };
+    const xArg = Number.isFinite(options.x) ? String(Math.round(options.x as number)) : "-1";
+    const yArg = Number.isFinite(options.y) ? String(Math.round(options.y as number)) : "-1";
 
     const scriptPath = path.join(process.cwd(), "scripts", "mouseController.py");
-    await execAsync(`py "${scriptPath}" ${action} ${xArg} ${yArg}`, { timeout: 4000 });
+    await runFile("py", [scriptPath, action, xArg, yArg]);
 
     let msg = "تم تنفيذ أمر الفأرة بنجاح.";
     if (action === "click" || action === "left_click") {
@@ -494,14 +510,15 @@ export async function controlKeyboard(options: {
       const pressEnter = options.pressEnter ? "enter" : "none";
       const safeTempPath = path.join(os.tmpdir(), `sanad_type_${Date.now()}.txt`);
       await writeFile(safeTempPath, text, "utf8");
-      await execAsync(`py "${scriptPath}" type --file "${safeTempPath}" ${pressEnter}`, { timeout: 4000 });
+      await runFile("py", [scriptPath, "type", "--file", safeTempPath, pressEnter]);
       try { await unlink(safeTempPath); } catch {}
       return { success: true, message: `تمت كتابة النص بنجاح: "${text.slice(0, 40)}${text.length > 40 ? "..." : ""}"` };
     }
 
     if (action === "press") {
-      const key = (options.key || "enter").toLowerCase();
-      await execAsync(`py "${scriptPath}" press "${key}"`, { timeout: 4000 });
+      const key = (options.key || "enter").toLowerCase().trim();
+      if (!KEY_RE.test(key)) return { success: false, message: `مفتاح غير مسموح: ${key.slice(0, 20)}` };
+      await runFile("py", [scriptPath, "press", key]);
       let keyLabel = key;
       if (key === "enter") keyLabel = "Enter (إدخال)";
       else if (key === "esc") keyLabel = "Escape (هروب)";
@@ -510,8 +527,9 @@ export async function controlKeyboard(options: {
     }
 
     if (action === "hotkey") {
-      const hotkey = (options.hotkey || "ctrl+s").toLowerCase();
-      await execAsync(`py "${scriptPath}" hotkey "${hotkey}"`, { timeout: 4000 });
+      const hotkey = (options.hotkey || "ctrl+s").toLowerCase().replace(/\s+/g, "");
+      if (!HOTKEY_RE.test(hotkey)) return { success: false, message: `اختصار غير مسموح: ${hotkey.slice(0, 30)}` };
+      await runFile("py", [scriptPath, "hotkey", hotkey]);
       let hotkeyLabel = hotkey;
       if (hotkey === "ctrl+s") hotkeyLabel = "Ctrl+S (حفظ)";
       else if (hotkey === "ctrl+n") hotkeyLabel = "Ctrl+N (جديد)";

@@ -166,10 +166,10 @@
   }
 
   function setLatest(htmlOrText) {
-    // قد تكون HTML؛ نعرض نصها فقط
-    const tmp = document.createElement("div");
-    tmp.innerHTML = typeof htmlOrText === "string" ? htmlOrText : "";
-    const plain = (tmp.textContent || "").replace(/\s+/g, " ").trim();
+    // قد تكون HTML؛ نعرض نصها فقط. DOMParser خامل (لا يحمّل صوراً ولا ينفّذ onerror)،
+    // أما innerHTML على عنصر منفصل فيُطلق <img onerror> — كان هذا ثغرة XSS هنا.
+    const doc = new DOMParser().parseFromString(typeof htmlOrText === "string" ? htmlOrText : "", "text/html");
+    const plain = (doc.body.textContent || "").replace(/\s+/g, " ").trim();
     if (plain) exLatest.textContent = plain.length > 220 ? `${plain.slice(0, 220)}…` : plain;
   }
 

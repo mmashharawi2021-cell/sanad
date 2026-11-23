@@ -4,3 +4,10 @@ node_modules/
 *.log
 dist/
 vendor/
+
+# Personal runtime data (memory, learned workflows, scheduled tasks) — never commit
+data/memory.json
+data/actionWorkflows.json
+data/tasks.json
+data/extensions.json
+data/extensions-backup/

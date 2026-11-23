@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { executeTerminalCommand } from "./codeRunner";
 import { getSystemStats } from "./systemTools";
@@ -66,7 +67,7 @@ const DEFAULT_TASKS: ScheduledTask[] = [
     scheduleStr: "كل 60 دقيقة",
     intervalMinutes: 60,
     actionType: "command",
-    actionValue: "dir C:\\Users\\mozar\\Desktop",
+    actionValue: `dir "${path.join(os.homedir(), "Desktop")}"`,
     enabled: false,
     createdAt: new Date().toISOString(),
     lastRunAt: null,
