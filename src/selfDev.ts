@@ -61,6 +61,8 @@ async function readInstalledCode(id: string): Promise<string | null> {
 /* ---------------------------- موجّه المطوّر ---------------------------- */
 export const SELF_DEV_SYSTEM_PROMPT = `You are SANAD's self-development engine. SANAD is an Arabic (RTL) desktop assistant whose web UI looks like iOS on an iPhone.
 Write ONE browser add-on in plain JavaScript (no imports, no modules, no build step) that implements the user's requested feature.
+The add-on runs inside its own sandboxed iframe: it can only use the api object below and normal browser APIs.
+It cannot see SANAD's page, cookies or localStorage (use api.storage), and window.parent is off-limits.
 
 The add-on MUST be a single call:
 sanadExt.register({

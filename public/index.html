@@ -2486,6 +2486,15 @@
                 body: JSON.stringify({ command: cmd, cwd: "desktop" }),
               });
               const data = await res.json();
+              if (data.cancelled) {
+                assistant.content = `🛑 **لم يُنفَّذ الأمر:** ألغيتَ التنفيذ.\n\n\`${cmd}\``;
+                assistant.pending = false;
+                assistant.model = "SANAD Terminal Engine";
+                saveState();
+                renderThread();
+                renderSidebar();
+                return true;
+              }
               const output = data.stdout || data.stderr || "(اكتمل بدون مخرجات)";
 
               assistant.content = `💻 **[تم تنفيذ أمر الطرفية على لابتوبك]:**\n\n\`\`\`powershell\n> ${data.command}\n${output}\n\`\`\`\n\n*(رمز الخروج: ${data.exitCode} | الاستغراق: ${data.durationMs}ms | مجلد العمل: \`${data.cwd}\`)*`;
@@ -3298,7 +3307,9 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
                 .replace(/\{[\s\S]*?"command"[\s\S]*?\}/gi, "")
                 .trim();
 
-              assistant.content = `${cleaned}\n\n> 💻 **[تم تنفيذ أمر الطرفية على لابتوبك]:**\n\`\`\`powershell\n> ${data.command}\n${output}\n\`\`\`\n*(رمز الخروج: ${data.exitCode} | الاستغراق: ${data.durationMs}ms)*`;
+              assistant.content = data.cancelled
+                ? `${cleaned}\n\n> 🛑 **لم يُنفَّذ الأمر الذي طلبه النموذج:** ألغيتَ التنفيذ.\n\`\`\`powershell\n> ${cmd}\n\`\`\``
+                : `${cleaned}\n\n> 💻 **[تم تنفيذ أمر الطرفية على لابتوبك]:**\n\`\`\`powershell\n> ${data.command}\n${output}\n\`\`\`\n*(رمز الخروج: ${data.exitCode} | الاستغراق: ${data.durationMs}ms)*`;
               renderThread();
               saveState();
               return;
@@ -4227,7 +4238,11 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           }
         }
 
-        sendMessage(command || cleanedText);
+        // أمر صوتي: الإجراءات الخطرة الناتجة عنه تحتاج تأكيداً (public/api-guard.js)
+        window.__sanadVoiceActing = (window.__sanadVoiceActing || 0) + 1;
+        Promise.resolve(sendMessage(command || cleanedText)).finally(() => {
+          window.__sanadVoiceActing = Math.max(0, (window.__sanadVoiceActing || 1) - 1);
+        });
       }
 
       function startListening() {

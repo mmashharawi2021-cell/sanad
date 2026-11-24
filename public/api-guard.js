@@ -44,6 +44,18 @@
     "/api/vision/workflows": "حذف مسار محفوظ",
   };
   window.__sanadModelActing = 0;
+  // أوامر صوتية: صوت من فيديو أو شخص آخر قد يقول «يا سند نفذ أمر …»
+  window.__sanadVoiceActing = 0;
+  // إجراءات صوتية آمنة تبقى بلا تأكيد (يدان حرتان): فتح برامج/مجلدات، الصوت، القفل، السطوع
+  const VOICE_SAFE_ACTIONS = new Set(["launch-app", "launch-any-app", "open-app", "start-app", "open-folder", "open-media", "volume", "set-volume", "lock", "lock-screen", "lock-workstation", "brightness", "set-brightness"]);
+  const VOICE_SAFE_PATHS = new Set(["/api/system/routine", "/api/desktop/preset", "/api/tasks/toggle"]);
+  function needsVoiceConfirm(path, body) {
+    if (!SENSITIVE[path] || VOICE_SAFE_PATHS.has(path)) return false;
+    if (path === "/api/system/action") {
+      try { return !VOICE_SAFE_ACTIONS.has(String(JSON.parse(body || "{}").action || "")); } catch { return true; }
+    }
+    return true;
+  }
 
   function describe(path, method, body) {
     let data = {};
@@ -56,11 +68,11 @@
     return `${SENSITIVE[path] || "إجراء"}${method === "DELETE" ? " (حذف)" : ""}\n\n${details || path}`;
   }
 
-  async function confirmModelAction(path, method, body) {
+  async function confirmModelAction(path, method, body, source = "model") {
     const message = describe(path, method, body);
     if (typeof window.sanadConfirm === "function") {
       return window.sanadConfirm({
-        title: "سند يطلب تنفيذ إجراء من رد النموذج",
+        title: source === "voice" ? "سند سمع أمراً صوتياً يتطلب تنفيذ إجراء" : "سند يطلب تنفيذ إجراء من رد النموذج",
         message: `${message}\n\nنفّذ فقط إن كنت تتوقع هذا الإجراء.`,
         confirmText: "نفّذ",
         cancelText: "إلغاء",
@@ -76,8 +88,10 @@
     if (!isOwnApi(url) || method === "GET" || method === "HEAD") return nativeFetch(input, init);
 
     const path = new URL(url, location.href).pathname;
-    if (window.__sanadModelActing > 0 && SENSITIVE[path]) {
-      const ok = await confirmModelAction(path, method, init.body);
+    const fromModel = window.__sanadModelActing > 0 && SENSITIVE[path];
+    const fromVoice = !fromModel && window.__sanadVoiceActing > 0 && needsVoiceConfirm(path, init.body);
+    if (fromModel || fromVoice) {
+      const ok = await confirmModelAction(path, method, init.body, fromModel ? "model" : "voice");
       if (!ok) {
         return new Response(JSON.stringify({ success: false, cancelled: true, message: "ألغيتَ تنفيذ هذا الإجراء.", error: "ألغيتَ تنفيذ هذا الإجراء." }), {
           status: 200,
@@ -93,5 +107,21 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  window.__sanadNativeFetch = nativeFetch;
+  // fetch الأصلي يُسلَّم مرة واحدة فقط لبيئة الإضافات (extensions-runtime.js) ثم يختفي —
+  // لا متغير عام يتيح تجاوز الحارس.
+  let handedOver = false;
+  window.__sanadTakeNativeFetch = () => {
+    if (handedOver) return null;
+    handedOver = true;
+    delete window.__sanadTakeNativeFetch;
+    return nativeFetch;
+  };
+
+  // نحتفظ بالرمز في هذا الإغلاق ونزيل وسم meta من الصفحة (دفاع إضافي ضد أي XSS)
+  const hideToken = () => {
+    getToken();
+    document.querySelector('meta[name="sanad-token"]')?.remove();
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hideToken, { once: true });
+  else hideToken();
 })();
