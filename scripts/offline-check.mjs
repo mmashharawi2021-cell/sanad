@@ -27,8 +27,6 @@ function row(group, label, state, detail = "", level = "critical") {
   rows.push({ group, label, state, detail });
   if (!state) level === "critical" ? critical++ : warnings++;
 }
-const mb = (n) => `${(n / 1024 / 1024).toFixed(0)}MB`;
-const size = (f) => (existsSync(f) ? statSync(f).size : 0);
 
 /* ---------- الأساس ---------- */
 const nodeMajor = Number(process.versions.node.split(".")[0]);
@@ -40,7 +38,7 @@ row("الأساس", "وضع التشغيل", true, `SANAD_MODE=${env.SANAD_MODE 
   const { freemem, totalmem } = await import("node:os");
   const freeGb = freemem() / 1024 ** 3, totalGb = totalmem() / 1024 ** 3;
   // Cold starts of local models slow down when RAM is nearly full (Windows starts paging to disk).
-  row("الأساس", "الذاكرة المتاحة", freeGb >= 2, `${freeGb.toFixed(1)} من ${totalGb.toFixed(1)} GB${freeGb < 2 ? " — أغلق برامج ثقيلة ليعمل العقل والصوت بسرعة" : ""}`, "warning");
+  row("الأساس", "الذاكرة المتاحة", freeGb >= 2, `${freeGb.toFixed(1)} من ${totalGb.toFixed(1)} GB${freeGb < 2 ? " — أغلق برامج ثقيلة ليعمل العقل المحلي بسرعة" : ""}`, "warning");
 }
 
 /* ---------- العقل المحلي ---------- */
@@ -60,21 +58,6 @@ if (tags) {
 }
 const gpu = spawnSync("nvidia-smi", ["--query-gpu=name,memory.total", "--format=csv,noheader"], { encoding: "utf8" });
 row("العقل المحلي", "كرت الشاشة", gpu.status === 0, gpu.status === 0 ? gpu.stdout.trim() : "غير متاح — سيعمل العقل على المعالج (أبطأ)", "warning");
-
-/* ---------- الصوت ---------- */
-const piper = p("vendor", "piper", "bin", "piper", "piper.exe");
-row("الصوت", "محرك النطق المحلي (Piper)", existsSync(piper));
-row("الصوت", "صوت الرجل (كريم)", size(p("vendor", "piper", "voices", "ar_JO-kareem-medium.onnx")) > 1e6);
-row("الصوت", "صوت الفتاة (دي)", size(p("vendor", "piper", "voices", "dii_ar.onnx")) > 1e6, "", "warning");
-row("الصوت", "السماع: FastConformer", size(p("vendor", "stt", "fastconformer", "model.onnx")) > 1e8, "", "warning");
-row("الصوت", "السماع الاحتياطي: whisper", existsSync(p("vendor", "whisper", "bin", "Release", "whisper-server.exe")) && size(p("vendor", "whisper", "models", "ggml-small-q5_1.bin")) > 1e8);
-const py = p("vendor", "py", "Scripts", "python.exe");
-const pyOk = existsSync(py) && spawnSync(py, ["-c", "import edge_tts, onnx_asr, soundfile, numpy"], { encoding: "utf8" }).status === 0;
-row("الصوت", "العملية الصوتية المساعدة (Python)", pyOk, pyOk ? "" : "powershell -File scripts\\voice-setup.ps1", "warning");
-let cacheFiles = [];
-try { cacheFiles = readdirSync(p("data", "voice-cache")).filter((f) => f.endsWith(".mp3")); } catch {}
-const cacheBytes = cacheFiles.reduce((a, f) => a + size(p("data", "voice-cache", f)), 0);
-row("الصوت", "عبارات محفوظة بالصوت الطبيعي", cacheFiles.length >= 20, `${cacheFiles.length} عبارة (${mb(cacheBytes)})${cacheFiles.length < 20 ? " — npm.cmd run voice:warm وأنت متصل" : ""}`, "warning");
 
 /* ---------- الواجهة ---------- */
 const fonts = ["400", "500", "700"].every((w) => existsSync(p("public", "fonts", `ibm-plex-sans-arabic-arabic-${w}-normal.woff2`)));

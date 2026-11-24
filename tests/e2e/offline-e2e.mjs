@@ -1,8 +1,8 @@
 // اختبار شامل لسند أثناء انقطاع الإنترنت (محاكاة على مستوى العملية — الجهاز يبقى متصلاً).
-// يحتاج: Ollama ونماذجه، ومكوّنات الصوت (npm.cmd run offline:setup). أبطأ من بقية الاختبارات.
-//   npm.cmd run test:e2e              ← المحادثة، الصوت، الأوامر، البحث
+// يحتاج: Ollama ونماذجه (npm.cmd run offline:setup). أبطأ من بقية الاختبارات.
+//   npm.cmd run test:e2e              ← المحادثة، وضع العمل، الأوامر، البحث
 //   npm.cmd run test:e2e -- --vision  ← ومعها فحص الشاشة بالنموذج المحلي (~15 ث إضافية)
-// لا يغيّر شيئاً على الجهاز: يُرسل فقط أسئلة وطلبات قراءة ونطقاً؛ إعداد السماع يُعاد كما كان.
+// لا يغيّر شيئاً على الجهاز: يُرسل فقط أسئلة وطلبات قراءة؛ وضع العمل يُعاد إلى التلقائي.
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 import { startSanad, ROOT } from "../helpers/sanad-server.mjs";
@@ -22,18 +22,6 @@ async function step(name, fn) {
 }
 const must = (cond, msg) => { if (!cond) throw new Error(msg); };
 
-/** يحوّل صوت WAV (أي تردد) إلى WAV أحادي 16kHz كما تفعل الواجهة قبل الإرسال للتعرّف. */
-function toWav16k(w) {
-  const rate = w.readUInt32LE(24);
-  let p = 12, off = 44, len = w.length - 44;
-  while (p < w.length - 8) { const id = w.toString("ascii", p, p + 4), sz = w.readUInt32LE(p + 4); if (id === "data") { off = p + 8; len = sz; break; } p += 8 + sz; }
-  const n = len / 2, ratio = rate / 16000, out = Math.floor(n / ratio), pcm = Buffer.alloc(44 + out * 2);
-  for (let i = 0; i < out; i++) { const a = Math.floor(i * ratio), b = Math.min(n, Math.floor((i + 1) * ratio)); let s = 0; for (let j = a; j < b; j++) s += w.readInt16LE(off + j * 2); pcm.writeInt16LE(Math.round(s / Math.max(1, b - a)), 44 + i * 2); }
-  pcm.write("RIFF", 0); pcm.writeUInt32LE(36 + out * 2, 4); pcm.write("WAVEfmt ", 8); pcm.writeUInt32LE(16, 16); pcm.writeUInt16LE(1, 20); pcm.writeUInt16LE(1, 22);
-  pcm.writeUInt32LE(16000, 24); pcm.writeUInt32LE(32000, 28); pcm.writeUInt16LE(2, 32); pcm.writeUInt16LE(16, 34); pcm.write("data", 36); pcm.writeUInt32LE(out * 2, 40);
-  return pcm;
-}
-
 /** صورة PNG بسيطة (خلفية داكنة + شريط) — تكفي للتأكد أن نموذج الرؤية المحلي يستجيب. */
 function tinyPng(w = 320, h = 120) {
   const raw = Buffer.alloc((w * 3 + 1) * h);
@@ -49,7 +37,6 @@ const s = await startSanad({
   env: { SANAD_MODE: "auto", OLLAMA_AUTOSTART: "true" },
   nodeOptions: `--require ${join(ROOT, "tests", "helpers", "offline-preload.cjs").replace(/\\/g, "/")}`,
 });
-const sttBefore = (await s.request("/api/voice/settings")).json.settings.stt;
 
 try {
   await step("حالة العقل: أوفلاين ومحلي", async () => {
@@ -79,26 +66,13 @@ try {
     const r = (await s.request("/api/web/search", { body: { query: "node.js" } })).json;
     must(r.offline === true, JSON.stringify(r).slice(0, 120));
   });
-  let localWav;
-  await step("النطق المحلي (Piper)", async () => {
-    const r = await fetch(`${s.base}/api/voice/speak`, { method: "POST", headers: { cookie: s.cookie, "x-sanad-request": "1", "content-type": "application/json" }, body: JSON.stringify({ text: "حرر المنفذ ثلاثة آلاف وافحص النت.", engine: "local" }) });
-    must(r.ok && r.headers.get("x-voice-source") === "local", `source=${r.headers.get("x-voice-source")}`);
-    localWav = Buffer.from(await r.arrayBuffer());
-  });
-  await step("النطق بصوت طبيعي محفوظ (دون إنترنت)", async () => {
-    const r = await fetch(`${s.base}/api/voice/speak`, { method: "POST", headers: { cookie: s.cookie, "x-sanad-request": "1", "content-type": "application/json" }, body: JSON.stringify({ text: "تم بنجاح." }) });
-    const src = r.headers.get("x-voice-source");
-    must(r.ok && ["cache", "local"].includes(src), `source=${src}`);
-    return src === "cache" ? "من الذاكرة المؤقتة" : "لا توجد نسخة محفوظة (npm.cmd run voice:warm)";
-  });
-  await step("السماع (FastConformer)", async () => {
-    await s.request("/api/voice/settings", { body: { stt: "fastconformer" } });
-    await s.request("/api/voice/warm", { body: {} });
-    // أول تعرّف يحمّل النموذج (~3 ث عادةً، وقد يطول كثيراً إن كانت الرام مزدحمة)
-    const r = await s.request("/api/voice/transcribe?lang=ar", { raw: toWav16k(localWav), contentType: "audio/wav", timeoutMs: 150_000 });
-    must(r.status === 200 && r.json.text, r.text.slice(0, 120));
-    must(/المنفذ/.test(r.json.text), `سمع: ${r.json.text}`);
-    return `${r.json.engine}: «${r.json.text}»`;
+  await step("وضع «دون اتصال»: النماذج المحلية فقط", async () => {
+    const m = (await s.request("/api/brain/mode", { body: { mode: "offline" } })).json;
+    must(m.setting === "offline", JSON.stringify(m).slice(0, 120));
+    const models = (await s.request("/api/models")).json.models;
+    must(models.length > 0 && models.every((x) => x.id.startsWith("ollama:")), `النماذج: ${models.map((x) => x.id).join(", ")}`);
+    await s.request("/api/brain/mode", { body: { mode: "auto" } });
+    return `${models.length} نموذج محلي`;
   });
   if (VISION) {
     await step("فحص الشاشة (رؤية محلية)", async () => {
@@ -110,9 +84,8 @@ try {
     });
   }
 } finally {
-  await s.request("/api/voice/settings", { body: { stt: sttBefore } }).catch(() => {});
   await s.stop();
 }
 const failed = results.filter((x) => !x).length;
-console.log(`\n${results.length - failed}/${results.length} نجح${failed ? ` — ${failed} فشل` : ""} (إعداد السماع أُعيد إلى: ${sttBefore})`);
+console.log(`\n${results.length - failed}/${results.length} نجح${failed ? ` — ${failed} فشل` : ""}`);
 process.exit(failed ? 1 : 0);

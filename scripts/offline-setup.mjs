@@ -1,8 +1,6 @@
 // سند — تجهيز العمل دون إنترنت (مرة واحدة، يحتاج اتصالاً):
 //   1) نماذج Ollama المحلية: العقل (OLLAMA_OFFLINE_MODEL) والرؤية (OLLAMA_VISION_MODEL)
-//   2) مكوّنات الصوت (scripts/voice-setup.ps1): Piper + صوتا كريم ودي، FastConformer، whisper، بيئة Python
-//   3) حفظ العبارات الشائعة بالصوت الطبيعي (scripts/voice-warm.ts)
-//   4) تقرير الجاهزية (scripts/offline-check.mjs)
+//   2) تقرير الجاهزية (scripts/offline-check.mjs)
 // الاستخدام: npm.cmd run offline:setup
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -92,24 +90,6 @@ if (!ollama) {
   }
 }
 
-step(2, "مكوّنات الصوت (النطق والسماع)");
-{
-  const code = await run("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(ROOT, "scripts", "voice-setup.ps1")]);
-  if (code === 0) ok("مكوّنات الصوت جاهزة ومطابقة لبصماتها");
-  else { warn("بعض مكوّنات الصوت لم تُجهَّز"); problems++; }
-}
-
-step(3, "حفظ العبارات الشائعة بالصوت الطبيعي");
-{
-  const tsx = join(ROOT, "node_modules", "tsx", "dist", "cli.mjs");
-  if (!existsSync(tsx)) { warn("شغّل npm.cmd install أولاً"); problems++; }
-  else {
-    const code = await run(process.execPath, [tsx, join("scripts", "voice-warm.ts")]);
-    if (code === 0) ok("العبارات محفوظة");
-    else { warn("تعذر حفظ العبارات (اختياري)"); }
-  }
-}
-
-step(4, "تقرير الجاهزية");
+step(2, "تقرير الجاهزية");
 const check = await run(process.execPath, [join(ROOT, "scripts", "offline-check.mjs")]);
 process.exit(problems || check ? 1 : 0);

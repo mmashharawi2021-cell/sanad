@@ -28,7 +28,7 @@ const MODALS = [
   ["tasksBtn", "#tasksModalBackdrop"],
   ["workflowsBtn", "#workflowsModalBackdrop"],
   ["projectPreviewBtn", "#previewModalBackdrop"],
-  ["voiceSettingsBtn", ".ios-voice-backdrop"],
+  ["brainBadge", ".mode-backdrop"], // ورقة «وضع العمل»
   ["extensionsBtn", null], // يُكتشف بظهور حوار جديد
 ];
 // مشكلات قائمة قبل إعادة البناء، موثّقة هنا حتى لا تُخفي أخطاء جديدة. كل بند يُصلَح في مرحلة لاحقة ثم يُحذف من هنا.
@@ -38,7 +38,7 @@ const KNOWN_ERRORS = [
     why: "نافذة المشاريع تعاين تلقائياً أول مشروع حتى لو لم يكن فيه index.html (مثل moodle-archive) ← 404",
   },
 ];
-const GLOBALS = ["sendMessage", "speakText", "startListening", "sanadNotify", "sanadConfirm", "sanadIntents", "sanadStreamSpeech", "sanadVoiceSheet", "openNetworkModal", "refreshBrainStatus"];
+const GLOBALS = ["sendMessage", "sanadNotify", "sanadConfirm", "sanadIntents", "sanadModePicker", "reloadModels", "openNetworkModal", "refreshBrainStatus"];
 
 const results = [];
 const record = (name, ok, detail = "") => { results.push({ name, ok, detail }); console.log(`${ok ? "✓" : "✗"} ${name}${detail ? `  — ${detail}` : ""}`); };
@@ -95,13 +95,22 @@ async function shot(name) {
   record(`مطابقة الشكل: ${name}`, ratio <= MAX_DIFF, `${(ratio * 100).toFixed(2)}% مختلف`);
 }
 
-async function freshPage(theme = "dark") {
+// ورقة «وضع العمل» تظهر عند كل فتح؛ keepPicker يُبقيها لاختبارها، وإلا تُغلق (دون تغيير الوضع) قبل اللقطة.
+async function freshPage(theme = "dark", keepPicker = false) {
   await page.navigate(`${s.base}/`);
   await page.evaluate(`document.documentElement.setAttribute("data-theme", ${JSON.stringify(theme)})`);
   await wait(2500);
+  if (!keepPicker) await page.evaluate("window.sanadModePicker?.close()");
 }
 
 try {
+  // 0) عند الفتح: ورقة «وضع العمل» بخيارين (باتصال / دون اتصال)
+  await page.viewport(1280, 800, false);
+  await freshPage("dark", true);
+  const picker = await page.evaluate(`(()=>{const v=${isVisible(".mode-backdrop")};const n=document.querySelectorAll(".mode-backdrop .mode-cell").length;return {v,n}})()`);
+  record("ورقة «وضع العمل» تظهر عند الفتح بخيارين", picker.v && picker.n === 2, `ظاهرة: ${picker.v}، الخيارات: ${picker.n}`);
+  if (picker.v) await shot("startup-mode-picker");
+
   // 1) الصفحة الرئيسية: حاسوب وهاتف، داكن وفاتح
   for (const [vw, vh, mobile, label] of [[1280, 800, false, "desktop"], [430, 932, true, "phone"]]) {
     await page.viewport(vw, vh, mobile);

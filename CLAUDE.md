@@ -28,18 +28,18 @@ npm.cmd run chat -- --stream "أمرك هنا"
 # تحديث قائمة الموديلات المجانية من OpenRouter
 npm.cmd run models:refresh
 
-# تجهيز العمل دون إنترنت (مرة واحدة وأنت متصل): نماذج Ollama + الصوت + العبارات المحفوظة
+# تجهيز العمل دون إنترنت (مرة واحدة وأنت متصل): نماذج Ollama للمحادثة والرؤية
 npm.cmd run offline:setup
 
 # تقرير جاهزية العمل دون إنترنت (لا يحتاج اتصالاً)
 npm.cmd run offline:check
 
 # شبكة الأمان (شغّلها قبل وبعد أي تغيير كبير):
-npm.cmd test              # فحص الأنواع + 226 اختبار مسارات وحماية + اختبارات الصوت (~15 ث)
+npm.cmd test              # فحص الأنواع + 210 اختبار مسارات وحماية + 37 اختبار أوامر فورية (~25 ث)
 npm.cmd run test:ui       # الواجهة في Edge دون نافذة: لا أخطاء، لا طلبات للإنترنت، النوافذ تُفتح، مقارنة اللقطات
 npm.cmd run test:ui -- --update   # تحديث اللقطات المرجعية بعد تغيير مقصود في الشكل
-npm.cmd run test:e2e      # سند دون إنترنت (محاكاة): محادثة، نطق، سماع، أوامر (يحتاج Ollama والصوت)
-npm.cmd run test:voice    # اختبارات الأوامر الصوتية والنطق أثناء الكتابة فقط
+npm.cmd run test:e2e      # سند دون إنترنت (محاكاة): محادثة، وضع «دون اتصال»، أوامر (يحتاج Ollama)
+npm.cmd run test:commands # اختبارات الأوامر الفورية فقط
 ```
 
 ---
@@ -51,7 +51,7 @@ npm.cmd run test:voice    # اختبارات الأوامر الصوتية وا�
 ### 1. الخادم الخلفي (`src/`):
 - `src/server.ts`: نقطة التشغيل فقط (~80 سطراً): طبقة الحماية ← جدول المسارات ← ملفات الواجهة.
 - `src/http/`: أدوات HTTP المشتركة — `core.ts` (قراءة JSON/الجسم الخام، `sendJson`، إطارات SSE)، `security.ts` (الحماية ورمز الجلسة)، `static.ts` (ملفات public/)، `router.ts` (جدول الطريقة+المسار).
-- `src/routes/`: ملف لكل مجال (`chat`، `memoryTasks`، `extensions`، `project`، `web`، `vision`، `system`، `network`، `voice`، `desktop`)، كل مسار بالصيغة `{ method: "…", path: "/api/…", handler }`. **المسار الجديد يُضاف هنا ويُصنَّف في `tests/routes.manifest.mjs`.**
+- `src/routes/`: ملف لكل مجال (`chat`، `memoryTasks`، `extensions`، `project`، `web`، `vision`، `system`، `network`، `desktop`)، كل مسار بالصيغة `{ method: "…", path: "/api/…", handler }`. **المسار الجديد يُضاف هنا ويُصنَّف في `tests/routes.manifest.mjs`.**
 - `src/diskInspector.ts`: المحلل الذكي للأقراص، تنظيف الملفات المؤقتة، محرر الرام الفوري عبر `psapi.dll`، وفاحص أكبر الملفات.
 - `src/projectBuilder.ts`: المطور البرمجي الذاتي لبناء مشاريع الويب والتطبيقات الحية وخدمة المعاينة التفاعلية داخل المتصفح.
 - `src/processMaestro.ts`: مدير العمليات والتطبيقات في ويندوز، إدارة سطوع الشاشة عبر WMI CIM، وتنفيذ الروتين اليومي.
@@ -69,16 +69,10 @@ npm.cmd run test:voice    # اختبارات الأوامر الصوتية وا�
 - `src/config.ts`: قراءة متغيرات البيئة (`.env`) والتحقق من صحتها.
 - `src/networkMaestro.ts`: المنافذ المفتوحة وتحرير المنفذ (Kill Port مع حماية عمليات النظام وخادم سند)، Ping، ومعلومات الشبكة. الفحص السريع عبر `netstat` (~35ms) مع ذاكرة مؤقتة لأسماء البرامج (15 ث)؛ عند التحرير يُجلب اسم البرنامج من جديد دائماً لأن الحماية تعتمد عليه. PowerShell احتياطي فقط.
 - **العمل دون إنترنت:** الخط IBM Plex Sans Arabic مستضاف في `public/fonts/` (ترخيص OFL)؛ لا تُضِف روابط خطوط أو مكتبات خارجية. البحث في الويب وقراءة الصفحات يعيدان `offline: true` مع رسالة واضحة عند انقطاع النت.
-- `src/offlineBrain.ts`: العقل المحلي — فحص الاتصال، تشغيل Ollama تلقائياً، التحويل للنموذج المحلي عند انقطاع النت، و`SANAD_MODE=auto|offline|cloud`.
-- **الصوت** (المكوّنات الثنائية في `vendor/` خارج git؛ جهّزها بـ `scripts/voice-setup.ps1`):
-  - `src/localVoice.ts`: النطق بالترتيب: ذاكرة مؤقتة (`data/voice-cache`) ← صوت عصبي طبيعي عند الاتصال ← Piper محلي (كريم رجل / دي فتاة).
-  - `src/localSpeech.ts`: التعرّف على الكلام — FastConformer العربي افتراضياً (~0.16 ث)، وwhisper.cpp احتياطياً.
-  - `src/voiceSidecar.ts` + `scripts/sanad_voice.py`: عملية Python مساعدة دائمة (`vendor/py`) للأصوات الطبيعية وFastConformer، تُطفأ بعد الخمول.
-  - `src/voiceSettings.ts`: إعدادات الصوت (`data/voice-settings.json`) بقوائم مسموحة فقط؛ واجهتها `public/ios-voice.js`.
-  - `npm.cmd run voice:warm`: يحفظ العبارات الشائعة بالصوت الطبيعي لتعمل دون إنترنت.
-  - `public/voice-intents.js` (`window.sanadIntents`): أوامر الشبكة والمنافذ الفورية دون العقل، وتصحيح نص السماع (كلمة التنبيه، والأرقام المنطوقة «ثلاثة آلاف» ← 3000). يُستدعى أول `tryHandleSystemIntent` وداخل `normalizeArabicSpeech`.
-  - `public/stream-speech.js` (`window.sanadStreamSpeech`): في الوضع الصوتي ينطق كل جملة فور اكتمالها أثناء تدفق الرد.
-  - الاختبارات: `npm.cmd run test:voice`.
+- `src/offlineBrain.ts`: العقل المحلي — فحص الاتصال، تشغيل Ollama تلقائياً، التحويل للنموذج المحلي عند انقطاع النت، و`SANAD_MODE=auto|offline|cloud` (الافتراضي عند الإقلاع)، و`setSanadMode` لتبديل الوضع أثناء التشغيل من ورقة «وضع العمل».
+- **وضع العمل:** عند فتح سند تظهر ورقة `public/mode-picker.js` (`window.sanadModePicker`) بخيارين: «العمل باتصال» (`auto`، كل النماذج) و«العمل دون اتصال» (`offline`، النماذج المحلية فقط) ← `POST /api/brain/mode` ثم `window.reloadModels()`. تُفتح لاحقاً من شارة `#brainBadge`.
+- **لا يوجد حوار صوتي:** أُزيل النطق والسماع وكلمة التنبيه ومكوّنات `vendor/` بالكامل بقرار المستخدم؛ لا تُعِد إضافتها دون طلب صريح.
+- `public/instant-commands.js` (`window.sanadIntents`): أوامر الشبكة والمنافذ الفورية دون العقل («حرر بورت 3000»، «افحص النت»)، مع توحيد النص (النداء والأرقام كلمات «ثلاثة آلاف» ← 3000). يُستدعى أول `tryHandleSystemIntent`. الاختبارات: `npm.cmd run test:commands`.
 
 ### 2. الواجهة الأمامية (`public/`):
 واجهة ويب عربية (RTL) مبنية بـ HTML5/CSS3/Vanilla JS، **بأسلوب iOS على آيفون برو ماكس حديث** (Liquid Glass، عناوين كبيرة، قوائم مجمّعة، أوراق Sheets، فقاعات iMessage، إشعارات Banners، Dynamic Island، مركز التحكم). يعمل في الوضعين الداكن والفاتح (`data-theme`).
@@ -92,14 +86,15 @@ npm.cmd run test:voice    # اختبارات الأوامر الصوتية وا�
 | `public/home.js` | الشاشة الرئيسية: ودجت الساعة، حلقات حالة الجهاز، أيقونات التطبيقات، اقتراحات سند |
 | `public/ios-island.js` | شريط الحالة و Dynamic Island (`window.sanadIsland`، تُغذّى من `setIslandStatus`/`updateIslandLatest`) |
 | `public/ios-control.js` | مركز التحكم (زر في الشريط، `Ctrl+Shift+C`، أو ضغط مطوّل على الجزيرة) |
-| `public/ios-tabs.js` | تنقل الهاتف: الرئيسية، المحادثات، الأدوات، وإعدادات الصوت |
+| `public/ios-tabs.js` | تنقل الهاتف: الرئيسية، المحادثات، الأدوات، والاتصال (وضع العمل) |
+| `public/mode-picker.js` | ورقة «وضع العمل» عند الفتح: باتصال (كل النماذج) / دون اتصال (المحلية فقط) |
+| `public/instant-commands.js` | الأوامر الفورية للشبكة والمنافذ (`window.sanadIntents`) |
 | `public/ios-apps.js` | نوافذ الأدوات كأوراق iOS (زر «تم»، أيقونة تطبيق، أدوات مقسّمة) |
 | `public/ios-list.js` | قائمة المحادثات بأسلوب iOS مع البحث وتأكيد الحذف |
 | `public/ios-polish.js` | إزالة الإيموجي والشروح الإنجليزية من نصوص واجهة النظام (لا يلمس محتوى المستخدم) |
 | `public/palette.js` | لوحة الأوامر `Ctrl+K` |
 
 - واجهة `#cyberIsland` القديمة مخفية؛ وضع العرض المصغّر والإجراءات السريعة يستخدمان Dynamic Island في `ios-island.js`.
-- الحوار الصوتي الكامل وكلمة التنبيه («يا سند») مع المقاطعة الحية (Barge-in) في منطق `index.html`.
 - النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
 
 **قواعد الواجهة:**
@@ -110,7 +105,7 @@ npm.cmd run test:voice    # اختبارات الأوامر الصوتية وا�
 - المهارات `ios-hig` و `frontend-design` و `i18n-accessibility` في `.claude/skills/` هي المرجع للتصميم.
 
 ### 3. السكربتات المساعدة (`scripts/`):
-- `scripts/globalHotkey.py`: خادم بايثون خفيف يلتقط الاختصارات العالمية (`Ctrl + Alt + S` لفتح سند، `Ctrl + Shift + V` للصوت).
+- `scripts/globalHotkey.py`: خادم بايثون خفيف يلتقط الاختصارات العالمية (`Ctrl + Alt + S` لفتح سند).
 - `scripts/mouseController.py` & `scripts/keyboardController.py`: محركات تحكم منخفضة المستوى بمؤشر الفأرة ولوحة المفاتيح.
 
 ---
@@ -141,11 +136,8 @@ npm.cmd run test:voice    # اختبارات الأوامر الصوتية وا�
 | `GET /api/desktop/status` | GET | حالة الملفات المبعثرة في المجلد |
 | `POST /api/desktop/preset` | POST | تجهيز بيئة عمل سريعة (gis, coding, clean) |
 | `GET /api/brain/status` | GET | حالة العقل: سحابي/محلي، Ollama، النموذج المحلي، وضع التشغيل |
+| `POST /api/brain/mode` | POST | وضع العمل `{mode: "auto"|"offline"|"cloud"}` (غير ذلك ← 400) |
 | `GET /api/network/ports` · `POST /api/network/kill-port` · `POST /api/network/ping` · `GET /api/network/info` | — | الشبكة والمنافذ |
-| `POST /api/voice/speak` | POST | نطق نص `{text, gender?, voice?, engine?:"local"}` ← صوت (الرأس `X-Voice-Source`: cache/natural/local) |
-| `POST /api/voice/transcribe` | POST | تعرّف على WAV بتردد 16kHz (FastConformer أو whisper) |
-| `POST /api/voice/warm` | POST | تحميل محرك السماع مسبقاً قبل أول جملة |
-| `GET`/`POST /api/voice/settings` | — | إعدادات الصوت (رجل/فتاة، الصوت الطبيعي، محرك السماع) |
 
 ---
 

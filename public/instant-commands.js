@@ -1,5 +1,5 @@
-/* سند — أوامر صوتية فورية (دون انتظار العقل)
-   - normalizeTranscript: يصحّح ما يكتبه محرك السماع: كلمة التنبيه («يا سندي/يا سناد» ← «يا سند»)،
+/* سند — أوامر فورية مكتوبة (دون انتظار العقل)
+   - normalizeTranscript: يوحّد النص المكتوب: النداء («يا سندي/يا سناد» ← «يا سند»)،
      والأرقام المكتوبة كلمات («ثلاثة آلاف» ← 3000) والأرقام الهندية (٣٠٠٠ ← 3000).
    - parse: يتعرّف على أوامر الشبكة والمنافذ ويعيد نيّة منظّمة (بلا تنفيذ).
    - handle: ينفّذ النيّة بالدوال الموجودة في الواجهة (killNetPort/runNetPing/…) — التأكيد الأمني
@@ -147,29 +147,21 @@
     return data;
   }
 
-  /**
-   * Run the intent and fill the assistant bubble. `spoken` is a short fixed phrase (pre-cached in the
-   * natural voice by `npm.cmd run voice:warm`, so it plays instantly — even offline); details go in text.
-   */
+  /** ينفّذ النيّة ويملأ فقاعة الرد بالنتيجة. التأكيد الأمني لتحرير المنفذ يبقى كما هو. */
   async function handle(text, conv, assistant, ctx) {
     const intent = parse(text);
     const started = performance.now();
-    let content = "", spoken = "";
+    let content = "";
     try {
       switch (intent && intent.type) {
         case "kill_port": {
-          const r = await root.killNetPort(intent.port); // keeps the security confirmation sheet
-          if (!r) { content = `لم يُحرَّر المنفذ ${intent.port}.`; spoken = "تم الإلغاء."; break; }
-          content = r.message;
-          spoken = r.success ? "تم تحرير المنفذ بنجاح." : (r.killed && r.killed.length ? "تم تحرير المنفذ بنجاح." : "تعذر تحرير المنفذ.");
-          if (r.success === true && /حر أصلاً/.test(r.message || "")) spoken = "المنفذ متاح وغير محجوز.";
+          const r = await root.killNetPort(intent.port);
+          content = r ? r.message : `لم يُحرَّر المنفذ ${intent.port}.`;
           break;
         }
         case "check_port": {
           const r = await api(`/api/network/port/check?port=${intent.port}`);
           content = r.message;
-          spoken = r.inUse ? `المنفذ ${intent.port} محجوز.` : "المنفذ متاح وغير محجوز.";
-          if (r.inUse && r.holders && r.holders[0]) spoken = `المنفذ ${intent.port} يحجزه ${r.holders[0].processName}.`;
           break;
         }
         case "list_ports": {
@@ -179,31 +171,26 @@
           content = dev.length
             ? `المنافذ المفتوحة للتطوير:\n${dev.map((p) => `- ${p.port} — ${p.processName}${p.label ? ` (${p.label})` : ""}`).join("\n")}`
             : "لا توجد منافذ تطوير مفتوحة الآن. فتحتُ لك نافذة الشبكة لعرض كل المنافذ.";
-          spoken = dev.length ? `يوجد ${dev.length} منافذ تطوير مفتوحة، عرضتها لك.` : "لا توجد منافذ تطوير مفتوحة الآن.";
           break;
         }
         case "ping": {
           const r = await (typeof root.runNetPing === "function" ? root.runNetPing(intent.host) : api("/api/network/ping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: intent.host }) }));
           content = r ? r.message : "تعذر فحص الاتصال.";
-          spoken = !r || r.avgMs == null ? "لا يوجد اتصال بالإنترنت." : r.quality === "ممتاز" ? "سرعة الاتصال ممتازة." : `زمن الاستجابة ${r.avgMs} مللي ثانية، والجودة ${r.quality}.`;
           break;
         }
         case "net_info": {
           const r = await api("/api/network/info");
           content = r.message;
-          spoken = r.primaryLocalIp ? `أنت متصل، وعنوانك المحلي ${r.primaryLocalIp}.` : "لا يوجد اتصال شبكة نشط.";
           break;
         }
         case "bad_port":
           content = `رقم المنفذ «${intent.raw}» غير صالح، يجب أن يكون بين 1 و65535.`;
-          spoken = "رقم المنفذ غير صالح.";
           break;
         default:
           return false;
       }
     } catch (e) {
       content = `تعذر تنفيذ الأمر: ${e.message || e}`;
-      spoken = "تعذر تنفيذ الأمر.";
     }
     assistant.content = content;
     assistant.pending = false;
@@ -211,7 +198,6 @@
     assistant.latencyMs = Math.round(performance.now() - started);
     ctx.save();
     ctx.render();
-    if (ctx.voiceMode()) ctx.speak(spoken, null, () => { if (ctx.voiceMode()) setTimeout(() => ctx.listen(), 400); });
     return true;
   }
 

@@ -21,11 +21,15 @@ for (const r of ROUTES.filter((x) => x.kind !== "guardOnly")) {
   });
 }
 
-test("قيم إعدادات الصوت غير المسموحة لا تغيّر شيئاً", async () => {
-  const before = (await s.request("/api/voice/settings")).json.settings;
-  const res = await s.request("/api/voice/settings", { body: { gender: "robot", stt: "evil", maleVoice: "x; rm", femaleVoice: 42 } });
-  assert.equal(res.status, 200);
-  assert.deepEqual(res.json.settings, before);
+test("اختيار وضع العمل: دون اتصال ← النماذج المحلية فقط، ثم العودة للوضع التلقائي", async () => {
+  const off = await s.request("/api/brain/mode", { body: { mode: "offline" } });
+  assert.equal(off.status, 200);
+  assert.equal(off.json.setting, "offline");
+  assert.equal(off.json.online, false);
+  const models = (await s.request("/api/models")).json.models;
+  assert.ok(models.every((m) => m.id.startsWith("ollama:")), "ظهر نموذج سحابي في وضع دون اتصال");
+  const back = await s.request("/api/brain/mode", { body: { mode: "auto" } });
+  assert.equal(back.json.setting, "auto");
 });
 
 test("جسم ليس JSON ← 415 قبل تنفيذ المسار", async () => {

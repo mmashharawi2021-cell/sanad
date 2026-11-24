@@ -4,7 +4,7 @@ import { readModelCatalog, toChatModels, type ChatModel, type OpenRouterModel } 
 import { ask, askStream, toAppError, type Answer, type ChatTurn } from "../openrouter";
 import { askOllama, askOllamaStream, cleanOllamaModelName, getOllamaChatModels, getOllamaStatus, isOllamaModel } from "../ollama";
 import { getLocalSystemPromptWithMemory, getSystemPromptWithMemory } from "../memory";
-import { ensureOllamaRunning, getBrainStatus, getSanadMode, isNetworkError, isOnline, markOffline, requireLocalModel, resolveLocalModel } from "../offlineBrain";
+import { ensureOllamaRunning, getBrainStatus, getSanadMode, isNetworkError, isOnline, isSanadMode, markOffline, requireLocalModel, resolveLocalModel, setSanadMode } from "../offlineBrain";
 import type { Generate } from "../selfDev";
 import { frame, readJsonBody, sendJson, write } from "../http/core";
 import type { Route, RouteContext } from "../http/router";
@@ -333,6 +333,19 @@ export const chatRoutes: Route[] = [
   {
     method: "GET", path: "/api/brain/status", handler: async ({ res, url }) => {
       const status = await getBrainStatus(url.searchParams.get("force") === "1");
+      sendJson(res, 200, { success: true, ...status });
+    },
+  },
+  {
+    // اختيار وضع العمل من شاشة البداية: auto (باتصال، مع احتياط محلي) أو offline (النماذج المحلية فقط).
+    method: "POST", path: "/api/brain/mode", handler: async ({ req, res }) => {
+      const body = await readJsonBody(req);
+      if (!isSanadMode(body.mode)) {
+        sendJson(res, 400, { success: false, error: "وضع غير معروف.", hint: 'استخدم "auto" أو "offline" أو "cloud".' });
+        return;
+      }
+      setSanadMode(body.mode);
+      const status = await getBrainStatus(true);
       sendJson(res, 200, { success: true, ...status });
     },
   },

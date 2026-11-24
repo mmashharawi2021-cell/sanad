@@ -69,13 +69,11 @@
 
         <div class="island-center">
           <form class="island-form" id="islandForm">
-            <input type="text" class="island-input" id="islandInput" placeholder="أمر سريع أو تحدث لسند..." autocomplete="off" />
+            <input type="text" class="island-input" id="islandInput" placeholder="أمر سريع لسند..." autocomplete="off" />
           </form>
         </div>
 
         <div class="island-right">
-          <button class="island-icon-btn" id="islandDuplexBtn" type="button" title="وضع المحادثة الصوتية الحية المستمرة (Full-Duplex Live Voice)">🔴</button>
-          <button class="island-icon-btn" id="islandMicBtn" type="button" title="استماع صوتي">🎙️</button>
           <button class="island-icon-btn" id="islandVisionBtn" type="button" title="فحص الشاشة">👁️</button>
           <button class="island-icon-btn" id="islandNetBtn" type="button" title="الشبكة والمنافذ — زمن الاستجابة">🌐<span class="island-latency-badge" id="islandLatencyBadge"></span></button>
           <button class="island-icon-btn" id="islandExpandBtn" type="button" title="توسيع / طي الكبسولة">▾</button>
@@ -283,14 +281,9 @@
             <p id="convMeta">جاهز لتنفيذ الأوامر وتقديم الدعم المباشر</p>
           </div>
 
-          <button class="jarvis-voice-btn brain-badge" id="brainBadge" type="button" title="حالة العقل — انقر لإعادة الفحص">
+          <button class="jarvis-voice-btn brain-badge" id="brainBadge" type="button" title="وضع العمل — انقر للتبديل بين «باتصال» و«دون اتصال»">
             <span class="brain-dot" id="brainBadgeDot"></span>
             <span class="btn-label" id="brainBadgeText">جارٍ الفحص...</span>
-          </button>
-
-          <button class="jarvis-voice-btn" id="voiceModeBtn" type="button" title="وضع سند الصوتي (استيقاظ بـ «يا سند» وتحدث مستمر)">
-            <svg class="ico" aria-hidden="true"><use href="#i-mic"/></svg>
-            <span class="btn-label">وضع سند</span>
           </button>
 
           <button class="jarvis-voice-btn palette-trigger" id="paletteBtn" type="button" title="لوحة الأوامر — ابحث عن أي أداة (Ctrl+K)" aria-haspopup="dialog" aria-controls="paletteBackdrop">
@@ -348,7 +341,6 @@
             <label class="sr-only" for="prompt">رسالتك</label>
             <textarea id="prompt" rows="1" placeholder="اكتب رسالتك لسند…" title="Enter للإرسال · Shift+Enter لسطر جديد · يمكنك سحب ملف إلى هنا"></textarea>
             <div class="composer-actions">
-              <button class="mic" id="micBtn" type="button" aria-label="تحدث صوتياً" title="تحدث بالمايك (انقر للتحدث)"><svg class="ico" aria-hidden="true"><use href="#i-mic"/></svg></button>
               <button class="send" id="send" type="submit" aria-label="إرسال"><svg class="ico" aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
               <button class="stop hidden" id="stop" type="button" aria-label="إيقاف"><svg class="ico" aria-hidden="true"><use href="#i-stop"/></svg></button>
             </div>
@@ -707,9 +699,6 @@
       const promptEl = document.getElementById("prompt");
       const sendBtn = document.getElementById("send");
       const stopBtn = document.getElementById("stop");
-      const micBtn = document.getElementById("micBtn");
-      const voiceModeBtn = document.getElementById("voiceModeBtn");
-      const arcReactorHud = document.getElementById("arcReactorHud");
       const attachBtn = document.getElementById("attachBtn");
       const fileInput = document.getElementById("fileInput");
       const attachmentBar = document.getElementById("attachmentBar");
@@ -765,8 +754,6 @@
       const cyberIsland = document.getElementById("cyberIsland");
       const islandInput = document.getElementById("islandInput");
       const islandForm = document.getElementById("islandForm");
-      const islandMicBtn = document.getElementById("islandMicBtn");
-      const islandDuplexBtn = document.getElementById("islandDuplexBtn");
       const islandVisionBtn = document.getElementById("islandVisionBtn");
       const islandExpandBtn = document.getElementById("islandExpandBtn");
       const islandLatestMsg = document.getElementById("islandLatestMsg");
@@ -943,12 +930,16 @@
         return `${tokens} سياق`;
       }
 
+      // رقم آخر طلب: رد قديم بطيء (قائمة السحابة) لا يغطي قائمة أحدث بعد تبديل وضع العمل
+      let modelsRequest = 0;
       async function loadModels() {
+        const requestId = ++modelsRequest;
         try {
           const response = await fetch("/api/models");
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const data = await response.json();
+          if (requestId !== modelsRequest) return;
           models = Array.isArray(data.models) ? data.models : [];
           defaultModel = typeof data.default === "string" ? data.default : "";
           modelsSource = data.source === "catalog" ? "catalog" : "live";
@@ -962,6 +953,7 @@
             saveState();
           }
         } catch {
+          if (requestId !== modelsRequest) return;
           modelsSource = "error";
         }
 
@@ -969,6 +961,9 @@
         renderModelButton();
         if (pickerOpen) renderModelPanel();
       }
+
+      // ورقة «وضع العمل» تعيد تحميل القائمة بعد التبديل (دون اتصال ← المحلية فقط)
+      window.reloadModels = loadModels;
 
       function findModel(id) {
         return models.find((model) => model.id === id) || null;
@@ -1451,14 +1446,6 @@
 
         tools.appendChild(copy);
 
-        const speak = document.createElement("button");
-        speak.type = "button";
-        speak.className = "tool";
-        speak.dataset.action = "speak-message";
-        speak.dataset.index = String(index);
-        setToolIcon(speak, "volume", "استماع");
-        tools.appendChild(speak);
-
         const isLast = index === conv.messages.length - 1;
         if (isLast) {
           const regen = document.createElement("button");
@@ -1752,14 +1739,11 @@
           });
         }
 
-        // 00a. أوامر فورية للشبكة والمنافذ («حرر بورت 3000»، «افحص النت»…) — public/voice-intents.js
+        // 00a. أوامر فورية للشبكة والمنافذ («حرر بورت 3000»، «افحص النت»…) — public/instant-commands.js
         if (window.sanadIntents?.matches(text)) {
           return window.sanadIntents.handle(text, conv, assistant, {
             save: saveState,
             render: renderAll,
-            speak: speakText,
-            listen: () => startListening(),
-            voiceMode: () => jarvisVoiceMode,
           });
         }
 
@@ -1786,7 +1770,7 @@
 - 🧠 **الذاكرة الدائمة:** أتذكر تفضيلاتك ومشاريعك ومعلوماتك دائماً.
 - ⏰ **المهام المستقلة:** تشغيل مهام الصيانة والمتابعة الدورية في الخلفية.
 
-🎙️ *يمكنك مناداتي صوتياً دائماً بـ **«يا سند»** وسأستجيب فوراً لأمرك.*
+⌨️ *اكتب أمرك مباشرة، أو افتح لوحة الأوامر بـ **Ctrl+K**.*
 `;
           assistant.pending = false;
           assistant.model = "SANAD Core Engine";
@@ -1794,11 +1778,6 @@
           saveState();
           renderThread();
           renderSidebar();
-          if (jarvisVoiceMode) {
-            speakText("أهلاً بك! أنا سند، مساعدك الشخصي المستقل. كيف يمكنني خدمتك اليوم؟", null, () => {
-              if (jarvisVoiceMode) setTimeout(() => startListening(), 500);
-            });
-          }
           return true;
         }
 
@@ -1823,9 +1802,6 @@
           saveState();
           renderThread();
           renderSidebar();
-          if (jarvisVoiceMode) {
-            speakText("نعم بكل تأكيد! أنا سند المدمج في لابتوبك، وأستطيع تشغيل البرامج والتحكم في الصوت وقراءة ملفاتك ومساعدتك في مهامك البرمجية. قل لي فقط: افتح فيجوال ستوديو أو ارفع الصوت.");
-          }
           return true;
         }
 
@@ -1879,11 +1855,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText(data.message || "تم ضبط مستوى الصوت.", null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 500);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -1910,15 +1881,7 @@
           renderThread();
           renderSidebar();
 
-          if (jarvisVoiceMode) {
-            speakText("حاضر، تم قفل شاشة اللابتوب لحماية خصوصيتك.", null, async () => {
-              await fetch("/api/system/action", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "lock-screen" }),
-              });
-            });
-          } else {
+          {
             await fetch("/api/system/action", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1968,15 +1931,10 @@
           saveState();
           renderThread();
           renderSidebar();
-          if (jarvisVoiceMode) {
-            speakText(`تم ${actionLabel} بالماوس`, null, () => {
-              if (jarvisVoiceMode) setTimeout(() => startListening(), 400);
-            });
-          }
           return true;
         }
 
-        // 0.4 Live Screen Stream Voice Intent (تشغيل / إيقاف البث المباشر)
+        // 0.4 Live Screen Stream Intent (تشغيل / إيقاف البث المباشر)
         if (
           query.includes("شغل البث") ||
           query.includes("شغل البث المباشر") ||
@@ -1993,11 +1951,6 @@
           saveState();
           renderThread();
           renderSidebar();
-          if (jarvisVoiceMode) {
-            speakText("تم تشغيل البث المباشر للشاشة، سند معك ويشاهد ما تراه.", null, () => {
-              if (jarvisVoiceMode) setTimeout(() => startListening(), 400);
-            });
-          }
           return true;
         }
 
@@ -2016,11 +1969,6 @@
           saveState();
           renderThread();
           renderSidebar();
-          if (jarvisVoiceMode) {
-            speakText("تم إيقاف البث المباشر.", null, () => {
-              if (jarvisVoiceMode) setTimeout(() => startListening(), 400);
-            });
-          }
           return true;
         }
 
@@ -2044,11 +1992,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText("تمت كتابة النص في الحقل النشط.", null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 400);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2099,11 +2042,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText(`تم تنفيذ ${label}`, null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 400);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2159,14 +2097,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              const voiceSummary = data.batteryPercent !== null 
-                ? `نسبة البطارية الحالية هي ${data.batteryPercent} بالمائة، واستهلاك الذاكرة ${data.usedMemoryPercent} بالمائة.` 
-                : `استهلاك الذاكرة الحالي هو ${data.usedMemoryPercent} بالمائة على جهازك.`;
-              speakText(voiceSummary, null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2202,14 +2132,6 @@
               saveState();
               renderThread();
               renderSidebar();
-              if (jarvisVoiceMode) {
-                const voiceSpeech = hasProject && m.target === "arcgis_pro"
-                  ? "أمرك، تم تشغيل برنامج آرك برو وتجهيز مشروع جديد لك."
-                  : `حاضر، تم تشغيل ${m.name} على لابتوبك.`;
-                speakText(voiceSpeech, null, () => {
-                  if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-                });
-              }
               return true;
             } catch (e) {
               console.warn(e);
@@ -2241,11 +2163,6 @@
               saveState();
               renderThread();
               renderSidebar();
-              if (jarvisVoiceMode) {
-                speakText(`تم فتح مجلد ${f.name} في مستكشف الملفات.`, null, () => {
-                  if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-                });
-              }
               return true;
             } catch (e) {
               console.warn(e);
@@ -2298,11 +2215,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText(data.message || "تم فتح الصورة على لابتوبك بنجاح.", null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2379,11 +2291,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText(`تم إنشاء المستند النصي على ${folder === "desktop" ? "سطح المكتب" : folder} وكتابة المحتوى بنجاح.`, null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2424,11 +2331,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText(`لديك ${list.length} معلومة محفوظة في الذاكرة الدائمة.`, null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2481,11 +2383,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText("تم حفظ المعلومة في الذاكرة الدائمة بنجاح، وسأتذكرها دائماً.", null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2532,11 +2429,6 @@
               saveState();
               renderThread();
               renderSidebar();
-              if (jarvisVoiceMode) {
-                speakText(data.success ? "تم تنفيذ أمر الطرفية بنجاح على لابتوبك." : "تم تنفيذ الأمر مع وجود تنبيه أو خطأ.", null, () => {
-                  if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-                });
-              }
               return true;
             }
           } catch (e) {
@@ -2568,11 +2460,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText("بيئة التطوير جاهزة على لابتوبك، نود وبايثون وجيت وفيجوال ستوديو كود تعمل بنجاح.", null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2621,11 +2508,6 @@
               saveState();
               renderThread();
               renderSidebar();
-              if (jarvisVoiceMode) {
-                speakText(data.offline ? "البحث في الويب يحتاج اتصالاً بالإنترنت." : `تم جلب نتائج البحث المباشرة عن ${searchQuery}.`, null, () => {
-                  if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-                });
-              }
               return true;
             }
           } catch (e) {
@@ -2660,11 +2542,6 @@
             saveState();
             renderThread();
             renderSidebar();
-            if (jarvisVoiceMode) {
-              speakText(`لديك ${list.length} مهام مجدولة للعمل في الخلفية.`, null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return true;
           } catch (e) {
             console.warn(e);
@@ -2724,11 +2601,6 @@
 `;
               saveState();
               renderAll();
-              if (jarvisVoiceMode && typeof speakText === "function") {
-                speakText(`تم تنظيف الملفات المؤقتة بنجاح وتحرير ${data.freedMb} ميجابايت من مساحة القرص.`, null, () => {
-                  if (jarvisVoiceMode && typeof startListening === "function") setTimeout(() => startListening(), 600);
-                });
-              }
             } else {
               assistant.content = `⚠️ ${data.message || "تعذر تنظيف بعض الملفات المؤقتة"}`;
               saveState();
@@ -2783,12 +2655,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             saveState();
             renderAll();
 
-            if (jarvisVoiceMode && typeof speakText === "function") {
-              const voiceSummary = `وضع جهازك ممتاز. استهلاك المعالج حالياً ${s.cpuUsagePercent} بالمئة، والرام ${s.usedMemoryPercent} بالمئة، والقرص متوفر به ${s.diskFreeGb} جيجابايت.`;
-              speakText(voiceSummary, null, () => {
-                if (jarvisVoiceMode && typeof startListening === "function") setTimeout(() => startListening(), 600);
-              });
-            }
           } catch (e) {
             assistant.pending = false;
             assistant.content = `❌ تعذر قراءة بيانات النظام: ${e.message}`;
@@ -2887,7 +2753,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             throw new AppError(data.error || `فشل الطلب (HTTP ${response.status})`, data.hint);
           }
 
-          window.sanadStreamSpeech?.begin(jarvisVoiceMode && shouldUseLocalTts());
           await consume(response.body, assistant);
           assistant.pending = false;
 
@@ -2934,20 +2799,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
           if (!assistant.error && !assistant.stopped) {
             playSciFiSound("done");
-          }
-
-          if (jarvisVoiceMode && !assistant.error && assistant.content) {
-            const resumeListening = () => {
-              if (jarvisVoiceMode && !busy) {
-                setTimeout(() => {
-                  if (jarvisVoiceMode && !busy) startListening();
-                }, 600);
-              }
-            };
-            // Already speaking sentence-by-sentence while streaming → just finish the remainder.
-            if (!window.sanadStreamSpeech?.finish(assistant, resumeListening)) speakText(assistant.content, null, resumeListening);
-          } else {
-            window.sanadStreamSpeech?.stop();
           }
         }
       }
@@ -3008,11 +2859,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
               assistant.content = `${text}\n\n---\n> ⚡ **[تم الحفظ والتشغيل التلقائي على لابتوبك]:**\n> 📁 **المسار:** \`${saveData.fullPath}\`\n\n\`\`\`powershell\n> ${execData.command}\n${output}\n\`\`\`\n*(رمز الخروج: ${execData.exitCode} | زمن التشغيل: ${execData.durationMs}ms)*`;
               renderThread();
               saveState();
-              if (jarvisVoiceMode) {
-                speakText(`تم حفظ الكود في ملف ${targetFile} وتشغيله بنجاح على لابتوبك.`, null, () => {
-                  if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-                });
-              }
               return;
             } catch (e) {
               console.warn("[auto save & run error]", e);
@@ -3047,7 +2893,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             renderThread();
             saveState();
             playSciFiSound("action");
-            if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
             return;
           }
 
@@ -3068,7 +2913,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             renderThread();
             saveState();
             playSciFiSound("confirm");
-            if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
             return;
           }
 
@@ -3087,7 +2931,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             renderThread();
             saveState();
             playSciFiSound("action");
-            if (jarvisVoiceMode) speakText(msg, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
             return;
           }
 
@@ -3143,7 +2986,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
               renderThread();
               saveState();
               playSciFiSound("action");
-              if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
               return;
             }
           }
@@ -3175,7 +3017,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
               renderThread();
               saveState();
               playSciFiSound("action");
-              if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
               return;
             }
           }
@@ -3206,7 +3047,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             renderThread();
             saveState();
             playSciFiSound("action");
-            if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
             return;
           }
 
@@ -3266,11 +3106,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             renderThread();
             saveState();
             playSciFiSound("confirm");
-            if (jarvisVoiceMode) {
-              speakText(data.message, null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return;
           }
 
@@ -3302,11 +3137,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             renderThread();
             saveState();
             playSciFiSound("action");
-            if (jarvisVoiceMode) {
-              speakText(data.message, null, () => {
-                if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-              });
-            }
             return;
           }
           // 1. Run Terminal Command Tool
@@ -3413,11 +3243,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
               renderThread();
               saveState();
               playSciFiSound("action");
-              if (jarvisVoiceMode) {
-                speakText(`تم إنشاء وتجهيز المشروع البرمجي ${projectName} مع المعاينة الحية.`, null, () => {
-                  if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
-                });
-              }
               setTimeout(() => {
                 openProjectPreview(projectName, "index.html");
               }, 800);
@@ -3600,7 +3425,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
         if (eventName === "delta") {
           assistant.content += data.text ?? "";
-          window.sanadStreamSpeech?.onDelta(assistant); // voice mode: start speaking finished sentences now
           paint();
           scrollToBottom();
           return false;
@@ -3701,7 +3525,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         if (busy) return;
-        stopSpeaking();
         const text = promptEl.value;
         promptEl.value = "";
         autoGrow();
@@ -3718,14 +3541,10 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       });
 
       stopBtn.addEventListener("click", () => {
-        stopSpeaking();
-        stopListening();
         controller?.abort();
       });
 
       document.getElementById("newChat").addEventListener("click", () => {
-        stopSpeaking();
-        stopListening();
         newConversation();
       });
       document.getElementById("openNav").addEventListener("click", openNav);
@@ -3769,18 +3588,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
               setTimeout(() => { setToolIcon(tool, "copy", "نسخ"); tool.classList.remove("done"); }, 1400);
             } catch {
               setToolIcon(tool, "alert", "تعذر النسخ");
-            }
-          }
-        }
-
-        if (tool.dataset.action === "speak-message") {
-          const index = Number(tool.dataset.index);
-          const message = conv.messages[index];
-          if (message && message.content) {
-            if (currentlySpeakingBtn === tool) {
-              stopSpeaking();
-            } else {
-              speakText(message.content, tool);
             }
           }
         }
@@ -3912,696 +3719,6 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         } catch (e) {
           console.warn("[audio fx error]", e);
         }
-      }
-
-      /* ======================= voice (سند SANAD) ======================= */
-
-      let jarvisVoiceMode = false;
-      let recognition = null;
-      let isRecording = false;
-      let currentSpeakingUtterance = null;
-      let currentlySpeakingBtn = null;
-      let speechSilenceTimeout = null;
-
-      function normalizeArabicSpeech(text) {
-        if (!text) return "";
-        let s = text.trim();
-        // Wake-word variants («يا سندي/يا سناد») and spoken numbers («ثلاثة آلاف» → 3000) — public/voice-intents.js
-        if (window.sanadIntents) s = window.sanadIntents.normalizeTranscript(s);
-        return s;
-      }
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "ar-SA";
-
-        recognition.onstart = () => {
-          isRecording = true;
-          if (speechSilenceTimeout) clearTimeout(speechSilenceTimeout);
-          if (micBtn) {
-            micBtn.classList.add("recording");
-            micBtn.title = "جارٍ الاستماع المستمر... تحدث بحرية وسينفذ سند فور توقفك (انقر للإيقاف)";
-          }
-          if (islandMicBtn) islandMicBtn.classList.add("active");
-          setIslandStatus("يستمع إليك...", true);
-          announcer.textContent = "سند يستمع إليك الآن";
-        };
-
-        recognition.onresult = (event) => {
-          let fullTranscript = "";
-          for (let i = 0; i < event.results.length; i++) {
-            const item = event.results[i];
-            fullTranscript += item[0].transcript;
-            if (item.isFinal) fullTranscript += " ";
-          }
-          const text = fullTranscript.trim();
-          if (text) {
-            promptEl.value = text;
-            autoGrow();
-          }
-
-          // Full-Duplex Real-Time Interruption (Barge-in):
-          // If SANAD is currently speaking and user speaks, immediately interrupt speech output
-          if (isSanadSpeaking()) {
-            const lowerTranscript = text.toLowerCase();
-            if (lowerTranscript.length > 2) {
-              stopSpeaking();
-              playSciFiSound("wake");
-              setIslandStatus("نعم، تفضل أنا استمع إليك...", true);
-            }
-          }
-
-          // Interim Wake-Word Detection:
-          const normText = normalizeArabicSpeech(text);
-          const lower = normText.toLowerCase().trim();
-          if (lower.startsWith("يا سند") || lower.startsWith("سند") || lower.startsWith("يا جارفيس") || lower.startsWith("جارفيس")) {
-            setIslandStatus("نعم، أنا معك! اسمعك...", true);
-            if (islandWaves) islandWaves.classList.add("active");
-          }
-
-          // Debounce: 1200ms pause before dispatching command
-          if (speechSilenceTimeout) clearTimeout(speechSilenceTimeout);
-          const debounceMs = jarvisVoiceMode ? 1100 : 1400;
-          speechSilenceTimeout = setTimeout(() => {
-            const rawText = promptEl.value.trim();
-            if (rawText && !busy) {
-              stopListening();
-              promptEl.value = "";
-              autoGrow();
-              handleVoiceTranscription(rawText);
-            }
-          }, debounceMs);
-        };
-
-        recognition.onerror = (event) => {
-          console.warn("Speech recognition error:", event.error);
-          if (event.error !== "no-speech") {
-            stopListening();
-          }
-          const speechErrors = {
-            "network": "🔌 التعرف على الصوت يحتاج اتصالاً بالإنترنت (خدمة المتصفح سحابية). اكتب أمرك نصياً — العقل المحلي يعمل دون اتصال.",
-            "not-allowed": "🎙️ لم يُسمح باستخدام الميكروفون. فعّل الإذن من إعدادات المتصفح.",
-            "audio-capture": "🎙️ لم يتم العثور على ميكروفون متصل.",
-            "service-not-allowed": "🎙️ خدمة التعرف على الصوت غير متاحة في هذا المتصفح.",
-          };
-          // Cloud recognizer unreachable → switch to the local whisper engine and keep listening.
-          if (event.error === "network" && localSttAvailable) {
-            forceLocalStt = true;
-            const note = "🔌 لا يوجد إنترنت — تم التحويل إلى التعرف الصوتي المحلي (whisper).";
-            updateIslandLatest(escapeHtml(note));
-            if (typeof showBrainToast === "function") showBrainToast(note);
-            setTimeout(() => { if (!isRecording && !busy) startListening(); }, 300);
-            return;
-          }
-          const msg = speechErrors[event.error];
-          if (msg) {
-            // Stop continuous voice mode so it does not loop on repeated network errors.
-            if (event.error === "network" && jarvisVoiceMode && voiceModeBtn) voiceModeBtn.click();
-            setIslandStatus(event.error === "network" ? "الصوت يحتاج إنترنت" : "تعذر الاستماع", false);
-            updateIslandLatest(escapeHtml(msg));
-            if (announcer) announcer.textContent = msg;
-            if (typeof showBrainToast === "function") showBrainToast(msg);
-          }
-        };
-
-        recognition.onend = () => {
-          if (speechSilenceTimeout) {
-            clearTimeout(speechSilenceTimeout);
-            speechSilenceTimeout = null;
-          }
-          const rawText = promptEl.value.trim();
-          if (isRecording) {
-            // Keep alive if still in recording state
-            try { recognition.start(); return; } catch {}
-          }
-          stopListening();
-          if (rawText && !busy) {
-            promptEl.value = "";
-            autoGrow();
-            handleVoiceTranscription(rawText);
-          } else if (jarvisVoiceMode && !busy) {
-            setTimeout(() => {
-              if (jarvisVoiceMode && !busy && !isRecording) {
-                startListening();
-              }
-            }, 400);
-          }
-        };
-      }
-
-      /* ---------- Local offline speech-to-text (whisper.cpp via /api/voice/transcribe) ---------- */
-
-      let localSttAvailable = false;
-      let localTtsAvailable = false;
-      let forceLocalStt = false; // set after the cloud recognizer fails with "network"
-
-      async function refreshLocalSttStatus() {
-        try {
-          const res = await fetch("/api/voice/status");
-          const data = await res.json();
-          localSttAvailable = !!data.available;
-          localTtsAvailable = !!(data.tts && data.tts.available);
-        } catch {
-          localSttAvailable = false;
-          localTtsAvailable = false;
-        }
-        return localSttAvailable;
-      }
-      refreshLocalSttStatus();
-
-      /** Local STT when offline (or offline mode), when the cloud recognizer failed, or when the browser has none. */
-      /** The on-device recognizer (FastConformer, ~0.16 s, 97% in our tests) is preferred whenever it is
-          installed: faster and more accurate than the browser's cloud recognizer, and private. */
-      function shouldUseLocalStt() {
-        return localSttAvailable;
-      }
-
-      let lastSpeechWarm = 0;
-      /** Ask the server to load the speech recognizer before the first utterance (at most every 5 min). */
-      function warmLocalSpeech() {
-        if (Date.now() - lastSpeechWarm < 5 * 60_000) return;
-        lastSpeechWarm = Date.now();
-        fetch("/api/voice/warm", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
-      }
-
-      function encodeWav16k(float32, sampleRate) {
-        const targetRate = 16000;
-        const ratio = sampleRate / targetRate;
-        const outLen = Math.floor(float32.length / ratio);
-        const pcm = new Int16Array(outLen);
-        for (let i = 0; i < outLen; i++) {
-          // Average over the source window (simple low-pass) while downsampling.
-          const start = Math.floor(i * ratio);
-          const end = Math.min(float32.length, Math.floor((i + 1) * ratio));
-          let sum = 0;
-          for (let j = start; j < end; j++) sum += float32[j];
-          const v = Math.max(-1, Math.min(1, sum / Math.max(1, end - start)));
-          pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
-        }
-        const buffer = new ArrayBuffer(44 + pcm.length * 2);
-        const view = new DataView(buffer);
-        const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
-        writeStr(0, "RIFF"); view.setUint32(4, 36 + pcm.length * 2, true); writeStr(8, "WAVE");
-        writeStr(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
-        view.setUint32(24, targetRate, true); view.setUint32(28, targetRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
-        writeStr(36, "data"); view.setUint32(40, pcm.length * 2, true);
-        new Int16Array(buffer, 44).set(pcm);
-        return new Blob([buffer], { type: "audio/wav" });
-      }
-
-      const localStt = (() => {
-        let stream = null, ctx = null, source = null, proc = null;
-        let active = false, speaking = false;
-        let chunks = [], preRoll = [], speechMs = 0, silenceMs = 0, totalMs = 0;
-        let noiseFloor = 0.004;
-        // MAX_MS matches whisper-server's -ac 512 window (~10 s) set in src/localSpeech.ts.
-        const PRE_ROLL_MS = 400, START_MS = 120, END_SILENCE_MS = 650, MAX_MS = 10000, MIN_SPEECH_MS = 350;
-
-        function resetSegment() {
-          speaking = false; chunks = []; speechMs = 0; silenceMs = 0; totalMs = 0;
-        }
-
-        function onFrame(input) {
-          if (!active) return;
-          const frame = new Float32Array(input);
-          const frameMs = (frame.length / ctx.sampleRate) * 1000;
-          let sq = 0;
-          for (let i = 0; i < frame.length; i++) sq += frame[i] * frame[i];
-          const rms = Math.sqrt(sq / frame.length);
-          const threshold = Math.max(0.012, noiseFloor * 3.2);
-
-          if (!speaking) {
-            preRoll.push(frame);
-            let preMs = preRoll.length * frameMs;
-            while (preMs > PRE_ROLL_MS && preRoll.length > 1) { preRoll.shift(); preMs -= frameMs; }
-            if (rms > threshold) {
-              speechMs += frameMs;
-              if (speechMs >= START_MS) {
-                speaking = true;
-                chunks = preRoll.slice();
-                preRoll = [];
-                totalMs = chunks.length * frameMs;
-                silenceMs = 0;
-                // Barge-in: user started talking while SANAD speaks.
-                if (isSanadSpeaking()) stopSpeaking();
-                setIslandStatus("أسمعك... (محلي)", true);
-              }
-            } else {
-              speechMs = 0;
-              noiseFloor = noiseFloor * 0.95 + rms * 0.05; // adapt to room noise
-            }
-            return;
-          }
-
-          chunks.push(frame);
-          totalMs += frameMs;
-          silenceMs = rms > threshold ? 0 : silenceMs + frameMs;
-          if (silenceMs >= END_SILENCE_MS || totalMs >= MAX_MS) finishSegment();
-        }
-
-        async function finishSegment() {
-          const segment = chunks;
-          const segMs = totalMs - silenceMs;
-          const rate = ctx ? ctx.sampleRate : 48000;
-          resetSegment();
-          stop(); // pause the mic while transcribing (same flow as the cloud recognizer)
-
-          if (segMs < MIN_SPEECH_MS) {
-            if (jarvisVoiceMode && !busy) setTimeout(() => { if (jarvisVoiceMode && !busy && !isRecording) startListening(); }, 300);
-            return;
-          }
-
-          let length = 0;
-          for (const c of segment) length += c.length;
-          const all = new Float32Array(length);
-          let off = 0;
-          for (const c of segment) { all.set(c, off); off += c.length; }
-
-          setIslandStatus("يحلل الصوت محلياً...", true);
-          let text = "";
-          try {
-            const res = await fetch("/api/voice/transcribe?lang=ar", { method: "POST", headers: { "Content-Type": "audio/wav" }, body: encodeWav16k(all, rate) });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-            text = (data.text || "").trim();
-          } catch (e) {
-            console.warn("[local-stt]", e);
-            const msg = "🎙️ تعذر التعرف على الصوت محلياً: " + e.message;
-            updateIslandLatest(escapeHtml(msg));
-            if (typeof showBrainToast === "function") showBrainToast(msg);
-          }
-          setIslandStatus("جاهز للأمر", false);
-
-          if (text && !busy) {
-            handleVoiceTranscription(text);
-          } else if (jarvisVoiceMode && !busy) {
-            setTimeout(() => { if (jarvisVoiceMode && !busy && !isRecording) startListening(); }, 300);
-          }
-        }
-
-        async function start() {
-          if (active) return;
-          warmLocalSpeech();
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-          } catch (e) {
-            const msg = "🎙️ لم يُسمح باستخدام الميكروفون أو لا يوجد ميكروفون متصل.";
-            updateIslandLatest(escapeHtml(msg));
-            if (typeof showBrainToast === "function") showBrainToast(msg);
-            stopListening();
-            return;
-          }
-          ctx = new (window.AudioContext || window.webkitAudioContext)();
-          source = ctx.createMediaStreamSource(stream);
-          proc = ctx.createScriptProcessor(2048, 1, 1);
-          proc.onaudioprocess = (e) => onFrame(e.inputBuffer.getChannelData(0));
-          source.connect(proc);
-          proc.connect(ctx.destination);
-          active = true;
-          resetSegment();
-          preRoll = [];
-          isRecording = true;
-          if (micBtn) {
-            micBtn.classList.add("recording");
-            micBtn.title = "يستمع محلياً دون إنترنت... تحدث وسيتم التنفيذ فور توقفك (انقر للإيقاف)";
-          }
-          if (islandMicBtn) islandMicBtn.classList.add("active");
-          setIslandStatus("يستمع (محلي)...", true);
-          announcer.textContent = "سند يستمع إليك الآن (تعرف صوتي محلي)";
-        }
-
-        function stop() {
-          active = false;
-          try { if (proc) { proc.disconnect(); proc.onaudioprocess = null; } } catch {}
-          try { if (source) source.disconnect(); } catch {}
-          try { if (ctx) ctx.close(); } catch {}
-          if (stream) stream.getTracks().forEach((t) => t.stop());
-          stream = ctx = source = proc = null;
-          preRoll = [];
-        }
-
-        return { start, stop, isActive: () => active };
-      })();
-
-      function handleVoiceTranscription(text) {
-        const cleanedText = normalizeArabicSpeech(text);
-        const lower = cleanedText.toLowerCase().trim();
-
-        // Check for session exit / farewell phrases in voice mode
-        if (
-          lower.includes("مع السلامة") ||
-          lower.includes("مع السلامه") ||
-          lower.includes("وداعا") ||
-          lower.includes("إيقاف وضع الصوت") ||
-          lower.includes("اغلق وضع الصوت") ||
-          lower.includes("اكتفينا") ||
-          lower === "توقف يا سند" ||
-          lower === "بس يا سند" ||
-          lower === "يكفي يا سند"
-        ) {
-          speakText("مع السلامة يا صديقي! سأكون في انتظارك دائماً كلما احتجتني.", null, () => {
-            if (jarvisVoiceMode && voiceModeBtn) voiceModeBtn.click();
-          });
-          return;
-        }
-
-        const wakeWords = ["يا سند", "سند", "يا جارفيس", "جارفيس", "hey sanad", "sanad"];
-
-        let matchedWake = false;
-        let command = cleanedText;
-
-        for (const w of wakeWords) {
-          if (lower.startsWith(w)) {
-            matchedWake = true;
-            command = cleanedText.slice(w.length).trim();
-            command = command.replace(/^[،,\s.]+/, "").trim();
-            break;
-          }
-        }
-
-        if (matchedWake) {
-          playSciFiSound("wake");
-          if (arcReactorHud) {
-            arcReactorHud.classList.add("active");
-          }
-
-          if (!command || command === "." || command === "،") {
-            const replies = [
-              "نعم، سند معك وفي خدمتك! كيف أساعدك؟",
-              "أمرك، أنا استمع إليك باهتمام، تفضل.",
-              "معك يا صديقي، بماذا أخدمك اليوم؟"
-            ];
-            const greeting = replies[Math.floor(Math.random() * replies.length)];
-            setIslandStatus("استمع إليك...", true);
-            speakText(greeting, null, () => {
-              if (jarvisVoiceMode) setTimeout(() => startListening(), 350);
-            });
-            return;
-          }
-        }
-
-        // أمر صوتي: الإجراءات الخطرة الناتجة عنه تحتاج تأكيداً (public/api-guard.js)
-        window.__sanadVoiceActing = (window.__sanadVoiceActing || 0) + 1;
-        Promise.resolve(sendMessage(command || cleanedText)).finally(() => {
-          window.__sanadVoiceActing = Math.max(0, (window.__sanadVoiceActing || 1) - 1);
-        });
-      }
-
-      function startListening() {
-        if (isRecording) {
-          stopListening();
-          return;
-        }
-        if (shouldUseLocalStt()) {
-          if (speechSilenceTimeout) {
-            clearTimeout(speechSilenceTimeout);
-            speechSilenceTimeout = null;
-          }
-          localStt.start();
-          return;
-        }
-        if (!recognition) {
-          sanadNotify.error("المتصفح لا يدعمه ومحرك السماع المحلي غير مُثبَّت.", "التعرف الصوتي غير متاح");
-          return;
-        }
-        if (speechSilenceTimeout) {
-          clearTimeout(speechSilenceTimeout);
-          speechSilenceTimeout = null;
-        }
-        stopSpeaking();
-        try {
-          recognition.start();
-        } catch (e) {
-          console.warn(e);
-        }
-      }
-
-      function stopListening() {
-        if (speechSilenceTimeout) {
-          clearTimeout(speechSilenceTimeout);
-          speechSilenceTimeout = null;
-        }
-        isRecording = false;
-        if (micBtn) {
-          micBtn.classList.remove("recording");
-          micBtn.title = "تحدث بالمايك (انقر للتحدث)";
-        }
-        if (islandMicBtn) islandMicBtn.classList.remove("active");
-        setIslandStatus("جاهز للأمر", false);
-        if (localStt.isActive()) localStt.stop();
-        if (recognition) {
-          try { recognition.stop(); } catch {}
-        }
-      }
-
-      function cleanTextForSpeech(text) {
-        if (!text) return "";
-        return text
-          .replace(/```[\s\S]*?```/g, " كود برمجي. ")
-          .replace(/`([^`]+)`/g, "$1")
-          .replace(/#{1,6}\s+/g, "")
-          .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1")
-          .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-          .replace(/<[^>]*>/g, "")
-          .replace(/https?:\/\/\S+/g, " رابط إلكتروني ")
-          .trim();
-      }
-
-      /* ---------- Local offline Arabic TTS (Piper via /api/voice/speak) ---------- */
-
-      let localTtsToken = 0;          // bumping it cancels any in-flight local playback
-      let localTtsAudio = null;       // current HTMLAudioElement
-      let localTtsPlaying = false;
-
-      function browserHasArabicVoice() {
-        if (!window.speechSynthesis) return false;
-        return window.speechSynthesis.getVoices().some((v) => v.lang && v.lang.toLowerCase().startsWith("ar"));
-      }
-
-      /** Piper when offline (or offline mode), or when the browser has no Arabic voice at all. */
-      /** Sanad's own voice (server: cached natural → natural online → offline Piper) whenever available;
-          the browser's speechSynthesis is only a last resort. */
-      function shouldUseLocalTts() {
-        return localTtsAvailable;
-      }
-
-      function isSanadSpeaking() {
-        return localTtsPlaying || !!window.sanadStreamSpeech?.isPlaying() || !!(window.speechSynthesis && window.speechSynthesis.speaking);
-      }
-
-      /** Group sentences into ~200-char chunks: fewer requests, and the first chunk starts playing quickly. */
-      function chunkForTts(text) {
-        const parts = text.split(/(?<=[.؟?!؛\n])\s+/).filter((s) => s.trim());
-        const chunks = [];
-        let cur = "";
-        for (const p of parts) {
-          if (cur && (cur.length + p.length > 200 || chunks.length === 0)) { chunks.push(cur); cur = p; }
-          else cur = cur ? `${cur} ${p}` : p;
-        }
-        if (cur) chunks.push(cur);
-        return chunks;
-      }
-
-      async function fetchTtsChunk(text) {
-        const res = await fetch("/api/voice/speak", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `HTTP ${res.status}`);
-        }
-        return URL.createObjectURL(await res.blob());
-      }
-
-      async function speakLocal(text, btn, onEndCallback) {
-        const token = ++localTtsToken;
-        const chunks = chunkForTts(text);
-        if (!chunks.length) return;
-        localTtsPlaying = true;
-        if (btn) {
-          currentlySpeakingBtn = btn;
-          setToolIcon(btn, "stop", "إيقاف");
-          btn.classList.add("speaking");
-        }
-        setIslandStatus("سند يتحدث (محلي)...", false);
-
-        let next = fetchTtsChunk(chunks[0]);
-        let ok = true;
-        for (let i = 0; i < chunks.length; i++) {
-          let url;
-          try {
-            url = await next;
-          } catch (e) {
-            console.warn("[local-tts]", e);
-            ok = false;
-            break;
-          }
-          if (token !== localTtsToken) { URL.revokeObjectURL(url); return; } // cancelled
-          if (i + 1 < chunks.length) next = fetchTtsChunk(chunks[i + 1]); // prefetch while playing
-          await new Promise((resolve) => {
-            const audio = new Audio(url);
-            localTtsAudio = audio;
-            audio.onended = audio.onerror = () => resolve();
-            audio.play().catch(() => resolve());
-          });
-          URL.revokeObjectURL(url);
-          if (token !== localTtsToken) return; // stopped by barge-in / stop button
-        }
-
-        if (token !== localTtsToken) return;
-        localTtsPlaying = false;
-        localTtsAudio = null;
-        stopSpeaking();
-        setIslandStatus(jarvisVoiceMode ? "يستمع إليك مباشرة..." : "جاهز للأمر", jarvisVoiceMode);
-        if (!ok) updateIslandLatest("🔇 تعذر النطق المحلي.");
-        if (onEndCallback) onEndCallback();
-      }
-
-      function stopSpeaking() {
-        localTtsToken++;
-        localTtsPlaying = false;
-        window.sanadStreamSpeech?.stop();
-        if (localTtsAudio) {
-          try { localTtsAudio.pause(); } catch {}
-          localTtsAudio = null;
-        }
-        if (window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-        }
-        if (currentlySpeakingBtn) {
-          setToolIcon(currentlySpeakingBtn, "volume", "استماع");
-          currentlySpeakingBtn.classList.remove("speaking");
-          currentlySpeakingBtn = null;
-        }
-        currentSpeakingUtterance = null;
-      }
-
-      function speakText(text, btn = null, onEndCallback = null) {
-        if (isSanadSpeaking()) {
-          const sameButton = btn && btn === currentlySpeakingBtn;
-          stopSpeaking();
-          if (sameButton) return;
-        }
-
-        const cleaned = cleanTextForSpeech(text);
-        if (!cleaned) return;
-
-        // In live voice mode, speak the most relevant conversational sentences (up to 3) for snappy responses
-        const sentences = cleaned.split(/(?<=[.؟!؛\n])\s+/).filter(Boolean);
-        const spokenContent = (jarvisVoiceMode && sentences.length > 3)
-          ? sentences.slice(0, 3).join(" ")
-          : cleaned;
-
-        if (shouldUseLocalTts()) {
-          speakLocal(spokenContent, btn, onEndCallback);
-          return;
-        }
-        if (!window.speechSynthesis) return;
-
-        const utterance = new SpeechSynthesisUtterance(spokenContent);
-
-        const voices = window.speechSynthesis.getVoices();
-        const arabicVoice =
-          voices.find((v) => v.name && v.name.includes("Hamed") && v.lang.startsWith("ar")) ||
-          voices.find((v) => v.name && v.name.includes("Shakir") && v.lang.startsWith("ar")) ||
-          voices.find((v) => v.name && v.name.includes("Natural") && v.lang.startsWith("ar")) ||
-          voices.find((v) => v.lang && (v.lang === "ar-SA" || v.lang.startsWith("ar"))) ||
-          voices.find((v) => v.name && (v.name.includes("Arabic") || v.name.includes("Naayf") || v.name.includes("Hoda") || v.name.includes("Salma")));
-
-        if (arabicVoice) {
-          utterance.voice = arabicVoice;
-          utterance.lang = arabicVoice.lang;
-        } else {
-          utterance.lang = "ar-SA";
-        }
-        utterance.rate = 1.05;
-        utterance.pitch = 1.0;
-
-        if (btn) {
-          currentlySpeakingBtn = btn;
-          setToolIcon(btn, "stop", "إيقاف");
-          btn.classList.add("speaking");
-        }
-
-        setIslandStatus("سند يتحدث...", false);
-
-        utterance.onend = () => {
-          stopSpeaking();
-          setIslandStatus(jarvisVoiceMode ? "يستمع إليك مباشرة..." : "جاهز للأمر", jarvisVoiceMode);
-          if (onEndCallback) onEndCallback();
-        };
-
-        utterance.onerror = () => {
-          stopSpeaking();
-          setIslandStatus("جاهز للأمر", false);
-        };
-
-        currentSpeakingUtterance = utterance;
-        window.speechSynthesis.speak(utterance);
-      }
-
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          window.speechSynthesis.getVoices();
-        };
-      }
-
-      if (micBtn) {
-        micBtn.addEventListener("click", () => {
-          if (isRecording) {
-            stopListening();
-          } else {
-            startListening();
-          }
-        });
-      }
-
-      if (voiceModeBtn) {
-        voiceModeBtn.addEventListener("click", () => {
-          jarvisVoiceMode = !jarvisVoiceMode;
-          voiceModeBtn.classList.toggle("active", jarvisVoiceMode);
-          if (islandDuplexBtn) islandDuplexBtn.classList.toggle("active", jarvisVoiceMode);
-          if (arcReactorHud) arcReactorHud.classList.toggle("active", jarvisVoiceMode);
-          const label = voiceModeBtn.querySelector("span:last-child");
-          if (jarvisVoiceMode) {
-            if (label) label.textContent = "سند مفعّل";
-            setIslandStatus("🟢 حوار صوتي مباشر", true);
-            playSciFiSound("wake");
-            speakText("أهلاً بك! وضع الحوار الصوتي المباشر مفعّل. أنا استمع إليك دائماً، نادني بـ «يا سند» أو تحدث بحرية وسأنفذ فوراً.", null, () => {
-              if (jarvisVoiceMode) startListening();
-            });
-          } else {
-            if (label) label.textContent = "وضع سند";
-            setIslandStatus("جاهز للأمر", false);
-            stopSpeaking();
-            stopListening();
-          }
-        });
-      }
-
-      if (islandDuplexBtn) {
-        islandDuplexBtn.addEventListener("click", () => {
-          if (voiceModeBtn) voiceModeBtn.click();
-        });
-      }
-
-      document.addEventListener("keydown", (e) => {
-        if (e.ctrlKey && e.shiftKey && (e.key === "V" || e.key === "v" || e.code === "KeyV")) {
-          e.preventDefault();
-          if (voiceModeBtn) voiceModeBtn.click();
-        }
-      });
-
-      if (arcReactorHud) {
-        arcReactorHud.addEventListener("click", () => {
-          if (voiceModeBtn) voiceModeBtn.click();
-        });
       }
 
       /* ======================= file inspector (sanad) ======================= */
@@ -5324,14 +4441,6 @@ ${data.text}
           renderAll();
           loadAndRenderWorkflows();
 
-          if (jarvisVoiceMode && typeof speakText === "function") {
-            const cleanText = data.text.replace(/[*_#`]/g, "").slice(0, 300);
-            speakText(cleanText, null, () => {
-              if (jarvisVoiceMode && typeof startListening === "function") {
-                setTimeout(() => startListening(), 600);
-              }
-            });
-          }
         } catch (err) {
           console.warn("Screen vision error:", err);
           assistant.pending = false;
@@ -5534,14 +4643,6 @@ ${data.text}
           renderAll();
           loadAndRenderWorkflows();
 
-          if (jarvisVoiceMode && typeof speakText === "function") {
-            const voiceMsg = `أمرك، تم تنفيذ المهمة البصرية على الشاشة: ${data.message || plan.summary || ""}`;
-            speakText(voiceMsg, null, () => {
-              if (jarvisVoiceMode && typeof startListening === "function") {
-                setTimeout(() => startListening(), 500);
-              }
-            });
-          }
         } catch (err) {
           console.warn("Visual agent error:", err);
           assistant.pending = false;
@@ -5792,15 +4893,6 @@ ${data.text}
         });
       }
 
-      if (islandMicBtn) {
-        islandMicBtn.addEventListener("click", () => {
-          if (isRecording) {
-            stopListening();
-          } else {
-            startListening();
-          }
-        });
-      }
 
       if (islandVisionBtn) {
         islandVisionBtn.addEventListener("click", () => {
@@ -5936,7 +5028,6 @@ ${data.text}
           playSciFiSound("action");
           sanadNotify({ type: data.success === false ? "error" : "success", title: "تحرير الذاكرة", body: data.message });
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
-          if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
           await loadAndRenderSysStats();
         } catch (e) {
           sanadNotify.error(e.message, "تعذّر تحرير الذاكرة");
@@ -5966,7 +5057,6 @@ ${data.text}
           playSciFiSound("action");
           sanadNotify({ type: data.success === false ? "error" : "success", title: "تنظيف القرص", body: data.message });
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
-          if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
           await loadAndRenderSysStats();
         } catch (e) {
           sanadNotify.error(e.message, "تعذّر تنظيف القرص");
@@ -6088,6 +5178,7 @@ ${data.text}
       const brainBadgeText = document.getElementById("brainBadgeText");
       const islandBrainDot = document.getElementById("islandBrainDot");
       let lastBrainMode = null;
+      let lastBrainSetting = null;
       let brainToastTimer = null;
 
       function showBrainToast(message, ms = 6000) {
@@ -6114,27 +5205,29 @@ ${data.text}
         let text;
         let title;
         if (mode === "cloud") {
-          text = "متصل — سحابي";
+          text = "باتصال";
           title = s.localModel ? `متصل بالإنترنت. العقل المحلي الاحتياطي جاهز: ${shortLocalName(s.localModel)}` : "متصل بالإنترنت. لا يوجد عقل محلي احتياطي (ثبّت Ollama ونموذجاً).";
         } else if (mode === "local") {
           const forced = s.setting === "offline";
-          text = forced ? "🔒 أوفلاين — محلي" : "أوفلاين — محلي";
-          title = `${forced ? "وضع أوفلاين مفروض (SANAD_MODE=offline) — لا اتصال بالسحابة إطلاقاً." : "لا يوجد إنترنت."} يعمل سند بالعقل المحلي: ${shortLocalName(s.localModel)}${s.warmed ? " (محمّل في الذاكرة)" : ""}`;
+          text = forced ? "دون اتصال" : "باتصال — محلي مؤقتاً";
+          title = `${forced ? "وضع «دون اتصال»: لا يُرسَل أي سؤال إلى الإنترنت." : "لا يوجد إنترنت الآن."} يعمل سند بالعقل المحلي: ${shortLocalName(s.localModel)}${s.warmed ? " (محمّل في الذاكرة)" : ""}`;
         } else {
           text = "لا يوجد عقل";
           title = "لا يوجد إنترنت ولا نموذج محلي. شغّل Ollama ونزّل نموذجاً وأنت متصل.";
         }
         [brainBadgeDot, islandBrainDot].forEach((el) => { if (el) el.setAttribute("data-brain", mode); });
         if (brainBadgeText) brainBadgeText.textContent = text;
-        if (brainBadge) brainBadge.title = title + " — انقر لإعادة الفحص";
+        if (brainBadge) brainBadge.title = title + " — انقر لتغيير وضع العمل";
         if (islandBrainDot) islandBrainDot.title = title;
 
-        if (lastBrainMode && lastBrainMode !== mode) {
+        // التبديل اليدوي من ورقة «وضع العمل» يعرض إشعاره بنفسه
+        if (lastBrainMode && lastBrainMode !== mode && lastBrainSetting === s.setting) {
           if (mode === "local") showBrainToast(`🔌 انقطع الإنترنت — سند يعمل الآن بالعقل المحلي (${shortLocalName(s.localModel)}).`);
           else if (mode === "cloud") showBrainToast("🌐 عاد الاتصال بالإنترنت — العودة للنماذج السحابية.");
           else showBrainToast("⚠️ لا يوجد إنترنت ولا نموذج محلي متاح.");
         }
         lastBrainMode = mode;
+        lastBrainSetting = s.setting;
       }
 
       async function refreshBrainStatus(force = false) {
@@ -6149,7 +5242,8 @@ ${data.text}
       }
       window.refreshBrainStatus = refreshBrainStatus;
 
-      if (brainBadge) brainBadge.addEventListener("click", () => refreshBrainStatus(true));
+      // الشارة تفتح ورقة «وضع العمل» (public/mode-picker.js)؛ وإن لم تُحمَّل تعيد الفحص
+      if (brainBadge) brainBadge.addEventListener("click", () => (window.sanadModePicker ? window.sanadModePicker.open() : refreshBrainStatus(true)));
       window.addEventListener("online", () => setTimeout(() => refreshBrainStatus(true), 1500));
       window.addEventListener("offline", () => refreshBrainStatus(true));
       refreshBrainStatus();
@@ -6188,7 +5282,6 @@ ${data.text}
 
       function netSpeak(message) {
         if (typeof updateIslandLatest === "function") updateIslandLatest(escapeHtml(message));
-        if (jarvisVoiceMode) speakText(message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
       }
 
       function maskIp(ip) {
@@ -6347,7 +5440,7 @@ ${data.text}
       }
 
       /**
-       * Free a port by terminating its holder. `skipConfirm` is used by voice / chat commands.
+       * Free a port by terminating its holder. `skipConfirm` is used by chat commands.
        */
       async function killNetPort(port, skipConfirm = false) {
         const n = Number(port);
@@ -6574,7 +5667,6 @@ ${data.text}
           const data = await res.json();
           playSciFiSound("action");
           if (typeof updateIslandLatest === "function") updateIslandLatest(data.message);
-          if (jarvisVoiceMode) speakText(data.message, null, () => { if (jarvisVoiceMode) setTimeout(() => startListening(), 500); });
         } catch (e) {
           sanadNotify.error(e.message, "تعذّر تشغيل الروتين");
         } finally {
@@ -6749,13 +5841,12 @@ ${data.text}
   <script src="/ios.js" defer></script>
   <script src="/ios-island.js" defer></script>
   <script src="/ios-control.js" defer></script>
-  <script src="/ios-voice.js" defer></script>
-  <script src="/voice-intents.js" defer></script>
-  <script src="/stream-speech.js" defer></script>
+  <script src="/instant-commands.js" defer></script>
   <script src="/ios-tabs.js" defer></script>
   <script src="/ios-apps.js" defer></script>
   <script src="/ios-list.js" defer></script>
   <script src="/ios-polish.js" defer></script>
   <script src="/selfdev-ui.js" defer></script>
+  <script src="/mode-picker.js" defer></script>
   </body>
 </html>

@@ -16,7 +16,7 @@
     { id: "home", label: "الرئيسية", symbol: "bot" },
     { id: "history", label: "المحادثات", symbol: "clock" },
     { id: "tools", label: "الأدوات", symbol: "activity" },
-    { id: "voice", label: "الصوت", symbol: "mic" },
+    { id: "mode", label: "الاتصال", symbol: "globe" },
   ];
   const mobileHeader = document.createElement("div");
   mobileHeader.className = "mobile-nav-head";
@@ -67,10 +67,8 @@
       } else if (tab.id === "home") {
         if (!document.querySelector("#thread .home")) document.getElementById("newChat")?.click();
         else document.getElementById("prompt")?.focus();
-      } else if (window.sanadVoiceSheet) {
-        window.sanadVoiceSheet.open();
-      } else {
-        document.getElementById("voiceModeBtn")?.click();
+      } else if (tab.id === "mode") {
+        window.sanadModePicker?.open();
       }
     });
     buttons.set(tab.id, button);
@@ -78,10 +76,9 @@
   }
 
   document.body.append(nav);
-  const voiceSheet = document.querySelector(".ios-voice-backdrop");
   const thread = document.getElementById("thread");
   function syncHome() {
-    if (app?.classList.contains("nav-open") || (activeTab === "voice" && voiceSheet && !voiceSheet.hidden)) return;
+    if (app?.classList.contains("nav-open") || (activeTab === "mode" && window.sanadModePicker?.isOpen())) return;
     const homeVisible = !!thread?.querySelector(".home");
     if (homeVisible) setActive("home");
     else if (activeTab === "home") setActive(null);
@@ -139,9 +136,8 @@
     });
   }
 
-  if (voiceSheet) {
-    new MutationObserver(() => {
-      if (voiceSheet.hidden && activeTab === "voice") syncHome();
-    }).observe(voiceSheet, { attributes: true, attributeFilter: ["hidden"] });
-  }
+  // عند إغلاق ورقة «وضع العمل» يعود التبويب النشط لما يناسب الشاشة
+  document.addEventListener("sanad:mode-picker-closed", () => {
+    if (activeTab === "mode") { setActive(null); syncHome(); }
+  });
 })();

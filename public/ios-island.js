@@ -13,7 +13,7 @@
 
   /* ======================= Status bar ======================= */
   const bar = el("div", "ios-statusbar");
-  bar.setAttribute("aria-hidden", "true"); // معلومات تكميلية؛ لا داعي لقراءتها صوتياً
+  bar.setAttribute("aria-hidden", "true"); // معلومات تكميلية؛ لا داعي لأن يقرأها قارئ الشاشة
   const sbTime = el("span", "sb-time");
   const sbRight = el("span", "sb-right");
   const sbWifi = el("span", "sb-wifi");
@@ -61,8 +61,6 @@
   const lead = el("span", "di-lead");
   const text = el("span", "di-text");
   const trail = el("span", "di-trail");
-  const waves = el("span", "di-waves");
-  for (let i = 0; i < 5; i++) waves.append(el("i"));
   const compact = el("div", "di-compact");
   compact.append(lead, text, trail);
 
@@ -75,7 +73,7 @@
   const exTitles = el("div", "di-ex-titles");
   exTitles.append(exTitle, exStatus);
   exHead.append(exIcon, exTitles);
-  const exLatest = el("div", "di-ex-latest", "اسألني أي شيء، أو قل «يا سند».");
+  const exLatest = el("div", "di-ex-latest", "اسألني أي شيء، أو اكتب أمراً سريعاً.");
   const quickComposer = document.querySelector(".island-center");
   if (quickComposer) {
     quickComposer.classList.add("di-compose");
@@ -94,8 +92,7 @@
   };
   const stopAct = action("stop", "إيقاف", () => stopCurrent(), "danger");
   exActions.append(
-    action("mic", "تحدث", () => document.getElementById("micBtn")?.click()),
-    action("radio", "حوار صوتي", () => document.getElementById("voiceModeBtn")?.click()),
+    action("globe", "وضع العمل", () => window.sanadModePicker?.open()),
     action("command", "الأوامر", () => document.getElementById("paletteBtn")?.click()),
     stopAct,
   );
@@ -156,8 +153,6 @@
   }
 
   function stopCurrent() {
-    if (state === "speaking" && typeof window.stopSpeaking === "function") return window.stopSpeaking();
-    if (state === "listening" && typeof window.stopListening === "function") return window.stopListening();
     const stop = document.getElementById("stop");
     if (stop && !stop.classList.contains("hidden")) stop.click();
   }
@@ -169,16 +164,6 @@
     trail.innerHTML = "";
     text.textContent = "";
     switch (effective) {
-      case "listening":
-        lead.innerHTML = svg("mic");
-        text.textContent = "يستمع";
-        trail.append(waves);
-        break;
-      case "speaking":
-        lead.innerHTML = svg("volume");
-        text.textContent = "يتحدث";
-        trail.append(waves);
-        break;
       case "thinking":
         lead.innerHTML = svg("sparkles");
         text.textContent = "يفكر";
@@ -197,12 +182,10 @@
     }
     const label = effective === "thinking" ? `يفكر${modelName() ? ` · ${modelName()}` : ""}` : statusText;
     exStatus.textContent = label;
-    stopAct.hidden = !["listening", "speaking", "thinking"].includes(effective);
+    stopAct.hidden = effective !== "thinking";
   }
 
   function classify(t) {
-    if (/يتحدث/.test(t)) return "speaking";
-    if (/استمع|أسمع|اسمع|يستمع|حوار صوتي|يحلل الصوت/.test(t)) return "listening";
     if (/^جاهز|الكبسولة نشطة/.test(t)) return "idle";
     if (/تعذر|تعذّر|يحتاج إنترنت/.test(t)) return "error";
     return "working";

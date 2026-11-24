@@ -1,9 +1,9 @@
-// Tests for public/voice-intents.js — run: node scripts/test-voice-intents.mjs
+// Tests for public/instant-commands.js — run: node scripts/test-instant-commands.mjs
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import assert from "node:assert/strict";
 
-const code = readFileSync(new URL("../public/voice-intents.js", import.meta.url), "utf8");
+const code = readFileSync(new URL("../public/instant-commands.js", import.meta.url), "utf8");
 const sandbox = { module: { exports: {} }, performance };
 vm.runInNewContext(code, sandbox);
 const { normalizeTranscript, parse } = sandbox.module.exports;

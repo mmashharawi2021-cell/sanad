@@ -15,7 +15,6 @@ import { networkRoutes } from "./routes/network";
 import { projectRoutes } from "./routes/project";
 import { systemRoutes } from "./routes/system";
 import { visionRoutes } from "./routes/vision";
-import { voiceRoutes } from "./routes/voice";
 import { webRoutes } from "./routes/web";
 
 /**
@@ -32,7 +31,6 @@ const dispatch = createRouter([
   visionRoutes,
   systemRoutes,
   networkRoutes,
-  voiceRoutes,
   desktopRoutes,
 ]);
 

@@ -37,9 +37,31 @@ export type BrainStatus = {
 
 export type SanadMode = "auto" | "offline" | "cloud";
 
+const SANAD_MODES: readonly SanadMode[] = ["auto", "offline", "cloud"];
+
+/** الوضع الذي اختاره المستخدم من شاشة البداية؛ يتقدّم على SANAD_MODE حتى إعادة تشغيل الخادم. */
+let runtimeMode: SanadMode | null = null;
+
+export function isSanadMode(value: unknown): value is SanadMode {
+  return typeof value === "string" && (SANAD_MODES as readonly string[]).includes(value);
+}
+
 export function getSanadMode(): SanadMode {
+  if (runtimeMode) return runtimeMode;
   const v = process.env.SANAD_MODE?.trim().toLowerCase();
   return v === "offline" || v === "cloud" ? v : "auto";
+}
+
+/** يبدّل وضع العقل أثناء التشغيل. في وضع «دون اتصال» يُجهَّز النموذج المحلي في الخلفية. */
+export function setSanadMode(mode: SanadMode): void {
+  runtimeMode = mode;
+  console.log(`[offline-brain] وضع العمل الآن: ${mode}`);
+  // OLLAMA_WARMUP=false (كما في الاختبارات) يمنع تحميل النموذج في الذاكرة
+  if (mode === "offline" && envFlag("OLLAMA_WARMUP", true)) {
+    void resolveLocalModel()
+      .then((model) => (model ? warmUpModel(model) : undefined))
+      .catch((err) => console.warn(`[offline-brain] تعذر تجهيز النموذج المحلي: ${(err as Error).message}`));
+  }
 }
 
 function envFlag(name: string, fallback: boolean): boolean {

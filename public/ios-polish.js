@@ -48,7 +48,7 @@
   }
 
   // أزرار الكبسولة كانت إيموجي فقط → أيقونات خطية (مع إبقاء شارة زمن الاستجابة في زر الشبكة)
-  const ISLAND_ICONS = { islandDuplexBtn: "radio", islandMicBtn: "mic", islandVisionBtn: "eye", islandNetBtn: "globe" };
+  const ISLAND_ICONS = { islandVisionBtn: "eye", islandNetBtn: "globe" };
   for (const [id, icon] of Object.entries(ISLAND_ICONS)) {
     const b = document.getElementById(id);
     if (b && !b.querySelector("svg")) {

@@ -25,7 +25,7 @@
   const svg = (id) => `<svg class="ico" aria-hidden="true"><use href="#i-${id}"/></svg>`;
   const fixed = [
     { group: "عام", icon: svg("plus"), label: "محادثة جديدة", target: "newChat" },
-    { group: "عام", icon: svg("mic"), label: "وضع سند الصوتي", target: "voiceModeBtn" },
+    { group: "عام", icon: svg("globe"), label: "وضع العمل: باتصال أو دون اتصال", target: "brainBadge" },
     { group: "عام", icon: svg("bot"), label: "اختيار الموديل", target: "modelBtn" },
     { group: "عام", icon: svg("moon"), label: "تبديل المظهر", target: "theme" },
   ];

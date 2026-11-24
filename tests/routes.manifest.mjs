@@ -21,6 +21,8 @@ export const ROUTES = [
   { method: "POST", path: "/api/chat/stream", kind: "validate", body: { prompt: "" }, expect: 400 },
   { method: "GET", path: "/api/models", kind: "read", expect: 200, check: (j) => isArr(j.models, "models") },
   { method: "GET", path: "/api/ollama/status", kind: "read", expect: 200, check: (j) => { if (typeof j.running !== "boolean") throw new Error("running"); } },
+  // وضع غير معروف يُرفض قبل أي تغيير (الوضع الصحيح يبدّل عقل الخادم فلا يُرسل في الاختبار العام)
+  { method: "POST", path: "/api/brain/mode", kind: "validate", body: { mode: "evil" }, expect: 400 },
   { method: "GET", path: "/api/brain/status", kind: "read", expect: 200, check: (j) => { if (!["cloud", "local", "none"].includes(j.mode)) throw new Error(`mode=${j.mode}`); } },
 
   // --- الذاكرة والمهام ---
@@ -80,15 +82,6 @@ export const ROUTES = [
   { method: "POST", path: "/api/desktop/preset", kind: "guardOnly", reason: "يشغّل برامج بيئة العمل" },
   { method: "POST", path: "/api/desktop/inspect", kind: "validate", body: {}, expect: 400 },
   { method: "POST", path: "/api/files/extract", kind: "validate", body: { filePath: "C:\\Windows\\System32\\config\\SAM" }, expect: 403 },
-
-  // --- الصوت ---
-  { method: "GET", path: "/api/voice/status", kind: "read", expect: 200, check: (j) => { if (typeof j.available !== "boolean" || !j.tts) throw new Error("available/tts"); } },
-  { method: "POST", path: "/api/voice/speak", kind: "validate", body: { text: "🚀" }, expect: 400 },
-  { method: "POST", path: "/api/voice/warm", kind: "guardOnly", reason: "يحمّل محرك السماع في الذاكرة" },
-  { method: "GET", path: "/api/voice/settings", kind: "read", expect: 200, check: (j) => { isObj(j.settings, "settings"); isArr(j.cloudVoices, "cloudVoices"); } },
-  // قيمة غير مسموحة تُتجاهل: الإعدادات تبقى كما هي (يتحقق الاختبار من عدم تغيّرها)
-  { method: "POST", path: "/api/voice/settings", kind: "validate", body: { gender: "robot", stt: "evil", maleVoice: "x; rm" }, expect: 200 },
-  { method: "POST", path: "/api/voice/transcribe", kind: "validate", raw: "not a wav file", contentType: "audio/wav", expect: 400 },
 
   // --- الشبكة ---
   { method: "GET", path: "/api/network/ports", kind: "read", query: "?udp=0", expect: 200, check: (j) => isArr(j.ports, "ports") },
