@@ -185,8 +185,8 @@ export async function transcribeWav(wav: Buffer, language = "ar"): Promise<{ tex
       return { text: cleanTranscript(String(r.text ?? "")), latencyMs: Date.now() - started, engine: "fastconformer" };
     } catch (err) {
       const msg = (err as Error).message;
-      // Still loading (slow cold start under memory pressure): starting whisper as well would load
-      // a second engine into already-full RAM and make it worse (measured: 92 s with RAM 0.6 GB free).
+      // Still loading: starting whisper as well would load a second engine (~850 MB) on top.
+      // (Very long loads were once caused by a stdin/DLL-load hang in the sidecar — fixed there.)
       if (/timed out/i.test(msg) && sidecarRunning()) {
         throw new AppError("محرك السماع ما زال يُحمَّل، والذاكرة مزدحمة. أعد المحاولة بعد لحظات.", {
           status: 503,

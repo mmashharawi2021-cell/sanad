@@ -126,8 +126,24 @@ async def handle(req: dict) -> None:
         reply({"id": rid, "ok": False, "error": f"{type(exc).__name__}: {exc}"})
 
 
+def _preload_native_libraries() -> None:
+    """Import every native-extension module here, in the main thread, BEFORE stdin is read.
+
+    On Windows a pending synchronous read on the stdin pipe (the reader thread below) blocks
+    DLL initialisation in other threads, so importing onnxruntime lazily inside a worker thread
+    hung until the next request line arrived (measured: >60 s stuck vs 1.6 s when lines kept
+    arriving). Loading the DLLs up front avoids that entirely.
+    """
+    import numpy  # noqa: F401
+    import soundfile  # noqa: F401
+    import onnxruntime  # noqa: F401
+    import onnx_asr  # noqa: F401
+    import edge_tts  # noqa: F401
+
+
 async def main() -> None:
     loop = asyncio.get_running_loop()
+    _preload_native_libraries()
     reply({"id": None, "ok": True, "ready": True})
     tasks = set()
     while True:

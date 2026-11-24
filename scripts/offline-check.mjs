@@ -39,7 +39,7 @@ row("الأساس", "وضع التشغيل", true, `SANAD_MODE=${env.SANAD_MODE 
 {
   const { freemem, totalmem } = await import("node:os");
   const freeGb = freemem() / 1024 ** 3, totalGb = totalmem() / 1024 ** 3;
-  // Cold starts of local models become very slow when RAM is nearly full (measured: 92 s at 0.6 GB free).
+  // Cold starts of local models slow down when RAM is nearly full (Windows starts paging to disk).
   row("الأساس", "الذاكرة المتاحة", freeGb >= 2, `${freeGb.toFixed(1)} من ${totalGb.toFixed(1)} GB${freeGb < 2 ? " — أغلق برامج ثقيلة ليعمل العقل والصوت بسرعة" : ""}`, "warning");
 }
 
