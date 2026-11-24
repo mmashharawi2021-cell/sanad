@@ -35,11 +35,11 @@ npm.cmd run offline:setup
 npm.cmd run offline:check
 
 # شبكة الأمان (شغّلها قبل وبعد أي تغيير كبير):
-npm.cmd test              # فحص الأنواع + 210 اختبار مسارات وحماية + 37 اختبار أوامر فورية (~25 ث)
+npm.cmd test              # فحص الأنواع + 210 اختبار مسارات وحماية + 37 أمر فوري + 191 اختبار سجل الأوامر (~25 ث)
 npm.cmd run test:ui       # الواجهة في Edge دون نافذة: لا أخطاء، لا طلبات للإنترنت، النوافذ تُفتح، مقارنة اللقطات
 npm.cmd run test:ui -- --update   # تحديث اللقطات المرجعية بعد تغيير مقصود في الشكل
 npm.cmd run test:e2e      # سند دون إنترنت (محاكاة): محادثة، وضع «دون اتصال»، أوامر (يحتاج Ollama)
-npm.cmd run test:commands # اختبارات الأوامر الفورية فقط
+npm.cmd run test:commands # اختبارات الأوامر الفورية وسجل الأوامر فقط
 ```
 
 ---
@@ -89,6 +89,7 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية فق�
 | `public/ios-tabs.js` | تنقل الهاتف: الرئيسية، المحادثات، الأدوات، والاتصال (وضع العمل) |
 | `public/mode-picker.js` | ورقة «وضع العمل» عند الفتح: باتصال (كل النماذج) / دون اتصال (المحلية فقط) |
 | `public/instant-commands.js` | الأوامر الفورية للشبكة والمنافذ (`window.sanadIntents`) |
+| `public/command-registry.js` | **سجل الأوامر المحلية الموحّد** (`window.sanadCommands`): كل أمر ينفَّذ دون العقل سجل مستقل بأمثلته |
 | `public/ios-apps.js` | نوافذ الأدوات كأوراق iOS (زر «تم»، أيقونة تطبيق، أدوات مقسّمة) |
 | `public/ios-list.js` | قائمة المحادثات بأسلوب iOS مع البحث وتأكيد الحذف |
 | `public/ios-polish.js` | إزالة الإيموجي والشروح الإنجليزية من نصوص واجهة النظام (لا يلمس محتوى المستخدم) |
@@ -98,6 +99,7 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية فق�
 - النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
 
 **قواعد الواجهة:**
+- **أي أمر محلي جديد** (يُنفَّذ دون العقل) يُضاف سجلاً في `public/command-registry.js` لا شرطاً في `index.html`: `id`، `risk` (`safe`/`action`/`danger`)، `examples` و`nonExamples` (تُختبر آلياً)، `match` و`run`. أوامر `action`/`danger` لا تطابق الأسئلة ولا الجمل الطويلة إلا بصيغة صريحة (`explicit`).
 - **لا تغيّر معرّفات العناصر** في `index.html`؛ المنطق ووحدات iOS تعتمد عليها. أي سلوك جديد يوضع في وحدة `public/*.js` مستقلة.
 - لا خطوط SF ولا SF Symbols ولا شعار Apple؛ استخدم أيقونات Lucide في الـ sprite وخط IBM Plex Sans Arabic.
 - لا `alert()`/`confirm()`؛ استخدم `sanadNotify` و `sanadConfirm`. النصوص القادمة من الخادم أو النموذج تُدرج عبر `textContent`.

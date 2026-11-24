@@ -62,7 +62,13 @@
         hint: el.title,
       });
     }
-    return out.filter((c) => document.getElementById(c.target));
+    const available = out.filter((c) => document.getElementById(c.target));
+    // أوامر سند المحلية من السجل الموحّد (public/command-registry.js): تُرسَل كرسالة فتُنفَّذ دون العقل
+    const GROUP_ICONS = { "النظام": "activity", "الذاكرة": "memory", "المهام": "clock", "البرمجة": "terminal", "الشاشة": "eye", "الصيانة": "sparkles", "سند": "bot" };
+    for (const c of window.sanadCommands?.paletteEntries() || []) {
+      available.push({ group: "أوامر سند", icon: svg(GROUP_ICONS[c.group] || "zap"), label: c.prompt, prompt: c.prompt, hint: c.label });
+    }
+    return available;
   }
 
   const norm = (s) => (s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
@@ -136,7 +142,8 @@
     const c = items[i];
     if (!c) return;
     close();
-    document.getElementById(c.target)?.click();
+    if (c.prompt && typeof window.sendMessage === "function") window.sendMessage(c.prompt);
+    else document.getElementById(c.target)?.click();
   }
 
   trigger?.addEventListener("click", open);

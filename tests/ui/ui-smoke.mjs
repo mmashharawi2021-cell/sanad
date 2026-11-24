@@ -38,7 +38,7 @@ const KNOWN_ERRORS = [
     why: "نافذة المشاريع تعاين تلقائياً أول مشروع حتى لو لم يكن فيه index.html (مثل moodle-archive) ← 404",
   },
 ];
-const GLOBALS = ["sendMessage", "sanadNotify", "sanadConfirm", "sanadIntents", "sanadModePicker", "reloadModels", "openNetworkModal", "refreshBrainStatus"];
+const GLOBALS = ["sendMessage", "sanadNotify", "sanadConfirm", "sanadIntents", "sanadCommands", "sanadModePicker", "reloadModels", "openNetworkModal", "refreshBrainStatus"];
 
 const results = [];
 const record = (name, ok, detail = "") => { results.push({ name, ok, detail }); console.log(`${ok ? "✓" : "✗"} ${name}${detail ? `  — ${detail}` : ""}`); };
@@ -127,6 +127,22 @@ try {
   record("الدوال والوحدات الأساسية موجودة", missing.length === 0, missing.length ? `ناقص: ${missing.join("، ")}` : `${GLOBALS.length} وحدة`);
   const title = await page.evaluate("document.title");
   record("عنوان الصفحة", /سند/.test(title), title);
+
+  // 2ب) سجل الأوامر: أمر قراءة فقط يُنفَّذ محلياً دون العقل، وجملة محادثة لا تطابق أمراً، والأوامر في لوحة Ctrl+K
+  {
+    const r = await page.evaluate(`(async () => {
+      await sendMessage("كيف وضع جهازي؟");
+      for (let i = 0; i < 50 && !/SANAD Health HUD/.test(JSON.stringify(activeConv()?.messages || [])); i++) await new Promise((r) => setTimeout(r, 200));
+      const last = activeConv().messages.at(-1);
+      return { model: last.model, ok: /نبض وصحة الجهاز/.test(last.content), chat: sanadCommands.match("اكتب لي مقالا عن البحر") === null };
+    })()`);
+    record("أمر محلي من السجل: «كيف وضع جهازي؟»", r.model === "SANAD Health HUD" && r.ok, r.model);
+    record("جملة محادثة لا تُعامل كأمر", r.chat);
+    const p = await page.evaluate(`(() => { document.getElementById("paletteBtn").click(); const n = [...document.querySelectorAll(".palette-item")].filter((b) => /كيف وضع جهازي/.test(b.textContent)).length; document.querySelector(".palette-backdrop, #paletteBackdrop")?.click(); return n; })()`);
+    record("أوامر سند في لوحة Ctrl+K", p > 0, `${p}`);
+    // محادثة الاختبار تُحفظ في المتصفح؛ تُمسح حتى لا تظهر في لقطات النوافذ التالية
+    await page.evaluate("localStorage.clear()");
+  }
 
   // 3) كل نافذة آمنة تُفتح
   for (const [btn, sel] of MODALS) {
