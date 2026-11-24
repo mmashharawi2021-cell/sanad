@@ -5412,7 +5412,6 @@ ${data.text}
               goal: goalText,
               screenWidth: screenW,
               screenHeight: screenH,
-              autoExecute: true, // المستخدم كلّف سند بالمهمة صراحة (أو وافق عليها عبر بطاقة التأكيد)
             }),
             signal: AbortSignal.timeout(75_000),
           });
@@ -5422,49 +5421,61 @@ ${data.text}
             throw new Error(err.error || `HTTP ${res.status}`);
           }
 
-          const data = await res.json();
-          playSciFiSound("done");
-
-          let stepsHtml = "";
-          if (Array.isArray(data.executed) && data.executed.length > 0) {
-            stepsHtml = data.executed
-              .map((item, idx) => {
-                const icon = item.action.type.includes("click") ? "🖱️" : item.action.type === "type" ? "⌨️" : "⚡";
-                return `<li style="margin: 4px 0;"><b>خطوة ${idx + 1}:</b> ${icon} ${item.action.description || item.result}</li>`;
-              })
-              .join("");
+          // 1) الخادم يخطط فقط. 2) نعرض الخطوات للموافقة. 3) ننفّذ عبر /api/vision/execute.
+          const plan = await res.json();
+          if (!plan.success || !Array.isArray(plan.actions) || !plan.actions.length) {
+            throw new Error(plan.summary || plan.thought || "لم يقترح الوكيل البصري أي خطوات.");
           }
 
+          const stepLabel = (a) => {
+            const d = a.description ? ` — ${a.description}` : "";
+            if (String(a.type).includes("click")) return `${a.type === "double_click" ? "نقر مزدوج" : a.type === "right_click" ? "نقر أيمن" : "نقر"} عند (${a.x}، ${a.y})${d}`;
+            if (a.type === "type") return `كتابة: «${a.text}»${a.pressEnter ? " ثم Enter" : ""}${d}`;
+            if (a.type === "press") return `مفتاح: ${a.key}${d}`;
+            if (a.type === "hotkey") return `اختصار: ${a.hotkey}${d}`;
+            if (a.type === "wait") return `انتظار ${a.waitMs}ms`;
+            return `${a.type}${d}`;
+          };
+          const stepsText = plan.actions.map((a, i) => `${i + 1}. ${stepLabel(a)}`).join("\n");
+
+          const approved = await sanadConfirm({
+            title: plan.cached ? "تنفيذ مسار محفوظ على شاشتك؟" : "تنفيذ خطة الوكيل البصري على شاشتك؟",
+            message: `${plan.thought}\n\n${stepsText}\n\nسيتحكم سند بالفأرة ولوحة المفاتيح لتنفيذ هذه الخطوات بالضبط.`,
+            confirmText: "نفّذ",
+            destructive: true,
+          });
+
           assistant.pending = false;
-          assistant.model = data.model || "SANAD Visual Agent";
-          assistant.latencyMs = data.latencyMs;
+          assistant.model = plan.model || "SANAD Visual Agent";
+          assistant.latencyMs = plan.latencyMs;
 
-          assistant.content = `
-<div style="margin: 10px 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.2);">
-  <div style="padding: 8px 12px; background: rgba(0,230,118,0.12); font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; color: #00e676;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <span>✅</span> <span>اكتملت المهمة البصرية بنجاح</span>
-    </div>
-    <span style="font-size: 11px; opacity: 0.8; color: var(--text);">${Math.round((data.latencyMs || 0) / 100) / 10} ث</span>
-  </div>
-  <img src="${base64DataUrl}" alt="لقطة الشاشة" style="max-width: 100%; max-height: 220px; object-fit: contain; display: block; margin: 0 auto; border-top: 1px solid var(--border);" />
-</div>
+          if (!approved) {
+            assistant.content = `🛑 **لم تُنفَّذ الخطة البصرية** — ألغيتَها.\n\n**الهدف:** ${goalText}\n\n**الخطوات المقترحة:**\n${stepsText}`;
+            saveState();
+            renderAll();
+            return;
+          }
 
-🎯 **تحليل سند البصري:** ${data.thought}
+          const execRes = await fetch("/api/vision/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ goal: goalText, actions: plan.actions, screenWidth: screenW, screenHeight: screenH }),
+          });
+          const data = await execRes.json();
+          playSciFiSound(data.success ? "done" : "confirm");
 
-📋 **الخطوات المنفذة ذاتياً:**
-<ul style="padding-inline-start: 20px; margin: 8px 0; line-height: 1.6;">
-  ${stepsHtml || "<li>تم النقر والتفاعل على الشاشة بنجاح.</li>"}
-</ul>
+          const doneLines = (data.executed || [])
+            .map((item, idx) => `${idx + 1}. ${item.success ? "✓" : "✗"} ${stepLabel(item.action)}${item.success ? "" : ` (${item.result})`}`)
+            .join("\n");
+          const rejected = (data.errors || []).map((e) => `- ${e}`).join("\n");
 
-✨ **النتيجة النهائية:** ${data.summary}
-`;
+          assistant.content = `${data.success ? "✅ **اكتملت المهمة البصرية**" : "⚠️ **لم تكتمل المهمة البصرية**"}\n\n**التحليل:** ${plan.thought}\n\n**الخطوات المنفذة:**\n${doneLines || "لا شيء"}${rejected ? `\n\n**أسباب الرفض:**\n${rejected}` : ""}\n\n**النتيجة:** ${data.success ? plan.summary : data.message}`;
           saveState();
           renderAll();
           loadAndRenderWorkflows();
 
           if (jarvisVoiceMode && typeof speakText === "function") {
-            const voiceMsg = `أمرك، تم تنفيذ المهمة البصرية على الشاشة: ${data.summary}`;
+            const voiceMsg = `أمرك، تم تنفيذ المهمة البصرية على الشاشة: ${data.message || plan.summary || ""}`;
             speakText(voiceMsg, null, () => {
               if (jarvisVoiceMode && typeof startListening === "function") {
                 setTimeout(() => startListening(), 500);

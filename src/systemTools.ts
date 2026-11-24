@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { runFile, runPowerShell, startDetached } from "./safeShell";
-import { isExecutableExtension, isInsideAny, userRoots } from "./safePaths";
+import { isInsideAny, isSafeToAutoOpen, userRoots } from "./safePaths";
 
 const execAsync = promisify(exec);
 
@@ -380,19 +380,19 @@ export async function createOrWriteTextFile(options: {
       fullPath: targetPath,
     };
   }
-  const executable = isExecutableExtension(targetPath);
+  const safeToOpen = isSafeToAutoOpen(targetPath);
 
   try {
     await writeFile(targetPath, options.content || "", "utf8");
 
-    // فتح ملف تنفيذي = تشغيله؛ لا نفعل ذلك تلقائياً أبداً
-    if (options.openAfterCreate !== false && !executable) {
+    // قائمة سماح: فتح امتداد غير معروف قد يعني تشغيله، فلا نفتح إلا المستندات والصور
+    if (options.openAfterCreate !== false && safeToOpen) {
       startDetached(targetPath);
     }
-    if (executable) {
+    if (!safeToOpen && options.openAfterCreate !== false) {
       return {
         success: true,
-        message: `تم حفظ الملف ${path.basename(targetPath)} دون فتحه، لأنه ملف تنفيذي. افتحه بنفسك إن كنت تثق بمحتواه.`,
+        message: `تم حفظ الملف ${path.basename(targetPath)} دون فتحه تلقائياً، لأن نوعه قد يُشغَّل عند فتحه. افتحه بنفسك إن كنت تثق بمحتواه.`,
         fullPath: targetPath,
       };
     }

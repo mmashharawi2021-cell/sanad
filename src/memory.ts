@@ -141,13 +141,14 @@ export function getLocalSystemPromptWithMemory(): Promise<string> {
 
 /**
  * كم من الذاكرة يُرسل إلى النماذج السحابية (OpenRouter)؟ من .env: SANAD_CLOUD_MEMORY
- *  - all (الافتراضي): كل الذاكرة
- *  - no-personal: بلا فئة «عن المستخدم» (المعلومات الشخصية)
+ *  - no-personal (الافتراضي): بلا فئة «عن المستخدم» (المعلومات الشخصية)
+ *  - all: كل الذاكرة (يجب طلبه صراحة)
  *  - off: لا شيء
+ * أي قيمة غير معروفة تُعامل كالافتراضي الآمن، لا كـ all.
  */
 function cloudMemoryPolicy(): "all" | "no-personal" | "off" {
-  const v = String(process.env.SANAD_CLOUD_MEMORY || "all").trim().toLowerCase();
-  return v === "off" || v === "no-personal" ? v : "all";
+  const v = String(process.env.SANAD_CLOUD_MEMORY || "no-personal").trim().toLowerCase();
+  return v === "off" || v === "all" ? v : "no-personal";
 }
 
 /** Formats the long-term memory for injection into the model's System Prompt */

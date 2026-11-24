@@ -1,11 +1,10 @@
 /* سند — حارس طلبات الواجهة إلى الخادم
-   - يضيف رمز الجلسة (X-Sanad-Token) إلى كل طلب يغيّر الحالة نحو /api/ على نفس الأصل.
+   - رمز الجلسة في كوكي HttpOnly يرسله المتصفح تلقائياً؛ لا يراه أي سكربت (ولا هذا الملف).
+   - يضيف الرأس X-Sanad-Request: 1 إلى كل طلب يغيّر الحالة نحو /api/ على نفس الأصل
+     (الخادم يرفض الطلب بدونه، وأي أصل آخر لا يستطيع إرساله دون preflight مرفوض).
    - يضبط Content-Type: application/json إن كان الجسم نصاً بلا نوع (الخادم يرفض غيره).
-   يُحمَّل قبل أي سكربت آخر. الرمز يأتي من <meta name="sanad-token"> الذي يحقنه الخادم. */
+   يُحمَّل قبل أي سكربت آخر. */
 (() => {
-  // يُقرأ عند كل طلب: وسم meta يُحقن قبل </head> أي بعد تحميل هذا السكربت
-  let cachedToken = "";
-  const getToken = () => cachedToken || (cachedToken = document.querySelector('meta[name="sanad-token"]')?.content || "");
   const nativeFetch = window.fetch.bind(window);
 
   function isOwnApi(url) {
@@ -40,8 +39,8 @@
     "/api/tasks/run": "تشغيل مهمة مجدولة",
     "/api/tasks/toggle": "تفعيل أو إيقاف مهمة مجدولة",
     "/api/memory": "تعديل ذاكرة سند الدائمة",
-    "/api/vision/act": "التحكم بالفأرة ولوحة المفاتيح",
     "/api/vision/workflows": "حذف مسار محفوظ",
+    // /api/vision/execute غير مدرج عمداً: runVisualAgentLoop يعرض الخطة كاملة ويطلب الموافقة بنفسه
   };
   window.__sanadModelActing = 0;
   // أوامر صوتية: صوت من فيديو أو شخص آخر قد يقول «يا سند نفذ أمر …»
@@ -57,15 +56,40 @@
     return true;
   }
 
+  // محارف التحكم بالاتجاه قد تُخفي جزءاً من الأمر أو تقلبه بصرياً — نُظهرها كرموز مرئية
+  const BIDI = /[‎‏‪-‮⁦-⁩؜]/g;
+  const showBidi = (s) => s.replace(BIDI, (c) => `⟦U+${c.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0")}⟧`);
+  const MAX_FIELD = 8000;
+  const RISKY_FILE = /(^|[\\/])\.vscode[\\/]|\.(bat|cmd|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|hta|lnk|url|exe|com|scr|msi|reg|pif|cpl|py|pyw|jar|msc)$/i;
+
   function describe(path, method, body) {
     let data = {};
     try { data = typeof body === "string" ? JSON.parse(body) : {}; } catch {}
     const fields = ["command", "action", "process", "name", "port", "path", "filePath", "target", "projectName", "title", "actionValue", "goal", "content", "preset", "routine", "url"];
     const details = fields
       .filter((k) => data[k] != null && String(data[k]).trim() !== "")
-      .map((k) => `${k}: ${String(data[k]).slice(0, 300)}`)
-      .join("\n");
-    return `${SENSITIVE[path] || "إجراء"}${method === "DELETE" ? " (حذف)" : ""}\n\n${details || path}`;
+      .map((k) => {
+        const v = String(data[k]);
+        // لا قطع صامت: الأمر يُعرض كاملاً، وإن تجاوز الحد نقول ذلك صراحة
+        const shown = v.length > MAX_FIELD ? `${v.slice(0, MAX_FIELD)}\n⚠️ … قُطع ${v.length - MAX_FIELD} حرفاً من هذا الحقل — لا توافق إن لم تكن متأكداً` : v;
+        return `${k}: ${showBidi(shown)}`;
+      });
+    // ملفات ستُكتب (إنشاء مشروع): الأسماء والأحجام، مع تنبيه على التنفيذية وملفات .vscode
+    if (Array.isArray(data.files) && data.files.length) {
+      details.push(`ملفات ستُكتب (${data.files.length}):`);
+      for (const f of data.files.slice(0, 60)) {
+        const name = String(f?.relativePath || f?.path || f?.name || "?");
+        const size = typeof f?.content === "string" ? `${f.content.length} حرف` : "";
+        details.push(`  ${RISKY_FILE.test(name) ? "⚠️ " : ""}${showBidi(name)}${size ? ` (${size})` : ""}`);
+      }
+      if (data.files.length > 60) details.push(`  … و${data.files.length - 60} ملفاً آخر`);
+      if (data.files.some((f) => RISKY_FILE.test(String(f?.relativePath || f?.path || f?.name || "")))) {
+        details.push("⚠️ بين الملفات ملفات تنفيذية أو إعدادات VS Code قد تشغّل أوامر عند فتح المجلد.");
+      }
+    }
+    if (BIDI.test(body || "")) details.push("⚠️ يحتوي الطلب على محارف تحكم بالاتجاه (قد تُخفي جزءاً من النص).");
+    BIDI.lastIndex = 0;
+    return `${SENSITIVE[path] || "إجراء"}${method === "DELETE" ? " (حذف)" : ""}\n\n${details.join("\n") || path}`;
   }
 
   async function confirmModelAction(path, method, body, source = "model") {
@@ -101,8 +125,7 @@
     }
 
     const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
-    const token = getToken();
-    if (token) headers.set("X-Sanad-Token", token);
+    headers.set("X-Sanad-Request", "1");
     if (typeof init.body === "string" && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     return nativeFetch(input, { ...init, headers });
   };
@@ -116,12 +139,4 @@
     delete window.__sanadTakeNativeFetch;
     return nativeFetch;
   };
-
-  // نحتفظ بالرمز في هذا الإغلاق ونزيل وسم meta من الصفحة (دفاع إضافي ضد أي XSS)
-  const hideToken = () => {
-    getToken();
-    document.querySelector('meta[name="sanad-token"]')?.remove();
-  };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hideToken, { once: true });
-  else hideToken();
 })();

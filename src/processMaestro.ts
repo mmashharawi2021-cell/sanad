@@ -105,11 +105,25 @@ export async function listProcesses(limit: number = 15): Promise<ProcessInfo[]> 
   });
 }
 
-// عمليات لا يُسمح بإنهائها: النظام، الجلسة، وخادم سند نفسه (node)
-const PROTECTED_PROCESSES = new Set([
+// عمليات نظام وجلسة لا يُسمح بإنهائها (بالاسم أو بالرقم) — قائمة واحدة يستخدمها أيضاً networkMaestro
+const SYSTEM_PROCESSES = new Set([
   "system", "idle", "registry", "smss", "csrss", "wininit", "winlogon", "services", "lsass", "lsaiso",
-  "svchost", "dwm", "fontdrvhost", "explorer", "sihost", "ctfmon", "memcompression", "secure system", "node",
+  "svchost", "dwm", "fontdrvhost", "explorer", "sihost", "ctfmon", "memcompression", "memory compression",
+  "secure system", "spoolsv", "audiodg", "searchhost", "startmenuexperiencehost", "taskhostw", "conhost",
 ]);
+// بالاسم فقط: «node» يُنهي كل عمليات node ومنها خادم سند. بالرقم يُسمح (لتحرير منفذ خادم تطوير) مع حماية سند نفسه.
+const NAME_ONLY_PROTECTED = new Set(["node"]);
+
+export function isProtectedProcessName(name: string): boolean {
+  return SYSTEM_PROCESSES.has(String(name).trim().replace(/\.exe$/i, "").toLowerCase());
+}
+
+/** اسم العملية لرقم معيّن، أو null إن لم توجد. */
+async function processNameForPid(pid: number): Promise<string | null> {
+  const r = await runPowerShell(`(Get-Process -Id ${pid} -ErrorAction Stop).ProcessName`, { timeoutMs: 10_000 });
+  const name = r.stdout.trim();
+  return r.exitCode === 0 && name ? name : null;
+}
 
 export async function killProcess(identifier: string | number): Promise<{ success: boolean; message: string }> {
   const raw = String(identifier).trim();
@@ -120,13 +134,19 @@ export async function killProcess(identifier: string | number): Promise<{ succes
     if (!Number.isInteger(pid) || pid <= 4 || pid === process.pid || pid === process.ppid) {
       return { success: false, message: `العملية (${raw}) محمية: عملية نظام أو خادم سند نفسه.` };
     }
+    // الرقم وحده لا يكفي: نحوّله إلى اسم ونفحصه في قائمة الحماية
+    const name = await processNameForPid(pid);
+    if (!name) return { success: false, message: `لا توجد عملية بالرقم ${pid}.` };
+    if (isProtectedProcessName(name)) {
+      return { success: false, message: `العملية «${name}» (PID ${pid}) عملية نظام محمية ولا يمكن إنهاؤها من سند.` };
+    }
   } else {
     const name = raw.replace(/\.exe$/i, "");
     // اسم عملية فقط: حروف وأرقام ونقطة وشرطة ومسافة — يمنع حقن أوامر PowerShell
     if (!/^[\w.\- ]{1,64}$/.test(name)) {
       return { success: false, message: "اسم العملية غير صالح." };
     }
-    if (PROTECTED_PROCESSES.has(name.toLowerCase())) {
+    if (isProtectedProcessName(name) || NAME_ONLY_PROTECTED.has(name.toLowerCase())) {
       return { success: false, message: `العملية «${name}» محمية ولا يمكن إنهاؤها من سند.` };
     }
   }

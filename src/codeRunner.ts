@@ -144,13 +144,15 @@ export async function createFullProject(options: {
       count++;
     }
 
-    if (options.openInVsCode !== false) {
+    const hasVsCodeConfig = options.files.some((f) => /(^|[\\/])\.vscode[\\/]/i.test(String(f.relativePath)));
+    const opened = options.openInVsCode === true && !hasVsCodeConfig;
+    if (opened) {
       startDetached("code", [projectPath]);
     }
 
     return {
       success: true,
-      message: `تم إنشاء المشروع بنجاح في: ${projectPath} وتجهيز ${count} ملف، وتم فتحه في Visual Studio Code.`,
+      message: `تم إنشاء المشروع بنجاح في: ${projectPath} وتجهيز ${count} ملف${opened ? "، وتم فتحه في Visual Studio Code" : ""}.`,
       projectPath,
       fileCount: count,
     };

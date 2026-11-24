@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { killProcess } from "./processMaestro";
+import { isProtectedProcessName, killProcess } from "./processMaestro";
 
 const execFileAsync = promisify(execFile);
 
@@ -92,10 +92,6 @@ const DEV_PORT_LABELS: Record<number, string> = {
   27017: "MongoDB",
 };
 
-/** Processes that must never be terminated through Kill Port. */
-const PROTECTED_PROCESS_NAMES = new Set(
-  ["system", "idle", "svchost", "lsass", "wininit", "csrss", "smss", "services", "winlogon", "spoolsv", "dwm", "registry", "memory compression"].map((n) => n.toLowerCase())
-);
 
 function isValidPort(port: unknown): port is number {
   return typeof port === "number" && Number.isInteger(port) && port >= 1 && port <= 65535;
@@ -113,8 +109,9 @@ function isValidHost(host: string): boolean {
 }
 
 function isProtected(pid: number, processName: string): boolean {
-  if (pid === 0 || pid === 4 || pid === process.pid) return true;
-  return PROTECTED_PROCESS_NAMES.has(processName.toLowerCase());
+  // قائمة الحماية نفسها التي يستخدمها killProcess (مصدر واحد)
+  if (pid <= 4 || pid === process.pid || pid === process.ppid) return true;
+  return isProtectedProcessName(processName);
 }
 
 /**

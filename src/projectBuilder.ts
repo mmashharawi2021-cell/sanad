@@ -426,7 +426,9 @@ export async function buildProject(options: BuildProjectOptions): Promise<BuildP
   }
 
   // Open in VS Code
-  if (openInVsCode) {
+  // لا نفتح VS Code تلقائياً إن احتوى المشروع إعدادات .vscode (قد تشغّل مهاماً عند فتح المجلد)
+  const hasVsCodeConfig = filesToCreate.some((f) => /(^|[\\/])\.vscode[\\/]/i.test(String(f.relativePath)));
+  if (openInVsCode && !hasVsCodeConfig) {
     try {
       startDetached("code", [projectPath]);
     } catch {}

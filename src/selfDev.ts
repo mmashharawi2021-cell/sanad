@@ -169,7 +169,7 @@ const FORBIDDEN: Array<[RegExp, string]> = [
   [/\beval\s*\(|new\s+Function\s*\(/, "يستخدم eval أو new Function."],
   [/document\.cookie/, "يقرأ أو يكتب الكوكيز."],
   [/localStorage\.(clear|removeItem)\s*\(/, "يحذف من التخزين المحلي العام."],
-  [/sanad-token|X-Sanad-Token|__sanadNativeFetch/i, "يحاول الوصول إلى رمز جلسة سند."],
+  [/sanad-token|sanad_session|X-Sanad-Token|X-Sanad-Request|__sanadNativeFetch|__sanadTakeNativeFetch/i, "يحاول الوصول إلى رمز جلسة سند."],
   [/\bimport\s*\(|^\s*import\s|^\s*export\s/m, "يستخدم وحدات import/export (غير مدعومة في الإضافات)."],
 ];
 
@@ -272,12 +272,28 @@ export async function installDraft(draftId: string): Promise<{ success: boolean;
     await mkdir(BACKUP_DIR, { recursive: true });
     await writeFile(join(BACKUP_DIR, `${draft.id}.${Date.now()}.js`), await readFile(target, "utf8"), "utf8");
   }
+  // الحقول نصوص من المستخدم/النموذج: نزيل كل ما قد يُغلق التعليق أو يكسر السطر (* و / وفواصل الأسطر والتحكم)
+  const field = (v: string, max: number) =>
+    String(v).replace(/[\s*/\\\x00-\x1f\x7f]+/g, " ").trim().slice(0, max);
   const header =
-    `/* إضافة سند: ${draft.name.replace(/\*\//g, "")}\n` +
-    `   الطلب: ${draft.request.replace(/\*\//g, "").slice(0, 300)}\n` +
-    `   كتبها: ${draft.model.replace(/\*\//g, "")} — ${new Date().toISOString()}\n` +
+    `/* إضافة سند: ${field(draft.name, 80)}\n` +
+    `   الطلب: ${field(draft.request, 300)}\n` +
+    `   كتبها: ${field(draft.model, 120)} — ${new Date().toISOString()}\n` +
     `   أُنشئت بواسطة مطوّر سند الذاتي وثُبّتت بموافقة المستخدم. */\n`;
-  await writeFile(target, header + draft.code + "\n", "utf8");
+  const finalFile = header + draft.code + "\n";
+  // فحص الملف النهائي كاملاً: الرأس تعليق واحد مغلق في مكانه، والملف كله يجتاز الفحص نفسه
+  const headerMatch = finalFile.match(/^\/\* إضافة سند:[\s\S]*?\*\/\n/);
+  // الكود نفسه فُحص أعلاه؛ هنا نتأكد أن الرأس لم يغيّر معنى الملف: تعليق واحد مغلق، والباقي هو الكود حرفياً، والملف كله صالح الصياغة
+  let syntaxError = "";
+  try {
+    new Script(finalFile, { filename: "extension.js" });
+  } catch (e) {
+    syntaxError = (e as Error).message;
+  }
+  if (!headerMatch || headerMatch[0] !== header || finalFile.slice(header.length) !== draft.code + "\n" || syntaxError) {
+    return { success: false, message: `رُفض الملف النهائي قبل كتابته: ${syntaxError || "رأس الإضافة غير سليم."}` };
+  }
+  await writeFile(target, finalFile, "utf8");
 
   const now = new Date().toISOString();
   const all = await readRegistry();

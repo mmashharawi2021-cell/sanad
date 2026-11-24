@@ -13,7 +13,7 @@ import { getMemories, addMemory, deleteMemory, getSystemPromptWithMemory, getLoc
 import { executeTerminalCommand, createFullProject, readProjectTree } from "./codeRunner";
 import { searchWeb, fetchPageContent } from "./webSearch";
 import { getTasks, createTask, toggleTask, deleteTask, runTaskNow, initTaskScheduler } from "./taskScheduler";
-import { analyzeScreenImage, planAndExecuteVisualAction } from "./screenVision";
+import { analyzeScreenImage, executeApprovedVisualPlan, planAndExecuteVisualAction } from "./screenVision";
 import { getWorkflows, deleteWorkflow } from "./actionMemory";
 import { organizeDirectory, getDirectoryStatus, setupWorkspacePreset, inspectAndSummarizeFile } from "./desktopAutomation";
 import { runUniversalCommand, type ShellType } from "./universalTerminal";
@@ -45,12 +45,23 @@ const MODELS_TTL_MS = 10 * 60_000;
    2) رأس Host يجب أن يكون localhost/127.0.0.1 على نفس المنفذ (يمنع DNS rebinding).
    3) كل طلب يغيّر الحالة (غير GET/HEAD) يجب أن:
       - يأتي من أصل سند نفسه إن أرسل المتصفح Origin (يمنع المواقع الأخرى / CSRF)،
-      - ويحمل X-Sanad-Token الصحيح (رمز عشوائي يُولَّد عند كل إقلاع ويُحقن في الصفحة فقط)،
+      - ويحمل كوكي الجلسة الصحيح: رمز عشوائي يُولَّد عند كل إقلاع ويُرسل مع الصفحة الرئيسية
+        في كوكي HttpOnly + SameSite=Strict — لا يقرؤه أي سكربت في الصفحة (ولا XSS)، ولا يُرسل من مواقع أخرى،
+      - ويحمل الرأس X-Sanad-Request: 1 (رأس مخصّص يفرض preflight على أي أصل آخر، ونحن لا نجيبه)،
       - ويرسل Content-Type: application/json لطلبات JSON. */
 const HOST = "127.0.0.1";
 const SESSION_TOKEN = randomBytes(32).toString("hex");
+const SESSION_COOKIE = "sanad_session";
 const ALLOWED_HOSTS = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`, `[::1]:${PORT}`]);
 const ALLOWED_ORIGINS = new Set([`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`]);
+
+function readCookie(req: IncomingMessage, name: string): string | undefined {
+  for (const part of String(req.headers.cookie || "").split(";")) {
+    const eq = part.indexOf("=");
+    if (eq > 0 && part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim();
+  }
+  return undefined;
+}
 
 function tokenMatches(given: string | string[] | undefined): boolean {
   if (typeof given !== "string") return false;
@@ -67,7 +78,10 @@ function securityRejection(req: IncomingMessage, pathname: string): string | nul
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") return null;
   const origin = req.headers.origin;
   if (origin && !ALLOWED_ORIGINS.has(origin)) return "مصدر الطلب غير مسموح.";
-  if (pathname.startsWith("/api/") && !tokenMatches(req.headers["x-sanad-token"])) return "رمز الجلسة مفقود أو غير صحيح. أعد تحميل الصفحة.";
+  if (pathname.startsWith("/api/")) {
+    if (req.headers["x-sanad-request"] !== "1") return "طلب غير صادر من واجهة سند.";
+    if (!tokenMatches(readCookie(req, SESSION_COOKIE))) return "جلسة سند منتهية أو غير صحيحة. أعد تحميل الصفحة.";
+  }
   return null;
 }
 
@@ -234,7 +248,8 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     const projectName = String(body.projectName || "").trim();
     const files = Array.isArray(body.files) ? (body.files as any[]) : [];
     const baseFolder = (body.baseFolder || "desktop") as any;
-    const openInVsCode = body.openInVsCode !== false;
+    // ملفات هذا المسار يختارها النموذج: لا نفتح VS Code إلا بطلب صريح (ملفات .vscode قد تشغّل مهاماً عند الفتح)
+    const openInVsCode = body.openInVsCode === true;
 
     if (!projectName || !files.length) {
       sendJson(res, 400, { error: "اسم المشروع والملفات مطلوبة." });
@@ -357,21 +372,25 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     const screenWidth = typeof body.screenWidth === "number" ? body.screenWidth : 1920;
     const screenHeight = typeof body.screenHeight === "number" ? body.screenHeight : 1080;
     const model = typeof body.model === "string" ? body.model : undefined;
-    // التنفيذ التلقائي لخطة نموذج الرؤية يجب أن يُطلب صراحة (افتراضياً: تحليل فقط)
-    const autoExecute = body.autoExecute === true;
 
     if (!imageBase64 || !goal) {
       sendJson(res, 400, { error: "صورة الشاشة والهدف المطلوب كلاهما مطلوب للوكيل البصري." });
       return;
     }
 
-    const result = await planAndExecuteVisualAction({
-      imageBase64,
-      goal,
-      screenWidth,
-      screenHeight,
-      model,
-      autoExecute,
+    // تخطيط فقط — التنفيذ عبر /api/vision/execute بعد موافقة المستخدم على الخطوات
+    const result = await planAndExecuteVisualAction({ imageBase64, goal, screenWidth, screenHeight, model });
+    sendJson(res, 200, result);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/vision/execute") {
+    const body = await readJsonBody(req);
+    const result = await executeApprovedVisualPlan({
+      goal: String(body.goal || "").trim().slice(0, 300),
+      actions: body.actions,
+      screenWidth: typeof body.screenWidth === "number" ? body.screenWidth : 1920,
+      screenHeight: typeof body.screenHeight === "number" ? body.screenHeight : 1080,
     });
     sendJson(res, 200, result);
     return;
@@ -1170,17 +1189,18 @@ async function serveStatic(pathname: string, res: ServerResponse): Promise<void>
   }
 
   try {
-    let file: Buffer | string = await readFile(filePath);
-    if (relative === "index.html") {
-      // نحقن رمز الجلسة في الصفحة فقط؛ لا تستطيع المواقع الأخرى قراءته (سياسة نفس الأصل)
-      file = file.toString("utf8").replace("</head>", `  <meta name="sanad-token" content="${SESSION_TOKEN}" />\n  </head>`);
-    }
-    res.writeHead(200, {
+    const file = await readFile(filePath);
+    const headers: Record<string, string> = {
       "Content-Type": CONTENT_TYPES[extname(filePath).toLowerCase()] ?? "application/octet-stream",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "same-origin",
-    });
+    };
+    if (relative === "index.html") {
+      // رمز الجلسة في كوكي HttpOnly: المتصفح يرسله تلقائياً، ولا يستطيع أي سكربت في الصفحة قراءته
+      headers["Set-Cookie"] = `${SESSION_COOKIE}=${SESSION_TOKEN}; Path=/; HttpOnly; SameSite=Strict`;
+    }
+    res.writeHead(200, headers);
     res.end(file);
   } catch {
     sendJson(res, 404, { error: "Not found." });

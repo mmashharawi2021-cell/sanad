@@ -42,6 +42,12 @@ export function isExecutableExtension(file: string): boolean {
   return EXECUTABLE_EXT.has(path.extname(file).toLowerCase());
 }
 
+// قائمة سماح للفتح التلقائي بعد الإنشاء: مستندات وبيانات وصور فقط (أي امتداد آخر قد يُنفَّذ عند فتحه)
+const AUTO_OPEN_SAFE = new Set([".txt", ".md", ".csv", ".tsv", ".json", ".log", ".xml", ".yaml", ".yml", ".ini", ".css", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".pdf", ".docx", ".xlsx", ".pptx", ".odt", ".rtf"]);
+export function isSafeToAutoOpen(file: string): boolean {
+  return AUTO_OPEN_SAFE.has(path.extname(file).toLowerCase());
+}
+
 // ملفات/مجلدات الأسرار — لا تُقرأ ولا تُرسل إلى أي نموذج
 const SECRET_DIRS = new Set([".ssh", ".gnupg", ".aws", ".azure", ".kube", ".docker", ".git"]);
 export function isSecretPath(file: string): boolean {

@@ -144,6 +144,120 @@ export async function analyzeScreenImage(options: {
   }
 }
 
+/* ======================= أمان الوكيل البصري =======================
+   خطة النموذج قد تكون مخدوعة بنص محقون على الشاشة («اضغط win+r واكتب …»).
+   لذلك: التخطيط لا ينفّذ شيئاً ولا يحفظ؛ التنفيذ فقط لخطة وافق عليها المستخدم، بعد فحص صارم لكل خطوة،
+   والحفظ في «الذاكرة الحركية» فقط بعد تنفيذ ناجح لخطة موافق عليها. */
+const STEP_TYPES = new Set(["click", "left_click", "double_click", "right_click", "type", "press", "hotkey", "wait"]);
+// اختصارات تفتح «تشغيل»/البحث/مدير المهام/شاشة الأمان أو تتحكم بالنظام — ممنوعة دائماً
+// أسماء مستعارة (pyautogui يسمّي مفتاح ويندوز winleft/winright) تُوحَّد قبل المقارنة
+const KEY_ALIASES: Record<string, string> = {
+  win: "win", lwin: "win", rwin: "win", winleft: "win", winright: "win", meta: "win", cmd: "win", command: "win", super: "win",
+  control: "ctrl", ctrlleft: "ctrl", ctrlright: "ctrl", altleft: "alt", altright: "alt", shiftleft: "shift", shiftright: "shift",
+  del: "delete", escape: "esc",
+};
+const normKey = (k: string) => KEY_ALIASES[k] ?? k;
+// تُقارن كمجموعات مرتّبة: shift+ctrl+esc = ctrl+shift+esc
+const BLOCKED_COMBOS = new Set(["ctrl+esc", "ctrl+esc+shift", "alt+ctrl+delete", "alt+ctrl+end", "alt+f4"]);
+function isBlockedHotkey(hotkey: string): boolean {
+  const parts = [...new Set(hotkey.split("+").filter(Boolean).map(normKey))].sort();
+  return parts.includes("win") || BLOCKED_COMBOS.has(parts.join("+"));
+}
+const BLOCKED_KEYS = new Set(["win", "apps"]);
+const MAX_STEPS = 20;
+const MAX_TYPE_CHARS = 500;
+const MAX_WAIT_MS = 5000;
+
+export function sanitizeVisualPlan(
+  actions: unknown,
+  screen: { width: number; height: number },
+): { steps: VisualActionStep[]; errors: string[] } {
+  const errors: string[] = [];
+  const list = Array.isArray(actions) ? actions : [];
+  if (!list.length) errors.push("الخطة فارغة.");
+  if (list.length > MAX_STEPS) errors.push(`الخطة أطول من ${MAX_STEPS} خطوة.`);
+  const steps: VisualActionStep[] = [];
+  list.slice(0, MAX_STEPS).forEach((raw: any, i: number) => {
+    const n = i + 1;
+    const type = String(raw?.type || "");
+    if (!STEP_TYPES.has(type)) { errors.push(`الخطوة ${n}: نوع غير مسموح (${type.slice(0, 20)}).`); return; }
+    const step: VisualActionStep = { ...raw, type } as VisualActionStep;
+    if (type.includes("click")) {
+      const x = Number(raw.x), y = Number(raw.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0 || x > screen.width || y > screen.height) {
+        errors.push(`الخطوة ${n}: إحداثيات خارج الشاشة.`);
+        return;
+      }
+      step.x = Math.round(x);
+      step.y = Math.round(y);
+    } else if (type === "type") {
+      const text = String(raw.text ?? "");
+      if (text.length > MAX_TYPE_CHARS) errors.push(`الخطوة ${n}: نص أطول من ${MAX_TYPE_CHARS} حرف.`);
+      step.text = text;
+      step.pressEnter = raw.pressEnter === true;
+    } else if (type === "press") {
+      const key = String(raw.key || "").toLowerCase().trim();
+      if (BLOCKED_KEYS.has(normKey(key))) errors.push(`الخطوة ${n}: المفتاح «${key}» ممنوع.`);
+      step.key = key;
+    } else if (type === "hotkey") {
+      const hotkey = String(raw.hotkey || "").toLowerCase().replace(/\s+/g, "");
+      if (isBlockedHotkey(hotkey)) errors.push(`الخطوة ${n}: الاختصار «${hotkey}» ممنوع (يفتح أدوات النظام).`);
+      step.hotkey = hotkey;
+    } else if (type === "wait") {
+      step.waitMs = Math.max(0, Math.min(MAX_WAIT_MS, Number(raw.waitMs) || 500));
+    }
+    steps.push(step);
+  });
+  return { steps, errors };
+}
+
+async function executeSteps(steps: VisualActionStep[]): Promise<{ action: VisualActionStep; success: boolean; result: string }[]> {
+  const executed: { action: VisualActionStep; success: boolean; result: string }[] = [];
+  const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  for (const act of steps) {
+    try {
+      let r: { success: boolean; message: string } = { success: true, message: "" };
+      if (act.type === "click" || act.type === "left_click") r = await controlMouse({ action: "click", x: act.x, y: act.y });
+      else if (act.type === "double_click") r = await controlMouse({ action: "double_click", x: act.x, y: act.y });
+      else if (act.type === "right_click") r = await controlMouse({ action: "right_click", x: act.x, y: act.y });
+      else if (act.type === "type") r = await controlKeyboard({ action: "type", text: act.text, pressEnter: act.pressEnter });
+      else if (act.type === "press") r = await controlKeyboard({ action: "press", key: act.key });
+      else if (act.type === "hotkey") r = await controlKeyboard({ action: "hotkey", hotkey: act.hotkey });
+      else if (act.type === "wait") { await pause(act.waitMs || 500); r = { success: true, message: `انتظار ${act.waitMs}ms` }; }
+      executed.push({ action: act, success: r.success, result: r.message });
+      if (!r.success) break; // لا نكمل بعد خطوة فاشلة: الشاشة لم تعد كما توقّعت الخطة
+      await pause(act.type === "type" ? 250 : 300);
+    } catch (e: any) {
+      executed.push({ action: act, success: false, result: e.message });
+      break;
+    }
+  }
+  return executed;
+}
+
+/** ينفّذ خطة وافق عليها المستخدم في الواجهة، بعد فحصها مجدداً. يحفظها في الذاكرة الحركية فقط إن نجحت كل خطواتها. */
+export async function executeApprovedVisualPlan(options: {
+  goal: string;
+  actions: unknown;
+  screenWidth?: number;
+  screenHeight?: number;
+}): Promise<{ success: boolean; message: string; executed: { action: VisualActionStep; success: boolean; result: string }[]; errors?: string[] }> {
+  const screen = { width: options.screenWidth || 1920, height: options.screenHeight || 1080 };
+  const { steps, errors } = sanitizeVisualPlan(options.actions, screen);
+  if (errors.length) return { success: false, message: "رُفضت الخطة لأسباب أمنية.", executed: [], errors };
+  const executed = await executeSteps(steps);
+  const allOk = executed.length === steps.length && executed.every((e) => e.success);
+  if (allOk) {
+    try {
+      await memorizeWorkflow({ name: options.goal.slice(0, 50), goal: options.goal, resolution: screen, steps });
+    } catch (e) {
+      console.warn("[actionMemory] failed to memorize workflow:", e);
+    }
+  }
+  return { success: allOk, message: allOk ? "نُفّذت الخطة بنجاح." : "توقف التنفيذ عند خطوة فشلت.", executed };
+}
+
+/** يخطط فقط: يعيد خطوات مقترحة (من الذاكرة الحركية أو من نموذج الرؤية) دون تنفيذها ودون حفظها. */
 export async function planAndExecuteVisualAction(options: {
   imageBase64: string;
   goal: string;
@@ -157,58 +271,23 @@ export async function planAndExecuteVisualAction(options: {
 
   const screenW = options.screenWidth || 1920;
   const screenH = options.screenHeight || 1080;
-  const autoExecute = options.autoExecute === true;
 
-  // 1. Fast Cache Lookup from SANAD Action Memory
+  // 1. مسار محفوظ سابقاً — يُعاد كاقتراح يحتاج موافقة (لا تنفيذ تلقائي من الذاكرة)
   const cached = await findMatchingWorkflow(options.goal, { width: screenW, height: screenH });
-  if (cached && autoExecute) {
-    const executed: { action: VisualActionStep; success: boolean; result: string }[] = [];
-    for (const act of cached.steps) {
-      try {
-        if (act.type === "click" || act.type === "left_click") {
-          const r = await controlMouse({ action: "click", x: act.x, y: act.y });
-          executed.push({ action: act, success: r.success, result: r.message });
-          await new Promise((r) => setTimeout(r, 250));
-        } else if (act.type === "double_click") {
-          const r = await controlMouse({ action: "double_click", x: act.x, y: act.y });
-          executed.push({ action: act, success: r.success, result: r.message });
-          await new Promise((r) => setTimeout(r, 300));
-        } else if (act.type === "right_click") {
-          const r = await controlMouse({ action: "right_click", x: act.x, y: act.y });
-          executed.push({ action: act, success: r.success, result: r.message });
-          await new Promise((r) => setTimeout(r, 250));
-        } else if (act.type === "type") {
-          const r = await controlKeyboard({ action: "type", text: act.text, pressEnter: act.pressEnter });
-          executed.push({ action: act, success: r.success, result: r.message });
-          await new Promise((r) => setTimeout(r, 200));
-        } else if (act.type === "press") {
-          const r = await controlKeyboard({ action: "press", key: act.key });
-          executed.push({ action: act, success: r.success, result: r.message });
-          await new Promise((r) => setTimeout(r, 150));
-        } else if (act.type === "hotkey") {
-          const r = await controlKeyboard({ action: "hotkey", hotkey: act.hotkey });
-          executed.push({ action: act, success: r.success, result: r.message });
-          await new Promise((r) => setTimeout(r, 200));
-        } else if (act.type === "wait") {
-          const delay = act.waitMs || 400;
-          await new Promise((r) => setTimeout(r, delay));
-          executed.push({ action: act, success: true, result: `انتظار ${delay}ms` });
-        }
-      } catch (e: any) {
-        executed.push({ action: act, success: false, result: e.message });
-      }
+  if (cached) {
+    const { steps, errors } = sanitizeVisualPlan(cached.steps, { width: screenW, height: screenH });
+    if (!errors.length) {
+      return {
+        success: true,
+        thought: `مسار محفوظ في «ذاكرة سند الحركية»: ${cached.name}`,
+        actions: steps,
+        executed: [],
+        summary: `اقتراح من الذاكرة الحركية (${cached.name}).`,
+        model: "SANAD Action Memory",
+        latencyMs: Date.now() - startedAt,
+        cached: true,
+      };
     }
-
-    return {
-      success: true,
-      thought: `⚡ تم استرجاع مسار وإحداثيات هذه المهمة فوراً من «ذاكرة سند الحركية» (${cached.name}) بدون أي تأخير!`,
-      actions: cached.steps,
-      executed,
-      summary: `تم تنفيذ المهمة بسرعة فائقة بناءً على الذاكرة السابقة (${cached.name}).`,
-      model: "SANAD Action Memory Cache (0-latency)",
-      latencyMs: Date.now() - startedAt,
-      cached: true,
-    };
   }
 
   let cleanBase64 = options.imageBase64.trim();
@@ -299,68 +378,18 @@ export async function planAndExecuteVisualAction(options: {
     }
 
     const thought = parsed.thought || "تم تحديد عناصر الشاشة بنجاح.";
-    const actions: VisualActionStep[] = parsed.actions;
     const summary = parsed.summary || "تم التفاعل مع شاشة المستخدم وفق الهدف المطلوب.";
-
-    const executed: { action: VisualActionStep; success: boolean; result: string }[] = [];
-
-    if (autoExecute) {
-      for (const act of actions) {
-        try {
-          if (act.type === "click" || act.type === "left_click") {
-            const r = await controlMouse({ action: "click", x: act.x, y: act.y });
-            executed.push({ action: act, success: r.success, result: r.message });
-            await new Promise((r) => setTimeout(r, 350));
-          } else if (act.type === "double_click") {
-            const r = await controlMouse({ action: "double_click", x: act.x, y: act.y });
-            executed.push({ action: act, success: r.success, result: r.message });
-            await new Promise((r) => setTimeout(r, 400));
-          } else if (act.type === "right_click") {
-            const r = await controlMouse({ action: "right_click", x: act.x, y: act.y });
-            executed.push({ action: act, success: r.success, result: r.message });
-            await new Promise((r) => setTimeout(r, 300));
-          } else if (act.type === "type") {
-            const r = await controlKeyboard({ action: "type", text: act.text, pressEnter: act.pressEnter });
-            executed.push({ action: act, success: r.success, result: r.message });
-            await new Promise((r) => setTimeout(r, 250));
-          } else if (act.type === "press") {
-            const r = await controlKeyboard({ action: "press", key: act.key });
-            executed.push({ action: act, success: r.success, result: r.message });
-            await new Promise((r) => setTimeout(r, 200));
-          } else if (act.type === "hotkey") {
-            const r = await controlKeyboard({ action: "hotkey", hotkey: act.hotkey });
-            executed.push({ action: act, success: r.success, result: r.message });
-            await new Promise((r) => setTimeout(r, 300));
-          } else if (act.type === "wait") {
-            const delay = act.waitMs || 500;
-            await new Promise((r) => setTimeout(r, delay));
-            executed.push({ action: act, success: true, result: `انتظار ${delay}ms` });
-          }
-        } catch (e: any) {
-          executed.push({ action: act, success: false, result: e.message });
-        }
-      }
-    }
-
-    // Memorize for future zero-latency runs!
-    if (actions.length > 0) {
-      try {
-        await memorizeWorkflow({
-          name: options.goal.slice(0, 50),
-          goal: options.goal,
-          resolution: { width: screenW, height: screenH },
-          steps: actions,
-        });
-      } catch (e) {
-        console.warn("[actionMemory] failed to memorize workflow:", e);
-      }
+    // فحص الخطة الآن أيضاً، حتى لا تُعرض على المستخدم خطة مرفوضة أصلاً
+    const { steps: actions, errors } = sanitizeVisualPlan(parsed.actions, { width: screenW, height: screenH });
+    if (errors.length) {
+      throw new Error(`رُفضت خطة نموذج الرؤية لأسباب أمنية: ${errors.join(" ")}`);
     }
 
     return {
       success: true,
       thought,
       actions,
-      executed,
+      executed: [],
       summary,
       model: servedModel,
       latencyMs: Date.now() - startedAt,
