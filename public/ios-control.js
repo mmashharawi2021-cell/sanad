@@ -27,12 +27,19 @@
 
   /* ---------- Build ---------- */
   const backdrop = el("div", "ios-cc-backdrop");
+  backdrop.id = "controlCenterBackdrop";
   backdrop.setAttribute("role", "dialog");
   backdrop.setAttribute("aria-modal", "true");
   backdrop.setAttribute("aria-label", "مركز التحكم");
   backdrop.hidden = true;
   const grid = el("div", "ios-cc");
-  backdrop.append(grid);
+  grid.id = "controlCenter";
+  const dismiss = el("button", "cc-dismiss");
+  dismiss.type = "button";
+  dismiss.setAttribute("aria-label", "إغلاق مركز التحكم");
+  dismiss.innerHTML = use("x");
+  dismiss.addEventListener("click", close);
+  backdrop.append(dismiss, grid);
 
   function roundBtn(iconHtml, label, onClick, cls = "") {
     const b = el("button", `cc-round ${cls}`);
@@ -192,6 +199,7 @@
     syncTheme();
     refreshStats();
     backdrop.hidden = false;
+    document.getElementById("controlCenterBtn")?.setAttribute("aria-expanded", "true");
     requestAnimationFrame(() => backdrop.classList.add("in"));
     window.sanadIsland?.collapse();
     setTimeout(() => grid.querySelector("button, [tabindex]")?.focus(), 60);
@@ -199,12 +207,31 @@
   function close() {
     if (backdrop.hidden) return;
     backdrop.classList.remove("in");
-    setTimeout(() => { backdrop.hidden = true; }, 320);
-    if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
+    document.getElementById("controlCenterBtn")?.setAttribute("aria-expanded", "false");
+    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 320;
+    setTimeout(() => {
+      backdrop.hidden = true;
+      if (lastFocus?.isConnected && typeof lastFocus.focus === "function") lastFocus.focus();
+    }, delay);
   }
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !backdrop.hidden) { e.stopPropagation(); close(); }
+    if (e.key === "Tab" && !backdrop.hidden) {
+      const focusable = [...backdrop.querySelectorAll('button:not(:disabled), [tabindex="0"]')]
+        .filter((node) => !node.hidden && node.getClientRects().length);
+      if (focusable.length) {
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !backdrop.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !backdrop.contains(document.activeElement))) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "c") { e.preventDefault(); backdrop.hidden ? open() : close(); }
   });
   // سحب للأعلى للإغلاق
@@ -221,6 +248,9 @@
     b.id = "controlCenterBtn";
     b.title = "مركز التحكم (Ctrl+Shift+C)";
     b.setAttribute("aria-label", "مركز التحكم");
+    b.setAttribute("aria-haspopup", "dialog");
+    b.setAttribute("aria-controls", backdrop.id);
+    b.setAttribute("aria-expanded", "false");
     b.innerHTML = ICON.sliders;
     b.addEventListener("click", open);
     palette.before(b);
@@ -230,7 +260,8 @@
   if (island) {
     let t = null;
     let longPressed = false;
-    island.addEventListener("pointerdown", () => {
+    island.addEventListener("pointerdown", (e) => {
+      if (e.target.closest(".di-expanded")) return;
       longPressed = false;
       t = setTimeout(() => { longPressed = true; open(); }, 480);
     });

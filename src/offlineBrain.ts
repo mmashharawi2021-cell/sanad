@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { AppError } from "./config";
 import { getLocalSystemPromptWithMemory } from "./memory";
-import { OLLAMA_HOST, OLLAMA_PREFIX, cleanOllamaModelName, getOllamaStatus, ollamaKeepAlive, ollamaRuntimeOptions } from "./ollama";
+import { OLLAMA_HOST, OLLAMA_PREFIX, cleanOllamaModelName, getOllamaStatus, ollamaKeepAlive, ollamaRuntimeOptions, ollamaThink } from "./ollama";
 
 /**
  * Offline brain: connectivity detection, Ollama auto-start, local model selection and warm-up.
@@ -211,6 +211,7 @@ export async function warmUpModel(modelId: string): Promise<void> {
           ],
           stream: false,
           keep_alive: ollamaKeepAlive(),
+          think: ollamaThink(),
           options: ollamaRuntimeOptions({ num_predict: 1 }),
         }),
         signal: AbortSignal.timeout(180_000),

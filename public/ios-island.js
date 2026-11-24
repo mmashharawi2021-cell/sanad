@@ -76,6 +76,13 @@
   exTitles.append(exTitle, exStatus);
   exHead.append(exIcon, exTitles);
   const exLatest = el("div", "di-ex-latest", "اسألني أي شيء، أو قل «يا سند».");
+  const quickComposer = document.querySelector(".island-center");
+  if (quickComposer) {
+    quickComposer.classList.add("di-compose");
+    const commandInput = quickComposer.querySelector("input");
+    commandInput?.setAttribute("aria-label", "اكتب أمراً لسند");
+    if (commandInput) commandInput.dir = "auto";
+  }
   const exActions = el("div", "di-ex-actions");
   const action = (icon, label, fn, cls = "") => {
     const b = el("button", `di-act ${cls}`);
@@ -92,7 +99,51 @@
     action("command", "الأوامر", () => document.getElementById("paletteBtn")?.click()),
     stopAct,
   );
-  expanded.append(exHead, exLatest, exActions);
+  const quickActions = el("div", "di-quick-actions");
+  const quickAction = (icon, label, onClick) => {
+    const b = el("button", "di-quick-action");
+    b.type = "button";
+    b.innerHTML = svg(icon);
+    b.append(el("span", null, label));
+    b.addEventListener("click", (e) => { e.stopPropagation(); onClick(); collapse(); });
+    quickActions.append(b);
+  };
+  [
+    ["islandQuickClickBtn", "activity", "نقر"],
+    ["islandQuickEnterBtn", "check", "Enter"],
+    ["islandQuickSaveBtn", "copy", "حفظ"],
+    ["islandQuickNewBtn", "plus", "جديد"],
+    ["islandQuickEscBtn", "x", "إلغاء"],
+    ["islandOrganizeDesktopBtn", "monitor", "ترتيب المكتب"],
+    ["islandRoutineMorningBtn", "sun", "بداية العمل"],
+    ["islandRoutineFocusBtn", "activity", "تركيز"],
+    ["islandRoutineWrapupBtn", "moon", "نهاية العمل"],
+    ["islandProjectsBtn", "code", "المشاريع"],
+    ["islandRamBoostBtn", "zap", "تحرير الرام"],
+    ["islandDiskCleanBtn", "disk", "تنظيف القرص"],
+    ["islandPortsBtn", "terminal", "المنافذ"],
+    ["islandPingBtn", "globe", "فحص النت"],
+  ].forEach(([id, icon, label]) => {
+    quickAction(icon, label, () => document.getElementById(id)?.click());
+  });
+  const modeAction = el("button", "di-mode-action");
+  modeAction.type = "button";
+  modeAction.addEventListener("click", (e) => {
+    e.stopPropagation();
+    window.sanadCompactMode?.toggle();
+    collapse();
+  });
+  expanded.append(exHead, exLatest);
+  if (quickComposer) expanded.append(quickComposer);
+  expanded.append(exActions, quickActions, modeAction);
+
+  function syncModeAction() {
+    const compactMode = document.body.classList.contains("island-only-mode");
+    modeAction.innerHTML = `${svg(compactMode ? "monitor" : "island")}<span>${compactMode ? "إظهار الواجهة الكاملة" : "العرض المصغّر"}</span>`;
+    modeAction.setAttribute("aria-label", compactMode ? "إظهار الواجهة الكاملة" : "تفعيل العرض المصغّر");
+  }
+  syncModeAction();
+  new MutationObserver(syncModeAction).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   island.append(compact, expanded);
 
   let state = "idle";
@@ -176,10 +227,11 @@
   function expand() { island.classList.add("expanded"); }
   function collapse() { island.classList.remove("expanded"); }
   island.addEventListener("click", (e) => {
-    if (e.target.closest(".di-act")) return;
+    if (e.target.closest(".di-expanded")) return;
     island.classList.toggle("expanded");
   });
   island.addEventListener("keydown", (e) => {
+    if (e.target.closest("button, input, textarea, select, a")) return;
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); island.classList.toggle("expanded"); }
     if (e.key === "Escape") collapse();
   });

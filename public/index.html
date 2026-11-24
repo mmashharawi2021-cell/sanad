@@ -2,16 +2,14 @@
 <html lang="ar" dir="rtl" data-theme="dark">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#070b12" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>سند · المساعد الذكي المستقل</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="/styles.css" />
     <script src="/api-guard.js"></script>
   </head>
@@ -225,7 +223,7 @@
           </button>
             <button class="tool-item" id="toggleIslandBtn" type="button" title="وضع الكبسولة العائمة الذكية (Dynamic Island)">
             <span class="tool-ico"><svg class="ico" aria-hidden="true"><use href="#i-island"/></svg></span>
-            <span class="tool-label">الكبسولة</span>
+            <span class="tool-label">العرض المصغّر</span>
           </button>
           </div>
 
@@ -271,7 +269,7 @@
 
       <main class="chat">
         <header class="chat-head">
-          <button class="icon-btn menu-btn" id="openNav" type="button" aria-label="فتح المحادثات"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></button>
+          <button class="icon-btn menu-btn" id="openNav" type="button" aria-label="فتح المحادثات" aria-controls="sidebar" aria-expanded="false"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></button>
 
           <div class="arc-reactor-hud" id="arcReactorHud" title="نواة سند العصبية (SANAD Core)">
             <div class="arc-outer-ring"></div>
@@ -690,6 +688,7 @@
       const app = document.getElementById("app");
       const sidebar = document.getElementById("sidebar");
       const backdrop = document.getElementById("backdrop");
+      const openNavButton = document.getElementById("openNav");
       const convList = document.getElementById("convList");
       const thread = document.getElementById("thread");
       const statsEl = document.getElementById("stats");
@@ -1331,6 +1330,22 @@
         });
       }
 
+      // لقطات الشاشة المرافقة لرسائل الوكيل البصري: في الذاكرة فقط (لا تُحفظ مع المحادثات — خصوصية وحجم)
+      const transientScreenshots = new WeakMap();
+
+      function screenshotFigure(dataUrl) {
+        const fig = document.createElement("figure");
+        fig.className = "msg-screenshot";
+        const cap = document.createElement("figcaption");
+        cap.textContent = "لقطة الشاشة التي حلّلها الوكيل";
+        const img = document.createElement("img");
+        img.alt = "لقطة الشاشة";
+        img.loading = "lazy";
+        img.src = dataUrl;
+        fig.append(cap, img);
+        return fig;
+      }
+
       function messageEl(conv, message, index) {
         const wrap = document.createElement("article");
         wrap.className = `msg ${message.role}`;
@@ -1362,6 +1377,8 @@
         } else {
           body.innerHTML = renderMarkdown(message.content || "");
           if (message.pending) body.classList.add("streaming");
+          const shot = transientScreenshots.get(message);
+          if (shot) body.prepend(screenshotFigure(shot));
         }
 
         if (message.notice) {
@@ -1683,7 +1700,7 @@
         saveState();
         renderAll();
         promptEl.focus();
-        closeNav();
+        closeNav(false);
       }
 
       function selectConversation(id) {
@@ -1732,6 +1749,17 @@
             model: state.model || conv.model || "",
             save: saveState,
             render: renderAll,
+          });
+        }
+
+        // 00a. أوامر فورية للشبكة والمنافذ («حرر بورت 3000»، «افحص النت»…) — public/voice-intents.js
+        if (window.sanadIntents?.matches(text)) {
+          return window.sanadIntents.handle(text, conv, assistant, {
+            save: saveState,
+            render: renderAll,
+            speak: speakText,
+            listen: () => startListening(),
+            voiceMode: () => jarvisVoiceMode,
           });
         }
 
@@ -2576,7 +2604,9 @@
               const data = await res.json();
               const results = data.results || [];
               let msg = `### 🌐 نتائج البحث المباشر على الويب عن: «${searchQuery}»\n\n`;
-              if (results.length) {
+              if (data.offline) {
+                msg = `🔌 ${data.message}`;
+              } else if (results.length) {
                 results.forEach((r, i) => {
                   msg += `${i + 1}. **[${r.title}](${r.url})**\n> ${r.snippet}\n\n`;
                 });
@@ -2592,7 +2622,7 @@
               renderThread();
               renderSidebar();
               if (jarvisVoiceMode) {
-                speakText(`تم جلب نتائج البحث المباشرة عن ${searchQuery}.`, null, () => {
+                speakText(data.offline ? "البحث في الويب يحتاج اتصالاً بالإنترنت." : `تم جلب نتائج البحث المباشرة عن ${searchQuery}.`, null, () => {
                   if (jarvisVoiceMode) setTimeout(() => startListening(), 600);
                 });
               }
@@ -2857,6 +2887,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
             throw new AppError(data.error || `فشل الطلب (HTTP ${response.status})`, data.hint);
           }
 
+          window.sanadStreamSpeech?.begin(jarvisVoiceMode && shouldUseLocalTts());
           await consume(response.body, assistant);
           assistant.pending = false;
 
@@ -2906,13 +2937,17 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
           }
 
           if (jarvisVoiceMode && !assistant.error && assistant.content) {
-            speakText(assistant.content, null, () => {
+            const resumeListening = () => {
               if (jarvisVoiceMode && !busy) {
                 setTimeout(() => {
                   if (jarvisVoiceMode && !busy) startListening();
                 }, 600);
               }
-            });
+            };
+            // Already speaking sentence-by-sentence while streaming → just finish the remainder.
+            if (!window.sanadStreamSpeech?.finish(assistant, resumeListening)) speakText(assistant.content, null, resumeListening);
+          } else {
+            window.sanadStreamSpeech?.stop();
           }
         }
       }
@@ -3465,6 +3500,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
               results.forEach((r, i) => {
                 out += `${i + 1}. **[${r.title}](${r.url})**\n> ${r.snippet}\n\n`;
               });
+              if (data.offline) out = `🔌 ${data.message}`;
               const cleaned = text
                 .replace(/<?\/?tool_use[\s\S]*?>?/gi, "")
                 .replace(/<server_name>[\s\S]*?<\/server_name>/gi, "")
@@ -3564,6 +3600,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
         if (eventName === "delta") {
           assistant.content += data.text ?? "";
+          window.sanadStreamSpeech?.onDelta(assistant); // voice mode: start speaking finished sentences now
           paint();
           scrollToBottom();
           return false;
@@ -3629,13 +3666,34 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       }
 
       function openNav() {
+        sidebar.dataset.navView = openNavButton.dataset.navView || "history";
+        delete openNavButton.dataset.navView;
         app.classList.add("nav-open");
         backdrop.classList.remove("hidden");
+        openNavButton.setAttribute("aria-expanded", "true");
+        if (window.matchMedia("(max-width: 600px)").matches) {
+          sidebar.inert = false;
+          app.querySelector(".chat").inert = true;
+          document.querySelector(".ios-tabs")?.setAttribute("inert", "");
+          sidebar.setAttribute("role", "dialog");
+          sidebar.setAttribute("aria-modal", "true");
+          sidebar.setAttribute("aria-labelledby", "mobileNavTitle");
+        }
       }
 
-      function closeNav() {
+      function closeNav(restoreFocus = true) {
+        if (!app.classList.contains("nav-open")) return;
+        app.querySelector(".chat").inert = false;
+        document.querySelector(".ios-tabs")?.removeAttribute("inert");
         app.classList.remove("nav-open");
         backdrop.classList.add("hidden");
+        openNavButton.setAttribute("aria-expanded", "false");
+        sidebar.removeAttribute("role");
+        sidebar.removeAttribute("aria-modal");
+        sidebar.removeAttribute("aria-labelledby");
+        if (restoreFocus && window.matchMedia("(max-width: 600px)").matches) {
+          document.querySelector(`.ios-tab[data-tab="${sidebar.dataset.navView}"]`)?.focus();
+        }
       }
 
       /* ======================= events ======================= */
@@ -3868,9 +3926,8 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       function normalizeArabicSpeech(text) {
         if (!text) return "";
         let s = text.trim();
-        // Correct ArcGIS Pro / Arc Pro misrecognitions from speech API
-        s = s.replace(/\b(اركش|ارك بروه|ارك بروا|آرك بروه|أرك بروه|آرك برو|أرك برو|اركش برو|ارك برو|ارك جي اس|ارك جيس)\b/gi, "ارك برو");
-        s = s.replace(/\b(ارك ماب|آرك ماب|أرك ماب|اركش ماب)\b/gi, "ارك ماب");
+        // Wake-word variants («يا سندي/يا سناد») and spoken numbers («ثلاثة آلاف» → 3000) — public/voice-intents.js
+        if (window.sanadIntents) s = window.sanadIntents.normalizeTranscript(s);
         return s;
       }
 
@@ -4017,10 +4074,18 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       refreshLocalSttStatus();
 
       /** Local STT when offline (or offline mode), when the cloud recognizer failed, or when the browser has none. */
+      /** The on-device recognizer (FastConformer, ~0.16 s, 97% in our tests) is preferred whenever it is
+          installed: faster and more accurate than the browser's cloud recognizer, and private. */
       function shouldUseLocalStt() {
-        if (!localSttAvailable) return false;
-        if (forceLocalStt || !recognition) return true;
-        return typeof lastBrainMode !== "undefined" && lastBrainMode === "local";
+        return localSttAvailable;
+      }
+
+      let lastSpeechWarm = 0;
+      /** Ask the server to load the speech recognizer before the first utterance (at most every 5 min). */
+      function warmLocalSpeech() {
+        if (Date.now() - lastSpeechWarm < 5 * 60_000) return;
+        lastSpeechWarm = Date.now();
+        fetch("/api/voice/warm", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
       }
 
       function encodeWav16k(float32, sampleRate) {
@@ -4054,7 +4119,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
         let chunks = [], preRoll = [], speechMs = 0, silenceMs = 0, totalMs = 0;
         let noiseFloor = 0.004;
         // MAX_MS matches whisper-server's -ac 512 window (~10 s) set in src/localSpeech.ts.
-        const PRE_ROLL_MS = 400, START_MS = 120, END_SILENCE_MS = 900, MAX_MS = 10000, MIN_SPEECH_MS = 350;
+        const PRE_ROLL_MS = 400, START_MS = 120, END_SILENCE_MS = 650, MAX_MS = 10000, MIN_SPEECH_MS = 350;
 
         function resetSegment() {
           speaking = false; chunks = []; speechMs = 0; silenceMs = 0; totalMs = 0;
@@ -4140,6 +4205,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
 
         async function start() {
           if (active) return;
+          warmLocalSpeech();
           try {
             stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
           } catch (e) {
@@ -4317,14 +4383,14 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       }
 
       /** Piper when offline (or offline mode), or when the browser has no Arabic voice at all. */
+      /** Sanad's own voice (server: cached natural → natural online → offline Piper) whenever available;
+          the browser's speechSynthesis is only a last resort. */
       function shouldUseLocalTts() {
-        if (!localTtsAvailable) return false;
-        if (typeof lastBrainMode !== "undefined" && lastBrainMode === "local") return true;
-        return !browserHasArabicVoice();
+        return localTtsAvailable;
       }
 
       function isSanadSpeaking() {
-        return localTtsPlaying || !!(window.speechSynthesis && window.speechSynthesis.speaking);
+        return localTtsPlaying || !!window.sanadStreamSpeech?.isPlaying() || !!(window.speechSynthesis && window.speechSynthesis.speaking);
       }
 
       /** Group sentences into ~200-char chunks: fewer requests, and the first chunk starts playing quickly. */
@@ -4400,6 +4466,7 @@ ${s.batteryPercent !== null ? `- 🔋 **البطارية:** ${s.batteryPercent}%
       function stopSpeaking() {
         localTtsToken++;
         localTtsPlaying = false;
+        window.sanadStreamSpeech?.stop();
         if (localTtsAudio) {
           try { localTtsAudio.pause(); } catch {}
           localTtsAudio = null;
@@ -5389,16 +5456,9 @@ ${data.text}
             base64DataUrl = canvas.toDataURL("image/jpeg", 0.78);
           }
 
-          assistant.content = `
-<div style="margin: 10px 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.2);">
-  <div style="padding: 8px 12px; background: rgba(0,242,254,0.1); font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px; color: var(--accent);">
-    <span>🤖</span> <span>لقطة شاشة المهمة الحية:</span>
-  </div>
-  <img src="${base64DataUrl}" alt="لقطة الشاشة" style="max-width: 100%; max-height: 240px; object-fit: contain; display: block; margin: 0 auto; border-top: 1px solid var(--border);" />
-</div>
-
-⏳ **يقوم وكيل سند البصري الآن بدراسة واجهة الشاشة وتحديد الإحداثيات وتنفيذ المهمة تلقائياً...**
-`;
+          // صورة حقيقية كعنصر DOM (renderMarkdown يهرّب HTML عمداً)، ولا تُحفظ في التخزين
+          if (/^data:image\/(jpeg|png);base64,/.test(base64DataUrl)) transientScreenshots.set(assistant, base64DataUrl);
+          assistant.content = "⏳ **يدرس وكيل سند البصري الشاشة الآن ويجهّز خطة لتعرضها عليك قبل التنفيذ...**";
           renderAll();
 
           const screenW = window.screen.width || 1920;
@@ -5695,21 +5755,28 @@ ${data.text}
 
       function toggleIslandOnlyMode(force = null) {
         islandOnlyMode = force !== null ? force : !islandOnlyMode;
+        app.inert = islandOnlyMode;
+        if (islandOnlyMode) app.setAttribute("aria-hidden", "true");
+        else app.removeAttribute("aria-hidden");
         if (islandOnlyMode) {
           document.body.classList.add("island-only-mode");
           if (toggleIslandBtn) toggleIslandBtn.classList.add("active");
-          setIslandStatus("الكبسولة نشطة");
+          setIslandStatus("العرض المصغّر نشط");
+          window.sanadIsland?.expand();
+          document.querySelector(".dyn-island")?.focus();
           playSciFiSound("wake");
         } else {
           document.body.classList.remove("island-only-mode");
           if (toggleIslandBtn) toggleIslandBtn.classList.remove("active");
           setIslandStatus("جاهز للأمر");
+          window.sanadIsland?.collapse();
+          promptEl.focus();
           playSciFiSound("confirm");
         }
       }
 
       if (toggleIslandBtn) toggleIslandBtn.addEventListener("click", () => toggleIslandOnlyMode());
-      if (islandToggleModeBtn) islandToggleModeBtn.addEventListener("click", () => toggleIslandOnlyMode());
+      if (islandToggleModeBtn) islandToggleModeBtn.addEventListener("click", () => toggleIslandOnlyMode(false));
       if (islandExpandBtn) islandExpandBtn.addEventListener("click", () => toggleIslandExpansion());
       if (islandDragHandle) islandDragHandle.addEventListener("click", () => toggleIslandExpansion());
 
@@ -5720,7 +5787,7 @@ ${data.text}
           if (!val) return;
           islandInput.value = "";
           setIslandStatus("ينفذ...");
-          toggleIslandExpansion(true);
+          window.sanadIsland?.expand();
           sendMessage(val);
         });
       }
@@ -5746,6 +5813,7 @@ ${data.text}
       if (islandQuickSaveBtn) islandQuickSaveBtn.addEventListener("click", () => triggerKeyboardAction({ keyboardAction: "hotkey", hotkey: "ctrl+s" }));
       if (islandQuickNewBtn) islandQuickNewBtn.addEventListener("click", () => triggerKeyboardAction({ keyboardAction: "hotkey", hotkey: "ctrl+n" }));
       if (islandQuickEscBtn) islandQuickEscBtn.addEventListener("click", () => triggerKeyboardAction({ keyboardAction: "press", key: "esc" }));
+      window.sanadCompactMode = { toggle: toggleIslandOnlyMode };
 
       /* ======================= System Stats & Disk Inspector HUD ======================= */
 
@@ -6681,6 +6749,10 @@ ${data.text}
   <script src="/ios.js" defer></script>
   <script src="/ios-island.js" defer></script>
   <script src="/ios-control.js" defer></script>
+  <script src="/ios-voice.js" defer></script>
+  <script src="/voice-intents.js" defer></script>
+  <script src="/stream-speech.js" defer></script>
+  <script src="/ios-tabs.js" defer></script>
   <script src="/ios-apps.js" defer></script>
   <script src="/ios-list.js" defer></script>
   <script src="/ios-polish.js" defer></script>

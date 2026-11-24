@@ -5,7 +5,7 @@
  * وتطبع سطر JSON؛ Node يحسب الفرق بين قراءتين = البايتات في الثانية.
  * تبدأ عند أول طلب وتتوقف تلقائياً بعد 30 ثانية بلا طلبات (لا استهلاك في الخلفية).
  */
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 
 export type ThroughputSample = { t: number; rxBps: number; txBps: number };
 
@@ -39,7 +39,7 @@ while ($true) {
 }
 `;
 
-let child: ChildProcessWithoutNullStreams | null = null;
+let child: ChildProcess | null = null;
 let lastRequest = 0;
 let idleTimer: NodeJS.Timeout | null = null;
 let prev: { t: number; rx: number; tx: number } | null = null;
@@ -47,23 +47,40 @@ let adapter = "";
 let linkSpeed = "";
 const history: ThroughputSample[] = [];
 
-function stop(): void {
+/** يُنظّف الحالة لعملية معيّنة فقط — خروج عملية قديمة لا يمسح مرجع عملية أحدث. */
+function cleanup(proc: ChildProcess | null): void {
+  if (proc && child !== proc) return;
   if (idleTimer) clearInterval(idleTimer);
   idleTimer = null;
-  child?.kill();
   child = null;
   prev = null;
+}
+
+function stop(): void {
+  const proc = child;
+  cleanup(proc);
+  proc?.kill();
 }
 
 function start(): void {
   if (child) return;
   const encoded = Buffer.from(SCRIPT, "utf16le").toString("base64");
-  child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], {
+  // stderr يُتجاهل (لا أنبوب يمتلئ فيعلق السكربت)، و stdin مغلق
+  const proc = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], {
     windowsHide: true,
+    stdio: ["ignore", "pipe", "ignore"],
   });
+  child = proc;
+  // فشل التشغيل (PowerShell غير موجود…) يُسجَّل ولا يُسقط الخادم
+  proc.on("error", (err) => {
+    console.warn(`[netMonitor] تعذر تشغيل مراقب الشبكة: ${err.message}`);
+    cleanup(proc);
+  });
+  proc.on("exit", () => cleanup(proc));
   let buffer = "";
-  child.stdout.setEncoding("utf8");
-  child.stdout.on("data", (chunk: string) => {
+  const stdout = proc.stdout!;
+  stdout.setEncoding("utf8");
+  stdout.on("data", (chunk: string) => {
     buffer += chunk;
     let nl: number;
     while ((nl = buffer.indexOf("\n")) >= 0) {
@@ -87,10 +104,6 @@ function start(): void {
         /* سطر غير مكتمل */
       }
     }
-  });
-  child.on("exit", () => {
-    child = null;
-    prev = null;
   });
   idleTimer = setInterval(() => {
     if (Date.now() - lastRequest > IDLE_STOP_MS) stop();

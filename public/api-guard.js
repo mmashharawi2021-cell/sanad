@@ -103,7 +103,10 @@
         destructive: true,
       });
     }
-    return window.confirm(`سند يطلب تنفيذ إجراء من رد النموذج:\n\n${message}`);
+    // نافذة التأكيد غير محمّلة (خطأ تحميل؟) → الرفض هو الخيار الآمن، لا تنفيذ بلا موافقة ولا confirm() بدائي
+    console.warn("[api-guard] sanadConfirm غير متاحة — رُفض الإجراء:", path);
+    window.sanadNotify?.({ type: "error", title: "لم يُنفَّذ الإجراء", body: "تعذر عرض نافذة التأكيد. أعد تحميل الصفحة ثم حاول مجدداً." });
+    return false;
   }
 
   window.fetch = async function sanadFetch(input, init = {}) {

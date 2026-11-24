@@ -23,8 +23,9 @@ import { getDrivesInfo, findLargeFiles, safeDeepCleanDisk, optimizeRam, revealFi
 import { listListeningPorts, checkPort, killPort, pingHost, getNetworkInfo } from "./networkMaestro";
 import { ensureOllamaRunning, getBrainStatus, getSanadMode, initOfflineBrain, isNetworkError, isOnline, markOffline, requireLocalModel, resolveLocalModel } from "./offlineBrain";
 import { cleanOllamaModelName } from "./ollama";
-import { getSpeechStatus, transcribeWav } from "./localSpeech";
+import { getSpeechStatus, transcribeWav, warmSpeech } from "./localSpeech";
 import { getVoiceStatus, synthesizeSpeech } from "./localVoice";
+import { CLOUD_VOICES, LOCAL_VOICES, getVoiceSettings, updateVoiceSettings } from "./voiceSettings";
 import { assertReadable } from "./safePaths";
 import { getThroughput } from "./netMonitor";
 import { deleteExtension, installDraft, listExtensions, proposeExtension, restorePreviousVersion, setExtensionEnabled, type Generate } from "./selfDev";
@@ -94,6 +95,9 @@ type ModelsResult = {
 
 let modelsCache: ModelsResult | undefined;
 
+const WEB_OFFLINE_MESSAGE =
+  "البحث في الويب يحتاج اتصالاً بالإنترنت، والجهاز غير متصل الآن. يمكنني الإجابة من معرفتي المحلية بدلاً من ذلك.";
+
 const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -102,6 +106,8 @@ const CONTENT_TYPES: Record<string, string> = {
   ".ico": "image/x-icon",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".woff2": "font/woff2",
+  ".txt": "text/plain; charset=utf-8",
 };
 
 const server = createServer((req, res) => {
@@ -329,6 +335,11 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       sendJson(res, 400, { error: "يرجى تحديد عبارة البحث." });
       return;
     }
+    // دون إنترنت (أو في وضع offline): سبب واضح بدل «لا توجد نتائج»
+    if (getSanadMode() === "offline" || !(await isOnline())) {
+      sendJson(res, 200, { success: false, offline: true, query, count: 0, results: [], message: WEB_OFFLINE_MESSAGE });
+      return;
+    }
     const results = await searchWeb(query, limit);
     sendJson(res, 200, { success: true, query, count: results.length, results });
     return;
@@ -340,6 +351,10 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     const maxChars = typeof body.maxChars === "number" ? body.maxChars : 6000;
     if (!targetUrl) {
       sendJson(res, 400, { error: "يرجى تزويد رابط الصفحة." });
+      return;
+    }
+    if (getSanadMode() === "offline" || !(await isOnline())) {
+      sendJson(res, 200, { success: false, offline: true, page: { title: targetUrl, content: WEB_OFFLINE_MESSAGE } });
       return;
     }
     const page = await fetchPageContent(targetUrl, maxChars);
@@ -663,9 +678,38 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   if (req.method === "POST" && url.pathname === "/api/voice/speak") {
     const body = await readJsonBody(req, 64 * 1024);
-    const wav = await synthesizeSpeech(String(body.text ?? ""));
-    res.writeHead(200, { "Content-Type": "audio/wav", "Content-Length": wav.length, "Cache-Control": "no-store" });
-    res.end(wav);
+    const gender = body.gender === "male" || body.gender === "female" ? body.gender : undefined;
+    const voice = typeof body.voice === "string" ? body.voice : undefined; // validated against an allow-list
+    const result = await synthesizeSpeech(String(body.text ?? ""), { gender, voice, forceLocal: body.engine === "local" });
+    res.writeHead(200, {
+      "Content-Type": result.mime,
+      "Content-Length": result.audio.length,
+      "Cache-Control": "no-store",
+      "X-Voice-Source": result.source,
+    });
+    res.end(result.audio);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/voice/warm") {
+    void warmSpeech(); // background: returns immediately
+    sendJson(res, 202, { success: true });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/voice/settings") {
+    sendJson(res, 200, {
+      success: true,
+      settings: await getVoiceSettings(),
+      cloudVoices: Object.entries(CLOUD_VOICES).map(([id, v]) => ({ id, ...v })),
+      localVoices: LOCAL_VOICES,
+    });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/voice/settings") {
+    const body = await readJsonBody(req, 4 * 1024);
+    sendJson(res, 200, { success: true, settings: await updateVoiceSettings(body) });
     return;
   }
 
@@ -1196,6 +1240,12 @@ async function serveStatic(pathname: string, res: ServerResponse): Promise<void>
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "same-origin",
     };
+    if (relative.startsWith("fonts/")) {
+      // الخطوط المحلية (لتعمل الواجهة دون إنترنت): ملفات عامة ثابتة. إطارات الإضافات المعزولة (أصل معتم)
+      // تحتاج CORS لتحميل الخطوط، فنسمح بها لهذا المجلد فقط.
+      headers["Access-Control-Allow-Origin"] = "*";
+      headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    }
     if (relative === "index.html") {
       // رمز الجلسة في كوكي HttpOnly: المتصفح يرسله تلقائياً، ولا يستطيع أي سكربت في الصفحة قراءته
       headers["Set-Cookie"] = `${SESSION_COOKIE}=${SESSION_TOKEN}; Path=/; HttpOnly; SameSite=Strict`;

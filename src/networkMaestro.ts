@@ -154,8 +154,69 @@ function toListeningPort(row: RawPortRow): ListeningPort {
   };
 }
 
-/** Fallback for systems where Get-NetTCPConnection is unavailable. */
+/* ------------------------------------------------------------------------------------------
+ * Fast path. Measured on this laptop: netstat ≈ 35 ms, `tasklist` (all) ≈ 600 ms, `tasklist`
+ * for one PID ≈ 190 ms, PowerShell Get-NetTCPConnection + Get-Process ≈ 1.8 s.
+ * So: netstat every time, process names from a short-lived cache, single-PID lookups for new PIDs.
+ * ---------------------------------------------------------------------------------------- */
+
+const NAME_TTL_MS = 15_000;
+let nameCache: { map: Map<number, string>; at: number } = { map: new Map(), at: 0 };
+let nameRefresh: Promise<void> | null = null;
+
+/** Parse `tasklist /fo csv /nh` → PID → process name (without ".exe"). */
+function parseTasklistCsv(stdout: string): Map<number, string> {
+  const map = new Map<number, string>();
+  for (const line of stdout.split(/\r?\n/)) {
+    const m = line.match(/^"([^"]+)","(\d+)"/);
+    if (m && m[1] && m[2]) map.set(Number(m[2]), m[1].replace(/\.exe$/i, ""));
+  }
+  return map;
+}
+
+function refreshProcessNames(): Promise<void> {
+  if (nameRefresh) return nameRefresh;
+  nameRefresh = execFileAsync("tasklist.exe", ["/fo", "csv", "/nh"], { timeout: 8000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 })
+    .then(({ stdout }) => {
+      nameCache = { map: parseTasklistCsv(stdout), at: Date.now() };
+    })
+    .finally(() => {
+      nameRefresh = null;
+    });
+  return nameRefresh;
+}
+
+/** Look up one PID right now (never from cache) — used before killing, where the name decides protection. */
+async function lookupProcessName(pid: number): Promise<string | null> {
+  if (pid === 0) return "Idle";
+  if (pid === 4) return "System";
+  try {
+    const { stdout } = await execFileAsync("tasklist.exe", ["/fo", "csv", "/nh", "/fi", `PID eq ${pid}`], { timeout: 5000, windowsHide: true });
+    const name = parseTasklistCsv(stdout).get(pid) ?? null;
+    if (name) nameCache.map.set(pid, name);
+    return name;
+  } catch {
+    return null;
+  }
+}
+
+/** Names for the given PIDs: cached when fresh, few unknown PIDs looked up one by one, many → full refresh. */
+async function namesFor(pids: number[]): Promise<Map<number, string>> {
+  if (Date.now() - nameCache.at > NAME_TTL_MS && pids.length > 3) await refreshProcessNames().catch(() => undefined);
+  const missing = [...new Set(pids)].filter((p) => p !== 0 && p !== 4 && !nameCache.map.has(p));
+  if (missing.length > 3) await refreshProcessNames().catch(() => undefined);
+  else if (missing.length) await Promise.all(missing.map(lookupProcessName));
+  return nameCache.map;
+}
+
+/** Listening TCP ports (and bound UDP) from netstat, with process names. */
 async function listPortsViaNetstat(): Promise<ListeningPort[]> {
+  const rows = await netstatRows();
+  const names = await namesFor(rows.map((r) => r.Pid));
+  return rows.map((r) => toListeningPort({ ...r, Name: names.get(r.Pid) ?? "" }));
+}
+
+async function netstatRows(): Promise<RawPortRow[]> {
   const { stdout } = await execFileAsync("netstat.exe", ["-ano"], { timeout: 8000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
   const rows: RawPortRow[] = [];
   for (const line of stdout.split(/\r?\n/)) {
@@ -172,7 +233,7 @@ async function listPortsViaNetstat(): Promise<ListeningPort[]> {
       rows.push({ Port: port, Protocol: "UDP", Address: address, Pid: Number(parts[parts.length - 1]), Name: "", Path: "" });
     }
   }
-  return rows.map(toListeningPort);
+  return rows;
 }
 
 function dedupeAndSort(ports: ListeningPort[]): ListeningPort[] {
@@ -193,6 +254,17 @@ function dedupeAndSort(ports: ListeningPort[]): ListeningPort[] {
  */
 export async function listListeningPorts(options?: { includeUdp?: boolean }): Promise<ListeningPort[]> {
   const includeUdp = options?.includeUdp ?? true;
+  try {
+    const ports = await listPortsViaNetstat();
+    if (ports.length) return dedupeAndSort(includeUdp ? ports : ports.filter((p) => p.protocol === "TCP"));
+  } catch {
+    // fall through to PowerShell
+  }
+  return listPortsViaPowerShell(includeUdp);
+}
+
+/** Slower fallback (≈1.8 s) that also returns process paths. */
+async function listPortsViaPowerShell(includeUdp: boolean): Promise<ListeningPort[]> {
   const psScript = `
 $ErrorActionPreference = 'SilentlyContinue'
 $procs = @{}
@@ -209,16 +281,22 @@ ConvertTo-Json -InputObject $rows -Compress
 `;
   try {
     const raw = await runPs(psScript, 12000);
-    const rows = parseJsonArray<RawPortRow>(raw);
-    if (rows.length === 0) throw new Error("empty");
-    return dedupeAndSort(rows.map(toListeningPort));
+    return dedupeAndSort(parseJsonArray<RawPortRow>(raw).map(toListeningPort));
   } catch {
-    try {
-      const ports = await listPortsViaNetstat();
-      return dedupeAndSort(includeUdp ? ports : ports.filter((p) => p.protocol === "TCP"));
-    } catch {
-      return [];
-    }
+    return [];
+  }
+}
+
+/** Ports held on one port number, with names looked up fresh (not from cache). */
+async function holdersOf(port: number): Promise<ListeningPort[]> {
+  try {
+    const rows = (await netstatRows()).filter((r) => r.Port === port);
+    // one fresh lookup per distinct PID (IPv4 + IPv6 rows share a PID), in parallel
+    const pids = [...new Set(rows.map((r) => r.Pid))];
+    const names = new Map(await Promise.all(pids.map(async (pid) => [pid, (await lookupProcessName(pid)) ?? ""] as const)));
+    return dedupeAndSort(rows.map((r) => toListeningPort({ ...r, Name: names.get(r.Pid) ?? "" })));
+  } catch {
+    return (await listPortsViaPowerShell(true)).filter((p) => p.port === port);
   }
 }
 
@@ -230,8 +308,7 @@ export async function checkPort(portInput: unknown): Promise<PortCheckResult> {
   if (port === null) {
     return { port: Number(portInput) || 0, inUse: false, holders: [], message: "رقم المنفذ غير صالح (يجب أن يكون بين 1 و 65535)." };
   }
-  const all = await listListeningPorts();
-  const holders = all.filter((p) => p.port === port);
+  const holders = await holdersOf(port);
   if (holders.length === 0) {
     return { port, inUse: false, holders, message: `المنفذ ${port} متاح وغير محجوز ✅` };
   }

@@ -126,7 +126,7 @@
     const boot = JSON.stringify({ extId, placement, index, storage: storageSnapshot(extId) }).replace(/</g, "\\u003c");
     const scriptUrl = `${location.origin}/extensions/${extId}.js?v=${encodeURIComponent(extensions.get(extId)?.version || "")}`;
     return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="${location.origin}/fonts/fonts.css">
 <style id="sanad-theme">${themeCss()}</style>
 <style>html,body{margin:0;padding:0;background:transparent;color:var(--text-1);font-family:var(--font-sans);font-size:15px;overflow:hidden}
 .ico{width:18px;height:18px;display:inline-block;vertical-align:middle}

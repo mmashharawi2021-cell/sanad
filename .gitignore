@@ -12,3 +12,5 @@ data/tasks.json
 data/extensions.json
 data/extensions-backup/
 public/lab/
+data/voice-cache/
+data/voice-settings.json

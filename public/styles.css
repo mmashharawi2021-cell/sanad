@@ -209,6 +209,7 @@ button, select, textarea, input { font: inherit; color: inherit; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   cursor: pointer;
+  min-height: 88px;
   transition: all .18s ease;
 }
 
@@ -2013,10 +2014,11 @@ button, select, textarea, input { font: inherit; color: inherit; }
 }
 
 body.island-only-mode .app {
-  opacity: 0.08;
+  opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   filter: blur(14px);
-  transition: all 0.3s ease;
+  transition: opacity 240ms var(--ease), filter 240ms var(--ease), visibility 240ms;
 }
 /* ======================= Offline Brain status ======================= */
 .brain-dot, .island-brain-dot {
@@ -2342,8 +2344,7 @@ body.island-only-mode .app {
   .palette-foot { display: none; }
 }
 
-/* الكبسولة العائمة تظهر فقط في وضع الكبسولة؛ في الوضع العادي يغني عنها الشريط العلوي */
-body:not(.island-only-mode) .cyber-island { display: none; }
+#cyberIsland { display: none !important; }
 
 @media (max-width: 600px) {
   .chat-head > .arc-reactor-hud, .chat-head .head-titles { display: none; }
@@ -2439,7 +2440,7 @@ body:not(.island-only-mode) .cyber-island { display: none; }
   .composer-inner { gap: 6px; padding: 8px 10px; }
   .composer-inner #attachBtn,
   .composer-inner #screenVisionBtn,
-  .composer-actions button { width: 38px; height: 38px; }
+  .composer-actions button { width: 44px; height: 44px; }
   .composer-actions { gap: 6px; }
   .composer-inner textarea { padding-inline: 4px; }
 }
@@ -3485,8 +3486,8 @@ button:not(:disabled) { -webkit-tap-highlight-color: transparent; }
 }
 .msg-tools { display: flex; gap: 2px; margin: 0; }
 .msg-tools .tool {
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -3761,6 +3762,7 @@ button:not(:disabled) { -webkit-tap-highlight-color: transparent; }
 }
 .ws-label { font-size: var(--fs-caption); color: var(--text-2); }
 .ws-foot { margin-top: 10px; font-size: var(--fs-caption); color: var(--text-3); text-align: center; }
+.widget-system:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 
 /* ---------- App grid ---------- */
 .home-apps {
@@ -3821,6 +3823,7 @@ button:not(:disabled) { -webkit-tap-highlight-color: transparent; }
   align-items: center;
   gap: 10px;
   padding: 9px 6px;
+  min-height: 44px;
   border: 0;
   border-radius: 12px;
   background: transparent;
@@ -3873,7 +3876,7 @@ button:not(:disabled) { -webkit-tap-highlight-color: transparent; }
 /* =====================================================================
    iOS — المهمة 5: شريط الحالة و Dynamic Island
    ===================================================================== */
-:root { --sb-h: 46px; }
+:root { --sb-h: calc(46px + env(safe-area-inset-top, 0px)); }
 
 /* إفساح مكان لشريط الحالة */
 html.has-statusbar .app { height: 100vh; height: 100dvh; padding-top: var(--sb-h); box-sizing: border-box; }
@@ -3897,7 +3900,7 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px 0 34px;
+  padding: env(safe-area-inset-top, 0px) calc(28px + env(safe-area-inset-right, 0px)) 0 calc(34px + env(safe-area-inset-left, 0px));
   background: var(--surface-0);
   color: var(--text-1);
   font-family: var(--font-display);
@@ -3942,7 +3945,7 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
 /* ---------- Dynamic Island ---------- */
 .dyn-island {
   position: fixed;
-  top: 6px;
+  top: calc(6px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 15001;
@@ -4035,8 +4038,12 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
 .dyn-island.expanded {
   width: min(380px, calc(100vw - 16px));
   height: auto;
+  max-height: calc(100dvh - var(--sb-h, 46px) - 16px);
   border-radius: 34px;
   cursor: default;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .dyn-island.expanded .di-compact { display: none; }
 .dyn-island.expanded .di-expanded { display: block; animation: diReveal 380ms var(--ease); }
@@ -4063,6 +4070,20 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.di-expanded .di-compose {
+  display: block !important;
+  width: 100%;
+  margin: 0 0 12px;
+}
+.di-expanded .island-form { width: 100%; }
+.di-expanded .island-input {
+  min-height: 44px;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(118, 118, 128, 0.22);
+  color: #ffffff;
+  font-size: 14px;
+}
+.di-expanded .island-input::placeholder { color: rgba(255, 255, 255, 0.62); }
 .di-ex-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
 .di-act {
   display: flex;
@@ -4083,15 +4104,66 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
 .di-act:active { transform: scale(0.94); transition-duration: 90ms; }
 .di-act.danger { background: rgba(255, 69, 58, 0.25); color: #ff6961; }
 .di-act[hidden] { display: none; }
+.di-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.di-quick-action {
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(118, 118, 128, 0.24);
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.di-quick-action .ico { width: 18px; height: 18px; }
+.di-quick-action:active,
+.di-mode-action:active { transform: scale(0.96); }
+.di-mode-action {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.di-mode-action .ico { width: 18px; height: 18px; }
 
 @media (max-width: 600px) {
-  :root { --sb-h: 50px; }
+  :root { --sb-h: calc(50px + env(safe-area-inset-top, 0px)); }
   .ios-statusbar { padding: 0 24px 0 30px; }
-  .dyn-island { top: 9px; }
+  .ios-statusbar {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-inline-start: calc(30px + env(safe-area-inset-left, 0px));
+    padding-inline-end: calc(24px + env(safe-area-inset-right, 0px));
+  }
+  .dyn-island { top: calc(9px + env(safe-area-inset-top, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .dyn-island { transition-duration: 1ms; }
   .di-waves i, .di-dots, .di-spinner { animation: none; }
+  .dyn-island.expanded .di-expanded { animation: none; }
+  body.island-only-mode .app { transition: none; }
 }
 
 /* =====================================================================
@@ -4294,8 +4366,24 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
 }
 
 /* زر مركز التحكم في الشريط العلوي */
-.cc-trigger { width: 40px; padding: 0 !important; }
+.cc-trigger { width: 44px; min-width: 44px; min-height: 44px; padding: 0 !important; }
 .cc-trigger .ico { width: 18px; height: 18px; }
+.cc-dismiss {
+  position: absolute;
+  top: calc(var(--sb-h, 46px) + 8px);
+  inset-inline-end: 16px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.cc-dismiss .ico { width: 20px; height: 20px; }
+.cc-dismiss:active { transform: scale(0.94); }
 
 @media (max-width: 380px) {
   .ios-cc { --cell: 68px; --gap: 12px; }
@@ -4313,6 +4401,127 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
 .ios-cc .cc-ram     { grid-column: 3 / 5; grid-row: 3 / 4; }
 .ios-cc .cc-disk    { grid-column: 3 / 5; grid-row: 4 / 5; }
 .ios-cc .cc-apps    { grid-column: 1 / 5; grid-row: 5 / 6; }
+
+/* شريط تنقل ثابت للهاتف، يترك المحادثة وصندوق الكتابة فوقه. */
+.ios-tabs,
+.mobile-nav-head { display: none; }
+@media (max-width: 600px) {
+  :root { --ios-tabs-height: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .chat { padding-bottom: var(--ios-tabs-height); }
+  .ios-tabs {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-height: var(--ios-tabs-height);
+    padding: 6px 10px max(6px, env(safe-area-inset-bottom, 0px));
+    padding-inline-start: max(10px, env(safe-area-inset-left, 0px));
+    padding-inline-end: max(10px, env(safe-area-inset-right, 0px));
+    border-top: var(--hairline) solid var(--line);
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+  .ios-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 2px 4px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 11px;
+    line-height: 1.2;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ios-tab .ico { width: 21px; height: 21px; }
+  .ios-tab.is-active { color: var(--brand); }
+  .ios-tab:active { background: var(--brand-soft); }
+  .ios-tabs { transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+  .sidebar { transition: transform 320ms var(--spring), background var(--dur) var(--ease); }
+
+  .sidebar {
+    inset-inline: 0;
+    inset-inline-start: 0;
+    top: auto;
+    bottom: var(--ios-tabs-height);
+    width: 100%;
+    max-height: calc(100dvh - var(--sb-h) - var(--ios-tabs-height) - 12px);
+    padding: 8px 18px 18px;
+    gap: 12px;
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    overflow-y: auto;
+    transform: translateY(calc(100% + var(--ios-tabs-height)));
+    transition: transform 320ms var(--spring);
+    box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.3);
+    z-index: 31;
+  }
+  .app.nav-open .sidebar { transform: translateY(0); }
+  .mobile-nav-head {
+    align-self: stretch;
+    min-width: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    margin: 0;
+    padding: 4px 0;
+    background: var(--sheet-bg);
+    border-bottom: var(--hairline) solid var(--cell-sep);
+  }
+  .mobile-nav-head h2 {
+    margin: 0;
+    color: var(--text-1);
+    font-size: var(--fs-headline);
+    font-weight: 600;
+  }
+  .mobile-nav-done {
+    min-width: 44px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 999px;
+    padding: 0 14px;
+    background: var(--tint-fill);
+    color: var(--brand);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .mobile-nav-head { display: flex; }
+  .sidebar[data-nav-view="history"] .tool-nav,
+  .sidebar[data-nav-view="history"] .stats,
+  .sidebar[data-nav-view="history"] .side-foot,
+  .sidebar[data-nav-view="history"] .brand,
+  .sidebar[data-nav-view="history"] .side-title,
+  .sidebar[data-nav-view="tools"] .brand,
+  .sidebar[data-nav-view="tools"] .side-head,
+  .sidebar[data-nav-view="tools"] .conv-list,
+  .sidebar[data-nav-view="tools"] .ios-search,
+  .sidebar[data-nav-view="tools"] .side-head,
+  .sidebar[data-nav-view="tools"] .side-title,
+  .sidebar[data-nav-view="tools"] .stats,
+  .sidebar[data-nav-view="tools"] .side-foot,
+  .sidebar[data-nav-view="tools"] #newChat { display: none; }
+  .sidebar[data-nav-view="history"] .conv-list { display: flex; }
+  .sidebar[data-nav-view="tools"] .tool-nav { display: block; }
+  .sidebar[data-nav-view="tools"] .tool-nav-head { min-height: 44px; }
+  .sidebar[data-nav-view="history"] #newChat { min-width: 44px; min-height: 44px; }
+}
+
+/* العرض المصغّر يستخدم الجزيرة الحديثة وحدها. */
+body.island-only-mode .ios-tabs { display: none; }
 
 /* =====================================================================
    iOS — المهمة 7: الأدوات كتطبيقات iOS (Sheets + قوائم مجمّعة)
@@ -5152,3 +5361,145 @@ html.has-statusbar .cyber-island { top: calc(var(--sb-h) + 8px); }
 
 /* إطارات الإضافات المعزولة */
 .ext-frame { width: 100%; border: 0; display: block; background: transparent; }
+
+/* ==========================================================================
+   ورقة «صوت سند» (public/ios-voice.js)
+   ========================================================================== */
+.ios-voice-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 16001;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+:root[data-theme="light"] .ios-voice-backdrop { background: rgba(0, 0, 0, 0.25); }
+.ios-voice-backdrop[hidden] { display: none; }
+.ios-voice-sheet {
+  width: min(560px, 100%);
+  max-height: min(88vh, 860px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px 14px 0 0 !important;
+  overflow: hidden;
+}
+.voice-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 18px 10px;
+}
+.voice-app-icon { background: linear-gradient(160deg, var(--brand), color-mix(in srgb, var(--brand) 55%, #000)); }
+.voice-body { overflow-y: auto; padding: 4px 16px 28px; }
+.voice-section { margin-top: 18px; }
+.voice-section-label {
+  margin: 0 16px 6px;
+  font-size: var(--fs-footnote);
+  font-weight: 500;
+  color: var(--text-2);
+}
+.voice-group { background: var(--cell-bg); border-radius: var(--radius-lg); overflow: hidden; }
+.voice-footer { margin: 6px 16px 0; font-size: var(--fs-footnote); color: var(--text-3); line-height: 1.5; }
+.voice-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 16px;
+  color: var(--text-1);
+  font-size: var(--fs-body);
+  border-bottom: var(--hairline) solid var(--cell-sep);
+}
+.voice-cell:last-child { border-bottom: 0; }
+.voice-cell-title { flex: 1; }
+.voice-cell-seg { padding: 8px 10px; }
+.voice-choice { cursor: pointer; }
+.voice-choice:hover { background: var(--tint-fill); }
+.voice-choice:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.voice-choice.is-disabled { opacity: 0.45; }
+.voice-check { width: 20px; display: grid; place-items: center; color: var(--brand); }
+.voice-check .ico { width: 18px; height: 18px; }
+.voice-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  display: grid;
+  place-items: center;
+  background: var(--tint-fill);
+  color: var(--brand);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.voice-play .ico { width: 15px; height: 15px; }
+.voice-play.on { background: var(--brand); color: #fff; }
+.voice-play.loading { animation: voicePulse 1s ease-in-out infinite; }
+@keyframes voicePulse { 50% { opacity: 0.55; } }
+.voice-seg { display: flex; flex: 1; gap: 2px; padding: 2px; border-radius: 9px; background: var(--tint-fill); }
+.voice-seg-btn {
+  flex: 1;
+  min-height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-subhead);
+  cursor: pointer;
+}
+.voice-seg-btn[aria-checked="true"] { background: var(--cell-bg); font-weight: 600; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
+.voice-seg-btn:focus-visible { outline: 2px solid var(--brand); }
+.voice-toggle { cursor: pointer; }
+.voice-switch {
+  appearance: none;
+  width: 51px;
+  height: 31px;
+  border-radius: 999px;
+  background: var(--fill-strong);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+  flex: 0 0 auto;
+}
+.voice-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: inset-inline-start var(--dur) var(--ease);
+}
+.voice-switch:checked { background: var(--success); }
+.voice-switch:checked::after { inset-inline-start: 22px; }
+.voice-switch:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .voice-play.loading { animation: none; }
+  .voice-switch, .voice-switch::after { transition: none; }
+}
+
+/* ===== لقطة شاشة الوكيل البصري داخل فقاعة سند (عنصر صورة حقيقي، لا تُحفظ) ===== */
+.msg-screenshot {
+  margin: 0 0 var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.msg-screenshot figcaption {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.msg-screenshot img {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border-top: 1px solid var(--line);
+}

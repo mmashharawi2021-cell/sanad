@@ -1,9 +1,13 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { cpus } from "node:os";
+import { unlink, writeFile } from "node:fs/promises";
+import { cpus, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppError } from "./config";
+import { sidecarAvailable, sidecarCall, sidecarRunning } from "./voiceSidecar";
+import { getVoiceSettings } from "./voiceSettings";
 
 /**
  * Offline speech-to-text via whisper.cpp's `whisper-server` (CPU build, no internet).
@@ -13,6 +17,7 @@ import { AppError } from "./config";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_EXE = join(ROOT, "vendor", "whisper", "bin", "Release", "whisper-server.exe");
 const DEFAULT_MODEL = join(ROOT, "vendor", "whisper", "models", "ggml-small-q5_1.bin");
+const FASTCONFORMER_MODEL = join(ROOT, "vendor", "stt", "fastconformer", "model.onnx");
 const HOST = "127.0.0.1";
 const BOOT_TIMEOUT_MS = 45_000;
 /**
@@ -28,7 +33,7 @@ let idleTimer: NodeJS.Timeout | null = null;
 export type SpeechStatus = {
   available: boolean;
   running: boolean;
-  engine: "whisper.cpp";
+  engine: "fastconformer" | "whisper.cpp";
   model: string;
   missing: string[];
 };
@@ -66,11 +71,13 @@ async function isServerUp(): Promise<boolean> {
 
 export async function getSpeechStatus(): Promise<SpeechStatus> {
   const missing = [exePath(), modelPath()].filter((p) => !existsSync(p));
+  const whisperOk = missing.length === 0;
+  const useFast = (await getVoiceSettings()).stt === "fastconformer" && fastConformerAvailable();
   return {
-    available: missing.length === 0,
-    running: await isServerUp(),
-    engine: "whisper.cpp",
-    model: modelPath().split(/[\\/]/).pop() || "",
+    available: whisperOk || fastConformerAvailable(),
+    running: useFast ? sidecarRunning() : await isServerUp(),
+    engine: useFast ? "fastconformer" : "whisper.cpp",
+    model: useFast ? "stt_ar_fastconformer_hybrid_large_pc" : modelPath().split(/[\\/]/).pop() || "",
     missing,
   };
 }
@@ -157,11 +164,71 @@ export function cleanTranscript(text: string): string {
 
 /**
  * Transcribe a 16 kHz mono WAV buffer (produced by the browser) to text.
+ * Default engine: NVIDIA FastConformer Arabic via the voice sidecar (measured on this laptop:
+ * ~0.16 s and 97% accuracy vs whisper-small's ~1.9 s and 92%). whisper.cpp stays as the fallback.
  */
-export async function transcribeWav(wav: Buffer, language = "ar"): Promise<{ text: string; latencyMs: number }> {
+export async function transcribeWav(wav: Buffer, language = "ar"): Promise<{ text: string; latencyMs: number; engine: string }> {
   if (wav.length < 44 || wav.toString("ascii", 0, 4) !== "RIFF" || wav.toString("ascii", 8, 12) !== "WAVE") {
     throw new AppError("ملف الصوت غير صالح (يجب أن يكون WAV).", { status: 400 });
   }
+  const settings = await getVoiceSettings();
+  if (settings.stt === "fastconformer" && language === "ar" && fastConformerAvailable()) {
+    const started = Date.now();
+    const file = join(tmpdir(), `sanad-stt-${randomUUID()}.wav`);
+    try {
+      await writeFile(file, wav);
+      // Generous timeout: if the model is still loading (cold start), wait for it rather than
+      // falling back to whisper, which would cold-start a second engine.
+      const r = await sidecarCall("stt", { wav: file }, 90_000);
+      if (!r.ok) throw new Error(String(r.error ?? "stt failed"));
+      return { text: cleanTranscript(String(r.text ?? "")), latencyMs: Date.now() - started, engine: "fastconformer" };
+    } catch (err) {
+      const msg = (err as Error).message;
+      // Still loading (slow cold start under memory pressure): starting whisper as well would load
+      // a second engine into already-full RAM and make it worse (measured: 92 s with RAM 0.6 GB free).
+      if (/timed out/i.test(msg) && sidecarRunning()) {
+        throw new AppError("محرك السماع ما زال يُحمَّل، والذاكرة مزدحمة. أعد المحاولة بعد لحظات.", {
+          status: 503,
+          hint: "أغلق بعض البرامج الثقيلة لتسريع التحميل.",
+        });
+      }
+      console.warn(`[local-speech] FastConformer تعذر، التحويل إلى whisper: ${msg}`);
+    } finally {
+      unlink(file).catch(() => undefined);
+    }
+  }
+  return { ...(await transcribeWithWhisper(wav, language)), engine: "whisper.cpp" };
+}
+
+let warming: Promise<void> | null = null;
+
+/**
+ * Load the speech recognizer ahead of time (called when the user opens the mic or voice mode),
+ * so the first utterance is not delayed by a cold model load.
+ */
+export function warmSpeech(): Promise<void> {
+  if (warming) return warming;
+  warming = (async () => {
+    const s = await getVoiceSettings();
+    if (s.stt === "fastconformer" && fastConformerAvailable()) {
+      const r = await sidecarCall("warm", {}, 120_000);
+      if (r.ok && !r.alreadyLoaded) console.log(`[local-speech] ✅ FastConformer جاهز (${r.ms} ms).`);
+    } else {
+      await ensureSpeechServer();
+    }
+  })()
+    .catch((err) => console.warn(`[local-speech] تعذر تسخين محرك السماع: ${(err as Error).message}`))
+    .finally(() => {
+      warming = null;
+    });
+  return warming;
+}
+
+function fastConformerAvailable(): boolean {
+  return sidecarAvailable() && existsSync(FASTCONFORMER_MODEL);
+}
+
+async function transcribeWithWhisper(wav: Buffer, language: string): Promise<{ text: string; latencyMs: number }> {
   const ready = await ensureSpeechServer();
   if (!ready) {
     throw new AppError("محرك السماع المحلي غير متاح.", {

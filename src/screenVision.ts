@@ -3,6 +3,81 @@ import { JARVIS_SYSTEM_PROMPT } from "./config";
 import { getSystemPromptWithMemory } from "./memory";
 import { controlMouse, controlKeyboard } from "./systemTools";
 import { findMatchingWorkflow, memorizeWorkflow } from "./actionMemory";
+import { getSanadMode, isOnline } from "./offlineBrain";
+import { OLLAMA_HOST, getOllamaStatus, ollamaKeepAlive, ollamaRuntimeOptions } from "./ollama";
+
+/** نموذج الرؤية المحلي (يفهم الصور) — يُستخدم دون إنترنت أو عند فشل السحابة. */
+function localVisionModel(): string {
+  return process.env.OLLAMA_VISION_MODEL?.trim() || "gemma3:4b";
+}
+
+/**
+ * طلب رؤية: السحابة أولاً إن وُجد اتصال ومفتاح، وإلا (أو عند فشلها) نموذج Ollama المحلي.
+ * cloudPayload كما يُرسل لـ OpenRouter؛ للمحلي نرسل النص والصورة بصيغة Ollama.
+ */
+async function visionRequest(o: {
+  cloudPayload: Record<string, unknown>;
+  system?: string;
+  text: string;
+  base64: string;
+  json?: boolean;
+  /** false = سحابة فقط (تخطيط النقرات يحتاج دقة إحداثيات لا تملكها النماذج المحلية الصغيرة) */
+  allowLocal?: boolean;
+  temperature: number;
+}): Promise<{ content: string; model: string }> {
+  const config = getConfig();
+  let cloudError = "";
+  // وضع «offline» لا يلمس الشبكة أبداً
+  if (config.apiKey && getSanadMode() !== "offline" && (await isOnline())) {
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": config.siteUrl || "http://localhost:3000",
+          "X-Title": config.appTitle || "SANAD",
+        },
+        body: JSON.stringify(o.cloudPayload),
+        signal: AbortSignal.timeout(60_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
+      const data = (await res.json()) as any;
+      return { content: data.choices?.[0]?.message?.content || "", model: data.model || String(o.cloudPayload.model) };
+    } catch (err: any) {
+      cloudError = err.message;
+      console.warn(`[screenVision] فشل نموذج الرؤية السحابي، أنتقل للمحلي: ${cloudError}`);
+    }
+  }
+
+  if (o.allowLocal === false) {
+    throw new Error(cloudError ? `تعذر الوصول لنموذج الرؤية السحابي: ${cloudError}` : "الوكيل البصري (النقر على الشاشة) يحتاج اتصالاً بالإنترنت: النموذج المحلي يصف الشاشة لكنه لا يحدد أماكن النقر بدقة.");
+  }
+  const name = localVisionModel();
+  const status = await getOllamaStatus();
+  if (!status.models.some((m) => m.id === `ollama:${name}`)) {
+    throw new Error(cloudError || `لا يوجد اتصال، ونموذج الرؤية المحلي ${name} غير مثبت (ollama pull ${name}).`);
+  }
+  const messages: any[] = [];
+  if (o.system) messages.push({ role: "system", content: o.system });
+  messages.push({ role: "user", content: o.text, images: [o.base64] });
+  const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: name,
+      messages,
+      stream: false,
+      ...(o.json ? { format: "json" } : {}),
+      keep_alive: ollamaKeepAlive(),
+      options: ollamaRuntimeOptions({ temperature: o.temperature }),
+    }),
+    signal: AbortSignal.timeout(180_000),
+  });
+  if (!res.ok) throw new Error(`Ollama vision HTTP ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
+  const data = (await res.json()) as any;
+  return { content: data.message?.content || "", model: `Ollama: ${name} (محلي)` };
+}
 
 export type VisionResult = {
   success: boolean;
@@ -68,7 +143,6 @@ export async function analyzeScreenImage(options: {
   mimeType?: string;
 }): Promise<VisionResult> {
   const startedAt = Date.now();
-  const config = getConfig();
 
   const mime = options.mimeType || "image/jpeg";
   let cleanBase64 = options.imageBase64.trim();
@@ -106,26 +180,13 @@ export async function analyzeScreenImage(options: {
   };
 
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": config.siteUrl || "http://localhost:3000",
-        "X-Title": config.appTitle || "SANAD",
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(60_000),
+    const { content, model: servedModel } = await visionRequest({
+      cloudPayload: payload,
+      system: (payload.messages[0] as any).content,
+      text: userText,
+      base64: dataUrl.split(",")[1] ?? "",
+      temperature: 0.6,
     });
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      throw new Error(`OpenRouter vision returned HTTP ${res.status}: ${errText}`);
-    }
-
-    const data = (await res.json()) as any;
-    const content = data.choices?.[0]?.message?.content || "";
-    const servedModel = data.model || chosenModel;
 
     return {
       success: true,
@@ -267,7 +328,6 @@ export async function planAndExecuteVisualAction(options: {
   autoExecute?: boolean;
 }): Promise<VisualAgentExecutionResult> {
   const startedAt = Date.now();
-  const config = getConfig();
 
   const screenW = options.screenWidth || 1920;
   const screenH = options.screenHeight || 1080;
@@ -351,26 +411,14 @@ export async function planAndExecuteVisualAction(options: {
   };
 
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": config.siteUrl || "http://localhost:3000",
-        "X-Title": config.appTitle || "SANAD",
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(60_000),
+    const { content, model: servedModel } = await visionRequest({
+      cloudPayload: payload,
+      text: promptText,
+      base64: cleanBase64,
+      json: true,
+      allowLocal: false,
+      temperature: 0.2,
     });
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      throw new Error(`Vision Agent API error HTTP ${res.status}: ${errText}`);
-    }
-
-    const data = (await res.json()) as any;
-    const content = data.choices?.[0]?.message?.content || "";
-    const servedModel = data.model || chosenModel;
 
     const parsed = extractJsonFromText(content);
     if (!parsed || !Array.isArray(parsed.actions)) {

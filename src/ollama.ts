@@ -38,6 +38,14 @@ export function ollamaRuntimeOptions(extra: Record<string, unknown> = {}): Recor
   return { ...options, ...extra };
 }
 
+/**
+ * «التفكير» الصامت في نماذج مثل qwen3.5: يولّد مئات الكلمات المخفية قبل كل رد (جملة واحدة أخذت 517 كلمة-جزء).
+ * مطفأ افتراضياً للسرعة؛ OLLAMA_THINK=true لتشغيله. النماذج التي لا تدعمه تتجاهل false.
+ */
+export function ollamaThink(): boolean {
+  return /^(1|true|yes|on)$/i.test(process.env.OLLAMA_THINK?.trim() || "");
+}
+
 /** How long Ollama keeps the model loaded after the last request (frees RAM/VRAM when idle). */
 export function ollamaKeepAlive(): string {
   return process.env.OLLAMA_KEEP_ALIVE?.trim() || "10m";
@@ -141,6 +149,7 @@ export async function askOllama(prompt: string, options: AskOptions = {}): Promi
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
         stream: false,
         keep_alive: ollamaKeepAlive(),
+        think: ollamaThink(),
         options: ollamaRuntimeOptions(),
       }),
       signal: options.signal,
@@ -197,6 +206,7 @@ export async function* askOllamaStream(
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
         stream: true,
         keep_alive: ollamaKeepAlive(),
+        think: ollamaThink(),
         options: ollamaRuntimeOptions(),
       }),
       signal: options.signal,

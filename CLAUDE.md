@@ -27,6 +27,15 @@ npm.cmd run chat -- --stream "أمرك هنا"
 
 # تحديث قائمة الموديلات المجانية من OpenRouter
 npm.cmd run models:refresh
+
+# تجهيز العمل دون إنترنت (مرة واحدة وأنت متصل): نماذج Ollama + الصوت + العبارات المحفوظة
+npm.cmd run offline:setup
+
+# تقرير جاهزية العمل دون إنترنت (لا يحتاج اتصالاً)
+npm.cmd run offline:check
+
+# اختبارات الأوامر الصوتية والنطق أثناء الكتابة
+npm.cmd run test:voice
 ```
 
 ---
@@ -52,6 +61,18 @@ npm.cmd run models:refresh
 - `src/ollama.ts`: عميل النماذج المحلية الذاتي عبر خادم Ollama (`http://127.0.0.1:11434`).
 - `src/models.ts`: فهرس ونماذج الذكاء الاصطناعي المجانية والمحلية.
 - `src/config.ts`: قراءة متغيرات البيئة (`.env`) والتحقق من صحتها.
+- `src/networkMaestro.ts`: المنافذ المفتوحة وتحرير المنفذ (Kill Port مع حماية عمليات النظام وخادم سند)، Ping، ومعلومات الشبكة. الفحص السريع عبر `netstat` (~35ms) مع ذاكرة مؤقتة لأسماء البرامج (15 ث)؛ عند التحرير يُجلب اسم البرنامج من جديد دائماً لأن الحماية تعتمد عليه. PowerShell احتياطي فقط.
+- **العمل دون إنترنت:** الخط IBM Plex Sans Arabic مستضاف في `public/fonts/` (ترخيص OFL)؛ لا تُضِف روابط خطوط أو مكتبات خارجية. البحث في الويب وقراءة الصفحات يعيدان `offline: true` مع رسالة واضحة عند انقطاع النت.
+- `src/offlineBrain.ts`: العقل المحلي — فحص الاتصال، تشغيل Ollama تلقائياً، التحويل للنموذج المحلي عند انقطاع النت، و`SANAD_MODE=auto|offline|cloud`.
+- **الصوت** (المكوّنات الثنائية في `vendor/` خارج git؛ جهّزها بـ `scripts/voice-setup.ps1`):
+  - `src/localVoice.ts`: النطق بالترتيب: ذاكرة مؤقتة (`data/voice-cache`) ← صوت عصبي طبيعي عند الاتصال ← Piper محلي (كريم رجل / دي فتاة).
+  - `src/localSpeech.ts`: التعرّف على الكلام — FastConformer العربي افتراضياً (~0.16 ث)، وwhisper.cpp احتياطياً.
+  - `src/voiceSidecar.ts` + `scripts/sanad_voice.py`: عملية Python مساعدة دائمة (`vendor/py`) للأصوات الطبيعية وFastConformer، تُطفأ بعد الخمول.
+  - `src/voiceSettings.ts`: إعدادات الصوت (`data/voice-settings.json`) بقوائم مسموحة فقط؛ واجهتها `public/ios-voice.js`.
+  - `npm.cmd run voice:warm`: يحفظ العبارات الشائعة بالصوت الطبيعي لتعمل دون إنترنت.
+  - `public/voice-intents.js` (`window.sanadIntents`): أوامر الشبكة والمنافذ الفورية دون العقل، وتصحيح نص السماع (كلمة التنبيه، والأرقام المنطوقة «ثلاثة آلاف» ← 3000). يُستدعى أول `tryHandleSystemIntent` وداخل `normalizeArabicSpeech`.
+  - `public/stream-speech.js` (`window.sanadStreamSpeech`): في الوضع الصوتي ينطق كل جملة فور اكتمالها أثناء تدفق الرد.
+  - الاختبارات: `npm.cmd run test:voice`.
 
 ### 2. الواجهة الأمامية (`public/`):
 واجهة ويب عربية (RTL) مبنية بـ HTML5/CSS3/Vanilla JS، **بأسلوب iOS على آيفون برو ماكس حديث** (Liquid Glass، عناوين كبيرة، قوائم مجمّعة، أوراق Sheets، فقاعات iMessage، إشعارات Banners، Dynamic Island، مركز التحكم). يعمل في الوضعين الداكن والفاتح (`data-theme`).
@@ -65,12 +86,13 @@ npm.cmd run models:refresh
 | `public/home.js` | الشاشة الرئيسية: ودجت الساعة، حلقات حالة الجهاز، أيقونات التطبيقات، اقتراحات سند |
 | `public/ios-island.js` | شريط الحالة و Dynamic Island (`window.sanadIsland`، تُغذّى من `setIslandStatus`/`updateIslandLatest`) |
 | `public/ios-control.js` | مركز التحكم (زر في الشريط، `Ctrl+Shift+C`، أو ضغط مطوّل على الجزيرة) |
+| `public/ios-tabs.js` | تنقل الهاتف: الرئيسية، المحادثات، الأدوات، وإعدادات الصوت |
 | `public/ios-apps.js` | نوافذ الأدوات كأوراق iOS (زر «تم»، أيقونة تطبيق، أدوات مقسّمة) |
 | `public/ios-list.js` | قائمة المحادثات بأسلوب iOS مع البحث وتأكيد الحذف |
 | `public/ios-polish.js` | إزالة الإيموجي والشروح الإنجليزية من نصوص واجهة النظام (لا يلمس محتوى المستخدم) |
 | `public/palette.js` | لوحة الأوامر `Ctrl+K` |
 
-- الكبسولة القديمة `#cyberIsland` باقية فقط لـ «وضع الكبسولة»، بشكل جزيرة سوداء موسّعة.
+- واجهة `#cyberIsland` القديمة مخفية؛ وضع العرض المصغّر والإجراءات السريعة يستخدمان Dynamic Island في `ios-island.js`.
 - الحوار الصوتي الكامل وكلمة التنبيه («يا سند») مع المقاطعة الحية (Barge-in) في منطق `index.html`.
 - النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
 
@@ -112,6 +134,12 @@ npm.cmd run models:refresh
 | `POST /api/desktop/organize` | POST | فرز وترتيب ملفات سطح المكتب أو التنزيلات |
 | `GET /api/desktop/status` | GET | حالة الملفات المبعثرة في المجلد |
 | `POST /api/desktop/preset` | POST | تجهيز بيئة عمل سريعة (gis, coding, clean) |
+| `GET /api/brain/status` | GET | حالة العقل: سحابي/محلي، Ollama، النموذج المحلي، وضع التشغيل |
+| `GET /api/network/ports` · `POST /api/network/kill-port` · `POST /api/network/ping` · `GET /api/network/info` | — | الشبكة والمنافذ |
+| `POST /api/voice/speak` | POST | نطق نص `{text, gender?, voice?, engine?:"local"}` ← صوت (الرأس `X-Voice-Source`: cache/natural/local) |
+| `POST /api/voice/transcribe` | POST | تعرّف على WAV بتردد 16kHz (FastConformer أو whisper) |
+| `POST /api/voice/warm` | POST | تحميل محرك السماع مسبقاً قبل أول جملة |
+| `GET`/`POST /api/voice/settings` | — | إعدادات الصوت (رجل/فتاة، الصوت الطبيعي، محرك السماع) |
 
 ---
 

@@ -38,6 +38,7 @@
   const input = el("input");
   input.type = "search";
   input.placeholder = "بحث";
+  input.dir = "auto";
   input.setAttribute("aria-label", "ابحث في المحادثات");
   input.autocomplete = "off";
   search.append(input);

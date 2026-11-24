@@ -8,7 +8,11 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "models:refresh": "tsx scripts/refresh-models.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "voice:warm": "tsx scripts/voice-warm.ts",
+    "test:voice": "node scripts/test-voice-intents.mjs && node scripts/test-stream-speech.mjs",
+    "offline:setup": "node scripts/offline-setup.mjs",
+    "offline:check": "node scripts/offline-check.mjs"
   },
   "dependencies": {
     "@openrouter/sdk": "^0.4.0",

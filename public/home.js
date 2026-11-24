@@ -15,7 +15,7 @@
     { id: "tasksBtn", icon: "clock", label: "المهام", color: "orange" },
     { id: "workflowsBtn", icon: "zap", label: "المسارات", color: "yellow" },
     { id: "projectPreviewBtn", icon: "code", label: "المشاريع", color: "purple" },
-    { id: "toggleIslandBtn", icon: "island", label: "الكبسولة", color: "cyan" },
+    { id: "toggleIslandBtn", icon: "island", label: "العرض المصغّر", color: "cyan" },
     { id: "paletteBtn", icon: "command", label: "الأوامر", color: "gray" },
     { id: "extensionsBtn", icon: "puzzle", label: "الإضافات", color: "purple" },
   ];
@@ -88,6 +88,8 @@
   function systemWidget() {
     const w = el("section", "widget widget-system");
     w.setAttribute("aria-label", "حالة الجهاز");
+    w.setAttribute("role", "button");
+    w.tabIndex = 0;
     const head = el("div", "widget-head");
     head.innerHTML = svg("activity");
     head.append(el("span", null, "حالة الجهاز"));
@@ -98,7 +100,14 @@
     rings.append(cpu.node, ram.node, bat.node);
     const foot = el("div", "ws-foot", "جارٍ القراءة…");
     w.append(head, rings, foot);
-    w.addEventListener("click", () => document.getElementById("sysStatsBtn")?.click());
+    const openStats = () => document.getElementById("sysStatsBtn")?.click();
+    w.addEventListener("click", openStats);
+    w.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openStats();
+      }
+    });
 
     async function refresh() {
       try {
@@ -149,6 +158,7 @@
       const b = el("button", "suggest-item");
       b.type = "button";
       b.title = s.prompt;
+      b.setAttribute("aria-label", s.text);
       const ic = el("span", "suggest-ico");
       ic.innerHTML = svg(s.icon);
       b.append(ic, el("span", "suggest-text", s.text));

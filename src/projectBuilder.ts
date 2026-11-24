@@ -54,7 +54,6 @@ export function generateTemplateFiles(template: ProjectTemplate, projectName: st
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${cleanTitle} · Task Manager</title>
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app-container">
@@ -94,7 +93,7 @@ export function generateTemplateFiles(template: ProjectTemplate, projectName: st
       },
       {
         relativePath: "styles.css",
-        content: `* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        content: `* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', Arial, sans-serif; }
 body { background: #0b0f19; color: #f1f5f9; min-height: 100vh; display: flex; justify-content: center; padding: 20px; }
 .app-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 20px; }
 .app-header { text-align: center; padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -205,27 +204,27 @@ class ${cleanTitle.replace(/\s+/g, "")}App:
         self.root.configure(bg="#0f172a")
 
         # Title
-        title_label = tk.Label(root, text="${cleanTitle}", font=("Cairo", 18, "bold"), fg="#38bdf8", bg="#0f172a")
+        title_label = tk.Label(root, text="${cleanTitle}", font=("Segoe UI", 18, "bold"), fg="#38bdf8", bg="#0f172a")
         title_label.pack(pady=15)
 
-        sub_label = tk.Label(root, text="${description || "أداة سطح مكتب مستقلة تم إنشاؤها عبر سند"}", font=("Cairo", 10), fg="#94a3b8", bg="#0f172a")
+        sub_label = tk.Label(root, text="${description || "أداة سطح مكتب مستقلة تم إنشاؤها عبر سند"}", font=("Segoe UI", 10), fg="#94a3b8", bg="#0f172a")
         sub_label.pack(pady=5)
 
         # Input Frame
         frame = tk.Frame(root, bg="#1e293b", padx=15, pady=15, relief="flat", highlightbackground="#334155", highlightthickness=1)
         frame.pack(fill="x", padx=25, pady=15)
 
-        tk.Label(frame, text="النص أو المعامل:", font=("Cairo", 11), fg="#f1f5f9", bg="#1e293b").pack(anchor="e")
-        self.entry = tk.Entry(frame, font=("Cairo", 12), bg="#0f172a", fg="#ffffff", insertbackground="#38bdf8", relief="flat")
+        tk.Label(frame, text="النص أو المعامل:", font=("Segoe UI", 11), fg="#f1f5f9", bg="#1e293b").pack(anchor="e")
+        self.entry = tk.Entry(frame, font=("Segoe UI", 12), bg="#0f172a", fg="#ffffff", insertbackground="#38bdf8", relief="flat")
         self.entry.pack(fill="x", pady=8)
         self.entry.focus()
 
         # Action Button
-        btn = tk.Button(root, text="⚡ تشغيل المعالجة", font=("Cairo", 12, "bold"), bg="#0284c7", fg="#ffffff", relief="flat", cursor="hand2", command=self.process_action)
+        btn = tk.Button(root, text="⚡ تشغيل المعالجة", font=("Segoe UI", 12, "bold"), bg="#0284c7", fg="#ffffff", relief="flat", cursor="hand2", command=self.process_action)
         btn.pack(pady=10, fill="x", padx=25)
 
         # Output Box
-        self.output_label = tk.Label(root, text="النتائج ستظهر هنا...", font=("Cairo", 11), fg="#38bdf8", bg="#1e293b", wraplength=380, pady=12)
+        self.output_label = tk.Label(root, text="النتائج ستظهر هنا...", font=("Segoe UI", 11), fg="#38bdf8", bg="#1e293b", wraplength=380, pady=12)
         self.output_label.pack(fill="both", expand=True, padx=25, pady=15)
 
     def process_action(self):
@@ -260,7 +259,6 @@ if __name__ == "__main__":
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${cleanTitle} · Analytics Dashboard</title>
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="dashboard-wrapper">
@@ -330,7 +328,7 @@ if __name__ == "__main__":
     },
     {
       relativePath: "styles.css",
-      content: `* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+      content: `* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', Arial, sans-serif; }
 body { background: #090d16; color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
 .dashboard-wrapper { display: flex; min-height: 100vh; }
 .sidebar { width: 260px; background: #0f172a; border-left: 1px solid rgba(255,255,255,0.06); padding: 24px; display: flex; flex-direction: column; gap: 30px; }
