@@ -32,12 +32,8 @@ const MODALS = [
   ["extensionsBtn", null], // يُكتشف بظهور حوار جديد
 ];
 // مشكلات قائمة قبل إعادة البناء، موثّقة هنا حتى لا تُخفي أخطاء جديدة. كل بند يُصلَح في مرحلة لاحقة ثم يُحذف من هنا.
-const KNOWN_ERRORS = [
-  {
-    match: /\/api\/project\/preview\?project=[^&]+&file=index\.html.* 404|404 \(Not Found\) .*\/api\/project\/preview/,
-    why: "نافذة المشاريع تعاين تلقائياً أول مشروع حتى لو لم يكن فيه index.html (مثل moodle-archive) ← 404",
-  },
-];
+// (أُصلحت في المرحلة 3: معاينة مشروع بلا index.html كانت تعطي 404 — صارت تعرض رسالة واضحة.)
+const KNOWN_ERRORS = [];
 const GLOBALS = ["sendMessage", "sanadNotify", "sanadConfirm", "sanadIntents", "sanadCommands", "sanadModePicker", "reloadModels", "openNetworkModal", "refreshBrainStatus"];
 
 const results = [];

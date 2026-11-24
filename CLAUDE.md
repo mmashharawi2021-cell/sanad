@@ -79,7 +79,8 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية وس�
 
 | الملف | المسؤولية |
 |---|---|
-| `public/index.html` | الهيكل والمنطق الرئيسي (سكربت مضمّن) + sprite أيقونات SVG في أعلى `<body>` (`<use href="#i-…">`) |
+| `public/index.html` | الهيكل + sprite أيقونات SVG + **قلب المحادثة فقط** في سكربت مضمّن: الحالة، الرسم، Markdown، الإرسال والبث، الأحداث |
+| وحدات النوافذ (سكربتات عادية تُحمَّل بعد السكربت المضمّن بالترتيب) | `models-ui.js`، `audio-fx.js`، `attachments.js`، `memory-ui.js`، `terminal-ui.js`، `tasks-ui.js`، `workflows-ui.js`، `vision-ui.js`، `visual-agent.js`، `live-stream.js`، `island-legacy.js`، `sys-stats.js`، `brain-status.js`، `network-ui.js`، `desktop-ui.js`، `preview-ui.js`، ثم `app-boot.js` أخيراً |
 | `public/styles.css` | المتغيرات (`--surface-*`، `--text-*`، `--brand`، `--glass-*`، `--sheet-bg`، `--cell-bg`) وأقسام مرتبة بالمراحل؛ الأقسام الأحدث في آخر الملف |
 | `public/ios.js` | الشريط العلوي والعنوان الكبير الذي يُطوى عند التمرير، وطفو الشريط وصندوق الإدخال فوق المحادثة |
 | `public/ios-notify.js` | `sanadNotify()` (إشعارات Banners) و `sanadConfirm()` (نافذة تأكيد iOS) |
@@ -99,6 +100,7 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية وس�
 - النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
 
 **قواعد الواجهة:**
+- **وحدات النوافذ سكربتات عادية لا `module`:** تتشارك الأسماء العامة مع السكربت المضمّن. ترتيب الوسوم بعد `</script>` هو ترتيب التنفيذ: كود يعمل عند التحميل لا يستدعي دالة من ملف يأتي بعده. `app-boot.js` يبقى الأخير.
 - **أي أمر محلي جديد** (يُنفَّذ دون العقل) يُضاف سجلاً في `public/command-registry.js` لا شرطاً في `index.html`: `id`، `risk` (`safe`/`action`/`danger`)، `examples` و`nonExamples` (تُختبر آلياً)، `match` و`run`. أوامر `action`/`danger` لا تطابق الأسئلة ولا الجمل الطويلة إلا بصيغة صريحة (`explicit`).
 - **لا تغيّر معرّفات العناصر** في `index.html`؛ المنطق ووحدات iOS تعتمد عليها. أي سلوك جديد يوضع في وحدة `public/*.js` مستقلة.
 - لا خطوط SF ولا SF Symbols ولا شعار Apple؛ استخدم أيقونات Lucide في الـ sprite وخط IBM Plex Sans Arabic.
