@@ -95,9 +95,21 @@ export async function startSanad(opts = {}) {
   return { base, port, cookie, setCookie, request, stop, log: () => log };
 }
 
-/** كل المسارات المعرَّفة في src/server.ts: [{ method, path }] — مصدر الحقيقة لاختبار التغطية. */
+/**
+ * كل مسارات API المعرَّفة في src/routes/*.ts بالصيغة { method: "…", path: "/api/…", handler } —
+ * مصدر الحقيقة لاختبار التغطية. (قبل تقسيم الخادم كانت في src/server.ts بصيغة req.method === … فنقرأ الصيغتين.)
+ */
 export async function routesInServer() {
-  const { readFile } = await import("node:fs/promises");
-  const src = await readFile(join(ROOT, "src", "server.ts"), "utf8");
-  return [...src.matchAll(/req\.method === "(\w+)" && url\.pathname === "([^"]+)"/g)].map((m) => ({ method: m[1], path: m[2] }));
+  const { readFile, readdir } = await import("node:fs/promises");
+  const files = [join(ROOT, "src", "server.ts")];
+  try {
+    for (const f of await readdir(join(ROOT, "src", "routes"))) if (f.endsWith(".ts")) files.push(join(ROOT, "src", "routes", f));
+  } catch {}
+  const out = [];
+  for (const f of files) {
+    const src = await readFile(f, "utf8");
+    for (const m of src.matchAll(/req\.method === "(\w+)" && url\.pathname === "([^"]+)"/g)) out.push({ method: m[1], path: m[2] });
+    for (const m of src.matchAll(/method:\s*"(\w+)",\s*path:\s*"(\/api\/[^"]+)"/g)) out.push({ method: m[1], path: m[2] });
+  }
+  return out;
 }

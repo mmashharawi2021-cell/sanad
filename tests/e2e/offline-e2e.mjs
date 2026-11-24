@@ -53,7 +53,13 @@ const sttBefore = (await s.request("/api/voice/settings")).json.settings.stt;
 
 try {
   await step("حالة العقل: أوفلاين ومحلي", async () => {
-    const r = (await s.request("/api/brain/status?force=1")).json;
+    // إن لم يكن Ollama يعمل، يشغّله سند عند الإقلاع في الخلفية — ننتظر جاهزيته بدل فحص لحظي
+    let r;
+    for (let i = 0; i < 60; i++) {
+      r = (await s.request("/api/brain/status?force=1")).json;
+      if (r.mode === "local") break;
+      await new Promise((res) => setTimeout(res, 1000));
+    }
     must(!r.online && r.mode === "local", JSON.stringify(r));
     return r.localModel;
   });

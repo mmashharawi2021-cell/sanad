@@ -59,12 +59,30 @@ page.on("Runtime.exceptionThrown", (p) => errors.push(`exception: ${p.exceptionD
 page.on("Runtime.consoleAPICalled", (p) => { if (p.type === "error") errors.push(`console.error: ${p.args.map((a) => a.value ?? a.description).join(" ").slice(0, 160)}`); });
 page.on("Log.entryAdded", (p) => { if (p.entry.level === "error") errors.push(`log: ${p.entry.text.slice(0, 160)} ${p.entry.url || ""}`); });
 page.on("Network.requestWillBeSent", (p) => { const u = p.request.url; if (!u.startsWith(s.base) && !/^(data|blob|about):/.test(u)) external.add(u); });
+// تتبّع الطلبات الجارية: اللقطة تُلتقط بعد أن تهدأ الشبكة، لا بعد زمن ثابت (الجهاز المشغول يبطئ البيانات الحية)
+const inflight = new Set();
+page.on("Network.requestWillBeSent", (p) => inflight.add(p.requestId));
+page.on("Network.loadingFinished", (p) => inflight.delete(p.requestId));
+page.on("Network.loadingFailed", (p) => inflight.delete(p.requestId));
+async function networkIdle(quietMs = 700, maxMs = 15_000) {
+  const end = Date.now() + maxMs;
+  let quietSince = inflight.size ? 0 : Date.now();
+  while (Date.now() < end) {
+    await new Promise((r) => setTimeout(r, 100));
+    if (inflight.size) quietSince = 0;
+    else if (!quietSince) quietSince = Date.now();
+    else if (Date.now() - quietSince >= quietMs) return true;
+  }
+  return false;
+}
 
 mkdirSync(OUTPUT, { recursive: true });
 mkdirSync(BASELINE, { recursive: true });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function shot(name) {
+  await networkIdle();
+  await wait(300); // رسم النتائج بعد آخر رد
   const png = await page.screenshot();
   writeFileSync(join(OUTPUT, `${name}.png`), png);
   const base = join(BASELINE, `${name}.png`);

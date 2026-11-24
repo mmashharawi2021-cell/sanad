@@ -49,7 +49,9 @@ npm.cmd run test:voice    # اختبارات الأوامر الصوتية وا�
 المشروع مبني على **Node.js (v20+)** مع **TypeScript (v5.9)** و **ES Modules (`"type": "module"`)**:
 
 ### 1. الخادم الخلفي (`src/`):
-- `src/server.ts`: الخادم المركزي (HTTP Native Server)، يدعم Server-Sent Events (SSE)، ويربط جميع الواجهات البرمجية (REST APIs).
+- `src/server.ts`: نقطة التشغيل فقط (~80 سطراً): طبقة الحماية ← جدول المسارات ← ملفات الواجهة.
+- `src/http/`: أدوات HTTP المشتركة — `core.ts` (قراءة JSON/الجسم الخام، `sendJson`، إطارات SSE)، `security.ts` (الحماية ورمز الجلسة)، `static.ts` (ملفات public/)، `router.ts` (جدول الطريقة+المسار).
+- `src/routes/`: ملف لكل مجال (`chat`، `memoryTasks`، `extensions`، `project`، `web`، `vision`، `system`، `network`، `voice`، `desktop`)، كل مسار بالصيغة `{ method: "…", path: "/api/…", handler }`. **المسار الجديد يُضاف هنا ويُصنَّف في `tests/routes.manifest.mjs`.**
 - `src/diskInspector.ts`: المحلل الذكي للأقراص، تنظيف الملفات المؤقتة، محرر الرام الفوري عبر `psapi.dll`، وفاحص أكبر الملفات.
 - `src/projectBuilder.ts`: المطور البرمجي الذاتي لبناء مشاريع الويب والتطبيقات الحية وخدمة المعاينة التفاعلية داخل المتصفح.
 - `src/processMaestro.ts`: مدير العمليات والتطبيقات في ويندوز، إدارة سطوع الشاشة عبر WMI CIM، وتنفيذ الروتين اليومي.
