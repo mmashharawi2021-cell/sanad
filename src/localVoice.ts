@@ -28,6 +28,7 @@ const CACHE_DIR = join(ROOT, "data", "voice-cache");
 const CACHE_MAX_BYTES = 300 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 30_000;
 const CLOUD_TIMEOUT_MS = 12_000;
+const OTHER_VOICE_IDLE_MS = 60_000;
 const MAX_CHARS = 600;
 
 export type SpeechResult = { audio: Buffer; mime: "audio/mpeg" | "audio/wav"; source: "cache" | "natural" | "local"; voice: string };
@@ -211,6 +212,14 @@ async function speakLocal(text: string, gender: Gender): Promise<Buffer> {
   if (w.idle) clearTimeout(w.idle);
   w.idle = setTimeout(() => stopWorker(voicePath), idleMs());
   w.idle.unref();
+  // Only the voice in use stays warm: the other gender's Piper (~125 MB) is freed after a minute
+  // (it is only loaded by a preview or a gender switch).
+  for (const [key, other] of workers) {
+    if (key === voicePath) continue;
+    if (other.idle) clearTimeout(other.idle);
+    other.idle = setTimeout(() => stopWorker(key), OTHER_VOICE_IDLE_MS);
+    other.idle.unref();
+  }
 
   const file = join(OUT_DIR, `${randomUUID()}.wav`);
   return new Promise<Buffer>((resolve, reject) => {

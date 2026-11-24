@@ -66,6 +66,18 @@ async def op_warm(_req: dict) -> dict:
     return {"ms": round((time.perf_counter() - t) * 1000), "alreadyLoaded": already}
 
 
+async def op_unload_stt(_req: dict) -> dict:
+    """Free the FastConformer model (~0.8 GB) when the user switches the recognizer to whisper."""
+    global _stt_model
+    async with _stt_lock:
+        was_loaded = _stt_model is not None
+        _stt_model = None
+        import gc
+
+        gc.collect()
+    return {"unloaded": was_loaded}
+
+
 async def op_tts(req: dict) -> dict:
     import edge_tts
 
@@ -103,6 +115,8 @@ async def handle(req: dict) -> None:
             result = await op_stt(req)
         elif op == "warm":
             result = await op_warm(req)
+        elif op == "unload_stt":
+            result = await op_unload_stt(req)
         elif op == "tts":
             result = await op_tts(req)
         else:

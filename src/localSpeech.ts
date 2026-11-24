@@ -181,6 +181,7 @@ export async function transcribeWav(wav: Buffer, language = "ar"): Promise<{ tex
       // falling back to whisper, which would cold-start a second engine.
       const r = await sidecarCall("stt", { wav: file }, 90_000);
       if (!r.ok) throw new Error(String(r.error ?? "stt failed"));
+      if (child) void applySttEngine("fastconformer"); // a fallback whisper is no longer needed
       return { text: cleanTranscript(String(r.text ?? "")), latencyMs: Date.now() - started, engine: "fastconformer" };
     } catch (err) {
       const msg = (err as Error).message;
@@ -198,6 +199,23 @@ export async function transcribeWav(wav: Buffer, language = "ar"): Promise<{ tex
     }
   }
   return { ...(await transcribeWithWhisper(wav, language)), engine: "whisper.cpp" };
+}
+
+/**
+ * Keep only one recognizer in memory. Measured private memory: whisper-server ≈ 850 MB,
+ * FastConformer (in the voice sidecar) ≈ 780 MB — both loaded at once cost ~1.6 GB.
+ * Called when the setting changes, and after each transcription as a safety net.
+ */
+export async function applySttEngine(engine: "fastconformer" | "whisper"): Promise<void> {
+  if (engine === "fastconformer") {
+    if (child) {
+      console.log("[local-speech] إيقاف whisper لأن FastConformer هو المحرك المختار (توفير ~850MB).");
+      stopSpeechServer();
+    }
+  } else if (sidecarRunning()) {
+    const r = await sidecarCall("unload_stt", {}, 15_000).catch(() => null);
+    if (r?.ok && r.unloaded) console.log("[local-speech] تفريغ FastConformer لأن whisper هو المحرك المختار (توفير ~780MB).");
+  }
 }
 
 let warming: Promise<void> | null = null;

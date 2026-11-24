@@ -23,7 +23,7 @@ import { getDrivesInfo, findLargeFiles, safeDeepCleanDisk, optimizeRam, revealFi
 import { listListeningPorts, checkPort, killPort, pingHost, getNetworkInfo } from "./networkMaestro";
 import { ensureOllamaRunning, getBrainStatus, getSanadMode, initOfflineBrain, isNetworkError, isOnline, markOffline, requireLocalModel, resolveLocalModel } from "./offlineBrain";
 import { cleanOllamaModelName } from "./ollama";
-import { getSpeechStatus, transcribeWav, warmSpeech } from "./localSpeech";
+import { applySttEngine, getSpeechStatus, transcribeWav, warmSpeech } from "./localSpeech";
 import { getVoiceStatus, synthesizeSpeech } from "./localVoice";
 import { CLOUD_VOICES, LOCAL_VOICES, getVoiceSettings, updateVoiceSettings } from "./voiceSettings";
 import { assertReadable } from "./safePaths";
@@ -709,7 +709,10 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   if (req.method === "POST" && url.pathname === "/api/voice/settings") {
     const body = await readJsonBody(req, 4 * 1024);
-    sendJson(res, 200, { success: true, settings: await updateVoiceSettings(body) });
+    const before = (await getVoiceSettings()).stt;
+    const settings = await updateVoiceSettings(body);
+    if (settings.stt !== before) void applySttEngine(settings.stt); // free the recognizer no longer used
+    sendJson(res, 200, { success: true, settings });
     return;
   }
 
