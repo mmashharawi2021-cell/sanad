@@ -10,7 +10,10 @@
     "models:refresh": "tsx scripts/refresh-models.ts",
     "typecheck": "tsc --noEmit",
     "voice:warm": "tsx scripts/voice-warm.ts",
+    "test": "tsc --noEmit && node --test tests/ && node scripts/test-voice-intents.mjs && node scripts/test-stream-speech.mjs",
     "test:voice": "node scripts/test-voice-intents.mjs && node scripts/test-stream-speech.mjs",
+    "test:ui": "node tests/ui/ui-smoke.mjs",
+    "test:e2e": "node tests/e2e/offline-e2e.mjs",
     "offline:setup": "node scripts/offline-setup.mjs",
     "offline:check": "node scripts/offline-check.mjs"
   },

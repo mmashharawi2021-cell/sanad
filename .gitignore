@@ -14,3 +14,7 @@ data/extensions-backup/
 public/lab/
 data/voice-cache/
 data/voice-settings.json
+
+# لقطات اختبار الواجهة (فيها بيانات شخصية، والمستودع عام)
+tests/ui/baseline/
+tests/ui/output/
