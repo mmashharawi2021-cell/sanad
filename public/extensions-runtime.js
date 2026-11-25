@@ -148,7 +148,12 @@ button{font:inherit;cursor:pointer}</style>
     iframe.srcdoc = buildSrcdoc(extId, placement, index);
     // نسجّل الإطار عند تحميله (contentWindow متاح قبل ذلك أيضاً)
     queueMicrotask(() => iframe.contentWindow && frames.set(iframe.contentWindow, { extId, iframe, placement }));
-    iframe.addEventListener("load", () => iframe.contentWindow && frames.set(iframe.contentWindow, { extId, iframe, placement }));
+    iframe.addEventListener("load", () => {
+      if (!iframe.contentWindow) return;
+      frames.set(iframe.contentWindow, { extId, iframe, placement });
+      // المظهر ربما تغيّر بين بناء الإطار واكتمال تحميله (رسالة التغيير ضاعت) ← نرسل الحالي الآن
+      iframe.contentWindow.postMessage({ __sanad: 1, type: "theme", css: themeCss() }, "*");
+    });
     return iframe;
   }
 

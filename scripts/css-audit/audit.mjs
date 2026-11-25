@@ -352,7 +352,8 @@ export async function runInlineAudit(styles, keep, { log = console.log, perProp 
 }
 
 // تشغيل مباشر: مقارنة ملف مرشّح بالحالي
-if (process.argv[1] && process.argv[1].endsWith("audit.mjs")) {
+// (اسم الملف بالضبط: a11y-audit.mjs ينتهي بـ audit.mjs أيضاً)
+if (process.argv[1] && /[\\/]audit\.mjs$/.test(process.argv[1])) {
   const { parseCss, importantDecls } = await import("./parse-css.mjs");
   const i = process.argv.indexOf("--candidate");
   if (i < 0) { console.log("الاستخدام: node scripts/css-audit/audit.mjs --candidate path.css"); process.exit(2); }

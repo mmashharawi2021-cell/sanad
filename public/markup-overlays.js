@@ -125,7 +125,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
     <!-- Command Palette (لوحة الأوامر) -->
     <div class="palette-backdrop hidden" id="paletteBackdrop" role="dialog" aria-modal="true" aria-label="لوحة الأوامر">
       <div class="palette">
-        <input class="palette-input" id="paletteInput" type="search" placeholder="ابحث عن أداة أو أمر…" autocomplete="off" aria-controls="paletteList" />
+        <input class="palette-input" id="paletteInput" aria-label="ابحث عن أمر أو أداة" type="search" placeholder="ابحث عن أداة أو أمر…" autocomplete="off" aria-controls="paletteList" />
         <div class="palette-list" id="paletteList" role="listbox"></div>
         <div class="palette-foot"><span><kbd class="kbd">↑↓</kbd> تنقّل</span><span><kbd class="kbd">Enter</kbd> تنفيذ</span><span><kbd class="kbd">Esc</kbd> إغلاق</span></div>
       </div>

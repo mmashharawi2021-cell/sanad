@@ -3,13 +3,13 @@
    iOS — المهمة 2: فقاعات iMessage
    ===================================================================== */
 :root {
-  --bubble-out: #0a84b8;      /* رسالتك: سماوي عميق بنص أبيض */
+  --bubble-out: #0a7daf;      /* أغمق بالحد الأدنى: نص أبيض بتباين 4.58 (كان 4.2) — المرحلة 5 */      /* رسالتك: سماوي عميق بنص أبيض */
   --bubble-out-text: #ffffff;
   --bubble-in: #26262a;       /* رد سند: رمادي iMessage الداكن */
   --bubble-in-text: #ffffff;
 }
 :root[data-theme="light"] {
-  --bubble-out: #0a8fc4;
+  --bubble-out: #097eac; /* نص أبيض بتباين 4.58 (كان 3.66) — المرحلة 5 */
   --bubble-out-text: #ffffff;
   --bubble-in: #e9e9eb;
   --bubble-in-text: #000000;
@@ -94,7 +94,7 @@
 .msg.assistant .bubble-body h5 { font-size: var(--fs-headline); font-weight: 600; margin: 12px 0 6px; }
 .msg.assistant .bubble-body p { margin: 0 0 8px; }
 .msg.assistant .bubble-body a { color: var(--brand-strong); }
-:root[data-theme="light"] .msg.assistant .bubble-body a { color: var(--color-0a7fb0); }
+:root[data-theme="light"] .msg.assistant .bubble-body a { color: var(--brand); } /* كان لوناً حرفياً بتباين 3.7 — المرحلة 5 */
 .msg.assistant .bubble-body code {
   background: rgba(0, 0, 0, 0.28);
   border: 0;

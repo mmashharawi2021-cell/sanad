@@ -15,7 +15,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             المعلومات المحفوظة هنا تُخزَّن في ملف محلي <code>data/memory.json</code> وتُحقن تلقائياً في عقل الذكاء الاصطناعي مع كل سؤال ليسهل عليه تذكرها دائماً، حتى بعد إغلاق المتصفح أو إعادة تشغيل اللابتوب.
           </p>
           <div class="memory-input-row">
-            <input type="text" class="memory-input" id="newMemoryInput" placeholder="اكتب معلومة جديدة ليتذكرها (مثلاً: اسمي محمد، مشروعي متجر أزياء...)" />
+            <input type="text" class="memory-input" id="newMemoryInput" aria-label="معلومة جديدة للذاكرة" placeholder="اكتب معلومة جديدة ليتذكرها (مثلاً: اسمي محمد، مشروعي متجر أزياء...)" />
             <select class="memory-select" id="newMemoryCategory">
               <option value="user">👤 عن المستخدم</option>
               <option value="project">💻 عن المشروع</option>
@@ -61,7 +61,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             <option value="git">🐙 Git</option>
           </select>
           <span class="terminal-prompt-symbol">&gt;</span>
-          <input type="text" class="terminal-input" id="terminalInput" placeholder="اكتب أمراً هنا واضغط Enter (مثل: git status, dir, node script.js)..." autocomplete="off" />
+          <input type="text" class="terminal-input" id="terminalInput" aria-label="أمر الطرفية" placeholder="اكتب أمراً هنا واضغط Enter (مثل: git status, dir, node script.js)..." autocomplete="off" />
           <button class="terminal-run-btn" id="terminalRunBtn" type="button">تشغيل ⚡</button>
         </div>
       </div>
@@ -79,7 +79,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             يقوم سند بتشغيل هذه المهام تلقائياً في الخلفية أثناء غيابك أو عملك، سواء كانت أوامر صيانة، نسخ احتياطي، أو مراقبة ملفات.
           </p>
           <div class="memory-input-row">
-            <input type="text" class="memory-input" id="newTaskTitle" placeholder="عنوان المهمة (مثلاً: نسخ احتياطي لمشاريعي)..." />
+            <input type="text" class="memory-input" id="newTaskTitle" aria-label="عنوان المهمة" placeholder="عنوان المهمة (مثلاً: نسخ احتياطي لمشاريعي)..." />
             <select class="memory-select" id="newTaskInterval">
               <option value="10">كل 10 دقائق</option>
               <option value="30" selected>كل 30 دقيقة</option>
@@ -87,7 +87,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
               <option value="360">كل 6 ساعات</option>
               <option value="1440">كل 24 ساعة (يومياً)</option>
             </select>
-            <input type="text" class="memory-input" id="newTaskAction" placeholder="أمر التشغيل (مثلاً: python backup.py أو أمر CMD)..." />
+            <input type="text" class="memory-input" id="newTaskAction" aria-label="الأمر الذي تنفّذه المهمة" placeholder="أمر التشغيل (مثلاً: python backup.py أو أمر CMD)..." />
             <button class="memory-add-btn" id="addTaskBtn" type="button">➕ جدولة المهمة</button>
           </div>
           <div class="memory-list" id="tasksList">
@@ -183,7 +183,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             <div class="net-card">
               <h3>
                 <span>📡</span><span>الاتصال الحالي</span>
-                <button class="net-chip" id="netInfoRefreshBtn" type="button" style="margin-inline-start: auto;">🔄</button>
+                <button class="net-chip" id="netInfoRefreshBtn" aria-label="تحديث معلومات الشبكة" type="button" style="margin-inline-start: auto;">🔄</button>
               </h3>
               <div id="netInfoSummary" style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">جاري فحص بطاقة الشبكة...</div>
               <dl class="net-kv" id="netInfoKv"></dl>
@@ -223,7 +223,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
               <h3 style="margin: 0;"><span>📋</span><span>المنافذ المفتوحة (Listening Ports)</span> <span id="netPortsCount" style="color: var(--muted); font-weight: 400; font-size: 12px;"></span></h3>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <input class="net-input" id="netPortsSearch" type="search" placeholder="بحث: منفذ / برنامج / PID" style="max-width: 200px; direction: rtl; font-family: inherit;" />
+                <input class="net-input" id="netPortsSearch" aria-label="البحث في المنافذ المفتوحة" type="search" placeholder="بحث: منفذ / برنامج / PID" style="max-width: 200px; direction: rtl; font-family: inherit;" />
                 <label style="font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
                   <input type="checkbox" id="netDevOnly" /> منافذ التطوير فقط
                 </label>

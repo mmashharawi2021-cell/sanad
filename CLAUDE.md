@@ -106,6 +106,7 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية وس�
 - النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
 
 **قواعد الواجهة:**
+- **إمكانية الوصول تُقاس:** `node scripts/css-audit/a11y-audit.mjs` (تباين WCAG AA في الوضعين، أسماء لقارئ الشاشة، أهداف لمس 44 على الهاتف) يجب أن يبقى 0 في التباين والأسماء. ألوان الوضع الفاتح في `17-ios-foundation.css` مختارة لتباين 4.5 — لا تفتّحها.
 - **تعديلات التنسيق تُقاس:** `node scripts/css-audit/audit.mjs --candidate نسخة.css` يقارن الأنماط المحسوبة لكل عنصر في 38 حالة من الواجهة. لا `!important` جديد إلا بسبب مثبت، ولا ألوان حرفية: أضف اللون إلى لوحة `01-tokens-palette.css`.
 - **فحص الأنواع للواجهة إلزامي:** `npm.cmd run typecheck` (يشمل `tsconfig.ui.json`) يجب أن يعطي 0 أخطاء. أي `window.X` جديد يُعرَّف في `public/globals.d.ts`، وعناصر `getElementById` تُكتب بنوعها (`/** @type {HTMLInputElement} */ (…)`).
 - **أداة نموذج جديدة** تُضاف في `TOOLS` داخل `public/model-tools.js` بحقولها، وتُذكر بالصيغة نفسها في تعليمات `src/config.ts` (اختبار يتحقق أن كل أداة في التعليمات معرّفة).

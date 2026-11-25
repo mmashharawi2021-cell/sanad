@@ -44,8 +44,16 @@
   .bubble { max-width: 100%; }
 }
 
+/* تقليل الحركة لمن يطلبه من نظامه: يجب أن يغلب كل قواعد الحركة الأكثر تحديداً، لذلك !important
+   (الاستعمال المقصود الوحيد هنا). دونه كان 23 عنصراً ما زال يتحرك — قيس في المرحلة 5.
+   iteration-count: 1 يوقف الحركات اللانهائية عند حالتها النهائية. */
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: .001s; transition-duration: .001s; scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Live Stream HUD Floating Panel */

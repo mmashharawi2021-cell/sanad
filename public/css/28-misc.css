@@ -28,3 +28,28 @@ body.work-offline #stats { display: none; }
 .code-head .code-run:hover { color: var(--brand); background: var(--brand-soft); box-shadow: none; }
 .code-head .code-run:disabled { opacity: 0.55; cursor: progress; }
 .code-head .code-run:focus-visible, .code-head .code-copy:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* سهولة الاستخدام (المرحلة 5): أهداف اللمس على الهاتف لا تقل عن 44×44 (إرشادات iOS)؛ الحاسوب كما هو */
+@media (max-width: 600px) {
+  .icon-btn, .jarvis-voice-btn, .model-btn, #newChat { min-width: 44px; min-height: 44px; }
+  .tool-item, .sheet-done, .memory-close-btn, .memory-add-btn { min-height: 44px; }
+  .code-head .code-run, .code-head .code-copy, .msg-tools .tool, .tool.retry { min-height: 44px; min-width: 44px; }
+}
+
+/* سهولة الاستخدام (المرحلة 5): وقت المحادثة المحددة ومعاينتها بأبيض كامل على لون الفقاعة (كان 0.8 بتباين 3.25) */
+.conv.active .conv-time,
+.conv.active .conv-preview { color: var(--color-white); }
+/* أزرار النوافذ: نفس قاعدة الـ 44 بتحديد يغلب .ios-sheet .memory-add-btn */
+@media (max-width: 600px) {
+  .ios-sheet .memory-add-btn, .ios-sheet .memory-add-btn.v-sm { min-height: 44px; }
+}
+
+/* عناصر خلفيتها داكنة دائماً (رأس الطرفية، Dynamic Island) تبقى بلون العلامة الفاتح في الوضع الفاتح أيضاً:
+   لون العلامة الغامق للوضع الفاتح لا يُقرأ عليها (تباين 2.9) — المرحلة 5 */
+:root[data-theme="light"] .terminal-modal .sheet-done,
+:root[data-theme="light"] .dyn-island .di-mode-action { color: var(--color-ios-cyan); }
+
+/* تقليل الحركة: انزلاق الأوراق والنوافذ عليه !important بمحدّد أقوى من * في 08 — نغلبه صراحةً هنا (آخر ملف) */
+@media (prefers-reduced-motion: reduce) {
+  .ios-sheet, .memory-modal, .terminal-modal, .ios-sheet.memory-modal { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; }
+}
