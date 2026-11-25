@@ -1,0 +1,79 @@
+/* @file 27-mode-picker.css */
+/* ==========================================================================
+   ورقة «وضع العمل»: باتصال / دون اتصال (public/mode-picker.js)
+   ========================================================================== */
+.mode-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 16001;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+:root[data-theme="light"] .mode-backdrop { background: rgba(0, 0, 0, 0.25); }
+.mode-backdrop[hidden] { display: none; }
+@media (min-width: 601px) { .mode-backdrop { align-items: center; } }
+.mode-sheet {
+  width: min(520px, 100%);
+  max-height: min(88vh, 720px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+}
+@media (min-width: 601px) { .mode-sheet { border-radius: 18px; } }
+.mode-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 18px 10px;
+}
+.mode-app-icon { background: linear-gradient(160deg, var(--brand), color-mix(in srgb, var(--brand) 55%, var(--color-black))); }
+.mode-body { overflow-y: auto; padding: 6px 16px 26px; }
+.mode-group { display: grid; gap: 10px; }
+.mode-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 84px;
+  padding: 14px 16px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-lg);
+  background: var(--cell-bg);
+  color: var(--text-1);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.mode-cell:hover:not(:disabled) { background: color-mix(in srgb, var(--cell-bg) 88%, var(--brand)); }
+.mode-cell:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mode-cell[aria-checked="true"] { border-color: var(--brand); }
+.mode-cell:disabled { opacity: 0.6; cursor: progress; }
+.mode-cell-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--color-white);
+}
+.mode-cell-icon .ico { width: 22px; height: 22px; }
+.mode-cell-icon.mode-auto { background: linear-gradient(160deg, var(--brand), color-mix(in srgb, var(--brand) 55%, var(--color-black))); }
+.mode-cell-icon.mode-offline { background: linear-gradient(160deg, var(--success), color-mix(in srgb, var(--success) 55%, var(--color-black))); }
+.mode-cell-text { flex: 1; display: grid; gap: 3px; min-width: 0; }
+.mode-cell-title { font-size: var(--fs-body); font-weight: 600; }
+.mode-cell-desc { font-size: var(--fs-footnote); color: var(--text-2); line-height: 1.5; }
+.mode-avail { font-size: var(--fs-footnote); color: var(--success); font-weight: 500; }
+.mode-avail.warn { color: var(--warning); }
+.mode-check { width: 22px; flex: 0 0 auto; display: grid; place-items: center; color: var(--brand); }
+.mode-check .ico { width: 20px; height: 20px; }
+.mode-footer { margin: 12px 6px 0; font-size: var(--fs-footnote); color: var(--text-3); line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) {
+  .mode-cell { transition: none; }
+}
+

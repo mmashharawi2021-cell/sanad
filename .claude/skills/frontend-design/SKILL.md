@@ -77,6 +77,6 @@ Keep the tone conversational: plain verbs, sentence case, no filler, with tone m
 The user has already chosen Sanad's visual direction: **the whole UI should feel like iOS on a recent iPhone Pro Max** (Liquid Glass, large titles, inset-grouped lists, sheets, iMessage bubbles, banners, Dynamic Island). Follow that brief — do not propose a different aesthetic unless asked. Use the `ios-hig` skill for platform rules.
 
 - Arabic first, RTL (`<html lang="ar" dir="rtl">`). Fonts: system font on Apple devices, **IBM Plex Sans Arabic** elsewhere. Never ship Apple's SF fonts, SF Symbols or the Apple logo — Lucide SVG icons live in the sprite at the top of `public/index.html` (`<use href="#i-…">`).
-- Tokens are CSS variables in `public/styles.css` (`--surface-*`, `--text-*`, `--brand`, `--glass-*`, `--sheet-bg`, `--cell-bg`…) with light overrides under `:root[data-theme="light"]`. Extend tokens; don't hard-code colours.
+- Tokens are CSS variables in `public/css/*.css` (`--surface-*`, `--text-*`, `--brand`, `--glass-*`, `--sheet-bg`, `--cell-bg`…) with light overrides under `:root[data-theme="light"]`. Extend tokens; don't hard-code colours.
 - Keep existing element IDs — `public/index.html` logic depends on them. New behaviour goes in its own `public/*.js` module.
 - Every change: check both themes, phone width (430px) and desktop, keyboard focus, and `prefers-reduced-motion`.

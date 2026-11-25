@@ -1,0 +1,358 @@
+/* @file 22-ios-control-center.css */
+/* =====================================================================
+   iOS — المهمة 6: مركز التحكم (Control Center)
+   ===================================================================== */
+.ios-cc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 16000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: calc(var(--sb-h, 46px) + 24px) 16px 24px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px) saturate(100%);
+  -webkit-backdrop-filter: blur(0px) saturate(100%);
+  transition: background 320ms var(--ease), backdrop-filter 320ms var(--ease), -webkit-backdrop-filter 320ms var(--ease);
+}
+.ios-cc-backdrop[hidden] { display: none; }
+.ios-cc-backdrop.in {
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(30px) saturate(170%);
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+}
+:root[data-theme="light"] .ios-cc-backdrop.in { background: rgba(255, 255, 255, 0.25); }
+
+.ios-cc {
+  --cell: 76px;
+  --gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, var(--cell));
+  grid-auto-rows: var(--cell);
+  gap: var(--gap);
+  opacity: 0;
+  transform: translateY(-24px) scale(0.94);
+  transform-origin: top center;
+  transition: transform 520ms var(--spring), opacity 260ms var(--ease);
+}
+.ios-cc-backdrop.in .ios-cc { opacity: 1; transform: none; }
+
+/* أسطح البلاطات: زجاج داكن كما في iOS */
+.cc-tile,
+.cc-square {
+  border: 0;
+  border-radius: 22px;
+  background: rgba(60, 60, 67, 0.42);
+  color: var(--color-white);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+:root[data-theme="light"] .cc-tile,
+:root[data-theme="light"] .cc-square {
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--color-black);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* الاتصال 2×2 */
+.cc-conn {
+  grid-column: span 2;
+  grid-row: span 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  place-items: center;
+  padding: 12px;
+}
+.cc-round {
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--color-white);
+  background: rgba(118, 118, 128, 0.4);
+  cursor: pointer;
+  transition: transform 300ms var(--spring), filter 160ms var(--ease);
+}
+.cc-round .ico { width: 24px; height: 24px; }
+.cc-round:hover { filter: brightness(1.12); }
+.cc-round:active { transform: scale(0.9); transition-duration: 90ms; }
+.cc-conn .c-blue { background: var(--color-ios-blue); }
+.cc-conn .c-green { background: var(--color-ios-green); }
+.cc-conn .c-red { background: var(--color-ios-red); }
+.cc-conn .c-teal { background: var(--color-40c8e0); }
+
+/* التركيز 2×2 */
+.cc-focus {
+  grid-column: span 2;
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+}
+.cc-tile-head { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; opacity: 0.85; padding: 0 4px 2px; }
+.cc-tile-head .ico { width: 15px; height: 15px; color: var(--color-ios-purple); }
+.cc-focus-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  transition: background 160ms var(--ease), transform 300ms var(--spring);
+}
+.cc-focus-item .ico { width: 18px; height: 18px; }
+.cc-focus-item:hover { background: rgba(118, 118, 128, 0.24); }
+.cc-focus-item:active { transform: scale(0.96); transition-duration: 90ms; }
+.cc-focus-item.on { background: var(--color-ios-purple); color: var(--color-white); }
+
+/* السطوع: شريط عمودي 1×2 */
+.cc-slider {
+  grid-row: span 2;
+  position: relative;
+  overflow: hidden;
+  cursor: ns-resize;
+  touch-action: none;
+  border-radius: 24px;
+  transition: transform 300ms var(--spring);
+}
+.cc-slider.active { transform: scale(1.04); }
+.cc-slider-fill {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  background: var(--color-white);
+  transition: height 80ms linear;
+}
+.cc-slider-icon {
+  position: absolute;
+  bottom: 14px;
+  inset-inline: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-ios-gray);
+  mix-blend-mode: normal;
+}
+.cc-slider-icon .ico { width: 24px; height: 24px; }
+.cc-slider:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
+
+/* مربعات 1×1 */
+.cc-square {
+  width: var(--cell);
+  height: var(--cell);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 300ms var(--spring), background 160ms var(--ease);
+}
+.cc-square .ico { width: 26px; height: 26px; }
+.cc-square:active { transform: scale(0.92); transition-duration: 90ms; }
+.cc-square.on { background: var(--color-white); color: var(--color-black); }
+:root[data-theme="light"] .c-theme { background: var(--color-white); color: var(--color-ios-orange); }
+
+/* بلاطات عريضة 2×1 */
+.cc-wide {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  text-align: start;
+  cursor: pointer;
+  transition: transform 300ms var(--spring), filter 160ms var(--ease);
+}
+.cc-wide:hover { filter: brightness(1.1); }
+.cc-wide:active { transform: scale(0.96); transition-duration: 90ms; }
+.cc-wide-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--color-white);
+}
+.cc-wide-icon .ico { width: 20px; height: 20px; }
+.c-purple .cc-wide-icon { background: var(--color-ios-purple); }
+.c-orange .cc-wide-icon { background: var(--color-ios-orange); }
+.cc-wide-text { display: flex; flex-direction: column; min-width: 0; }
+.cc-wide-text strong { font-size: 14px; font-weight: 600; }
+.cc-wide-sub { font-size: 12px; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* صف التطبيقات */
+.cc-apps {
+  grid-column: span 4;
+  display: grid;
+  grid-template-columns: repeat(4, var(--cell));
+  gap: var(--gap);
+}
+
+/* زر مركز التحكم في الشريط العلوي */
+.cc-trigger { width: 44px; min-width: 44px; min-height: 44px; padding: 0; }
+.cc-trigger .ico { width: 18px; height: 18px; }
+.cc-dismiss {
+  position: absolute;
+  top: calc(var(--sb-h, 46px) + 8px);
+  inset-inline-end: 16px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.cc-dismiss .ico { width: 20px; height: 20px; }
+.cc-dismiss:active { transform: scale(0.94); }
+
+@media (max-width: 380px) {
+  .ios-cc { --cell: 68px; --gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ios-cc, .ios-cc-backdrop { transition-duration: 1ms; }
+}
+
+/* مواضع ثابتة لبلاطات مركز التحكم (شبكة 4×5) */
+.ios-cc .cc-conn    { grid-column: 1 / 3; grid-row: 1 / 3; }
+.ios-cc .cc-focus   { grid-column: 3 / 5; grid-row: 1 / 3; }
+.ios-cc .cc-slider  { grid-column: 1 / 2; grid-row: 3 / 5; }
+.ios-cc .c-theme    { grid-column: 2 / 3; grid-row: 3 / 4; }
+.ios-cc .cc-palette { grid-column: 2 / 3; grid-row: 4 / 5; }
+.ios-cc .cc-ram     { grid-column: 3 / 5; grid-row: 3 / 4; }
+.ios-cc .cc-disk    { grid-column: 3 / 5; grid-row: 4 / 5; }
+.ios-cc .cc-apps    { grid-column: 1 / 5; grid-row: 5 / 6; }
+
+/* شريط تنقل ثابت للهاتف، يترك المحادثة وصندوق الكتابة فوقه. */
+.ios-tabs,
+.mobile-nav-head { display: none; }
+@media (max-width: 600px) {
+  :root { --ios-tabs-height: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .chat { padding-bottom: var(--ios-tabs-height); }
+  .ios-tabs {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-height: var(--ios-tabs-height);
+    padding: 6px 10px max(6px, env(safe-area-inset-bottom, 0px));
+    padding-inline-start: max(10px, env(safe-area-inset-left, 0px));
+    padding-inline-end: max(10px, env(safe-area-inset-right, 0px));
+    border-top: var(--hairline) solid var(--line);
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+  .ios-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 2px 4px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 11px;
+    line-height: 1.2;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ios-tab .ico { width: 21px; height: 21px; }
+  .ios-tab.is-active { color: var(--brand); }
+  .ios-tab:active { background: var(--brand-soft); }
+  .ios-tabs { transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+  .sidebar { transition: transform 320ms var(--spring), background var(--dur) var(--ease); }
+
+  .sidebar {
+    inset-inline: 0;
+    inset-inline-start: 0;
+    top: auto;
+    bottom: var(--ios-tabs-height);
+    width: 100%;
+    max-height: calc(100dvh - var(--sb-h) - var(--ios-tabs-height) - 12px);
+    padding: 8px 18px 18px;
+    gap: 12px;
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    overflow-y: auto;
+    transform: translateY(calc(100% + var(--ios-tabs-height)));
+    transition: transform 320ms var(--spring);
+    box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.3);
+    z-index: 31;
+  }
+  .app.nav-open .sidebar { transform: translateY(0); }
+  .mobile-nav-head {
+    align-self: stretch;
+    min-width: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    margin: 0;
+    padding: 4px 0;
+    background: var(--sheet-bg);
+    border-bottom: var(--hairline) solid var(--cell-sep);
+  }
+  .mobile-nav-head h2 {
+    margin: 0;
+    color: var(--text-1);
+    font-size: var(--fs-headline);
+    font-weight: 600;
+  }
+  .mobile-nav-done {
+    min-width: 44px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 999px;
+    padding: 0 14px;
+    background: var(--tint-fill);
+    color: var(--brand);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .mobile-nav-head { display: flex; }
+  .sidebar[data-nav-view="history"] .tool-nav,
+  .sidebar[data-nav-view="history"] .stats,
+  .sidebar[data-nav-view="history"] .side-foot,
+  .sidebar[data-nav-view="history"] .brand,
+  .sidebar[data-nav-view="history"] .side-title,
+  .sidebar[data-nav-view="tools"] .brand,
+  .sidebar[data-nav-view="tools"] .side-head,
+  .sidebar[data-nav-view="tools"] .conv-list,
+  .sidebar[data-nav-view="tools"] .ios-search,
+  .sidebar[data-nav-view="tools"] .side-head,
+  .sidebar[data-nav-view="tools"] .side-title,
+  .sidebar[data-nav-view="tools"] .stats,
+  .sidebar[data-nav-view="tools"] .side-foot,
+  .sidebar[data-nav-view="tools"] #newChat { display: none; }
+  .sidebar[data-nav-view="history"] .conv-list { display: flex; }
+  .sidebar[data-nav-view="tools"] .tool-nav { display: block; }
+  .sidebar[data-nav-view="tools"] .tool-nav-head { min-height: 44px; }
+  .sidebar[data-nav-view="history"] #newChat { min-width: 44px; min-height: 44px; }
+}
+
+/* العرض المصغّر يستخدم الجزيرة الحديثة وحدها. */
+body.island-only-mode .ios-tabs { display: none; }
+

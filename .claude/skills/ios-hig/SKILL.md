@@ -17,7 +17,7 @@ Sanad is a web app (HTML/CSS/vanilla JS, RTL Arabic) styled as iOS. Translate ea
 
 | HIG concept | Sanad equivalent |
 |---|---|
-| `systemBackground` / grouped backgrounds | `--surface-0/1/2`, `--sheet-bg`, `--cell-bg` in `public/styles.css` |
+| `systemBackground` / grouped backgrounds | `--surface-0/1/2`, `--sheet-bg`, `--cell-bg` in `public/css/*.css` |
 | Large title → inline on scroll | `.head-titles` + `.chat.scrolled` (`public/ios.js`); sheets: `.sheet-title` + `.ios-sheet.scrolled` (`public/ios-apps.js`) |
 | `.sheet` with Done | `.memory-modal` → `.ios-sheet`, `.sheet-done` (`ios-apps.js`) |
 | `.alert` | `sanadConfirm()` (`public/ios-notify.js`) |

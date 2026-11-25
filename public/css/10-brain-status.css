@@ -1,0 +1,44 @@
+/* @file 10-brain-status.css */
+/* ======================= Offline Brain status ======================= */
+.brain-dot, .island-brain-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.island-brain-dot { width: 7px; height: 7px; margin-inline: 2px 4px; }
+[data-brain="cloud"] { background: var(--color-3fb950); box-shadow: 0 0 6px rgba(63, 185, 80, 0.7); }
+[data-brain="local"] { background: var(--color-f0883e); box-shadow: 0 0 6px rgba(240, 136, 62, 0.7); }
+[data-brain="none"] { background: var(--danger); box-shadow: 0 0 6px rgba(255, 82, 82, 0.7); }
+.brain-notice {
+  margin: 0 0 8px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(240, 136, 62, 0.12);
+  border: 1px solid rgba(240, 136, 62, 0.3);
+  color: var(--color-f0883e);
+  font-size: 12px;
+}
+.brain-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid rgba(240, 136, 62, 0.45);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 10000;
+}
+.brain-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+

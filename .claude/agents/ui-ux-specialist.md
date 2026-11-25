@@ -18,7 +18,7 @@ model: inherit
 | الجزء | الملف |
 |---|---|
 | المنطق الرئيسي والمعرّفات | `public/index.html` (ومنه sprite الأيقونات `#i-…`) |
-| المتغيرات والأنماط (أقسام مرتبة بالمراحل) | `public/styles.css` |
+| المتغيرات والأنماط (أقسام مرتبة بالمراحل) | `public/css/*.css` |
 | العنوان الكبير، الزجاج، طفو الشريط | `public/ios.js` |
 | الإشعارات ونافذة التأكيد (`sanadNotify`، `sanadConfirm`) | `public/ios-notify.js` |
 | الشاشة الرئيسية | `public/home.js` |

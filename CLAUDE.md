@@ -85,7 +85,7 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية وس�
 | `public/markup-overlays.js` و `public/markup-modals.js` | هيكل HTML للكبسولة القديمة والبث ولوحة الأوامر، ولنوافذ الأدوات؛ يُدرَج في موضع وسمه نفسه (المعرّفات كما هي) |
 | `public/globals.d.ts` + `tsconfig.ui.json` | فحص TypeScript للواجهة دون بناء: أنواع الأسماء المشتركة على `window` |
 | وحدات النوافذ (سكربتات عادية تُحمَّل بعد السكربت المضمّن بالترتيب) | `models-ui.js`، `audio-fx.js`، `attachments.js`، `memory-ui.js`، `terminal-ui.js`، `tasks-ui.js`، `workflows-ui.js`، `vision-ui.js`، `visual-agent.js`، `live-stream.js`، `island-legacy.js`، `sys-stats.js`، `brain-status.js`، `network-ui.js`، `desktop-ui.js`، `preview-ui.js`، ثم `app-boot.js` أخيراً |
-| `public/styles.css` | المتغيرات (`--surface-*`، `--text-*`، `--brand`، `--glass-*`، `--sheet-bg`، `--cell-bg`) وأقسام مرتبة بالمراحل؛ الأقسام الأحدث في آخر الملف |
+| `public/css/*.css` | التنسيق في 28 ملفاً مرقّماً بترتيب تحميلها في `index.html` (الترتيب = ترتيب التتالي): `01-tokens-palette.css` (المتغيرات ولوحة الألوان) … `28-misc.css`. الأقسام الأحدث في الملفات الأعلى رقماً |
 | `public/ios.js` | الشريط العلوي والعنوان الكبير الذي يُطوى عند التمرير، وطفو الشريط وصندوق الإدخال فوق المحادثة |
 | `public/ios-notify.js` | `sanadNotify()` (إشعارات Banners) و `sanadConfirm()` (نافذة تأكيد iOS) |
 | `public/home.js` | الشاشة الرئيسية: ودجت الساعة، حلقات حالة الجهاز، أيقونات التطبيقات، اقتراحات سند |
@@ -106,6 +106,7 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية وس�
 - النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
 
 **قواعد الواجهة:**
+- **تعديلات التنسيق تُقاس:** `node scripts/css-audit/audit.mjs --candidate نسخة.css` يقارن الأنماط المحسوبة لكل عنصر في 38 حالة من الواجهة. لا `!important` جديد إلا بسبب مثبت، ولا ألوان حرفية: أضف اللون إلى لوحة `01-tokens-palette.css`.
 - **فحص الأنواع للواجهة إلزامي:** `npm.cmd run typecheck` (يشمل `tsconfig.ui.json`) يجب أن يعطي 0 أخطاء. أي `window.X` جديد يُعرَّف في `public/globals.d.ts`، وعناصر `getElementById` تُكتب بنوعها (`/** @type {HTMLInputElement} */ (…)`).
 - **أداة نموذج جديدة** تُضاف في `TOOLS` داخل `public/model-tools.js` بحقولها، وتُذكر بالصيغة نفسها في تعليمات `src/config.ts` (اختبار يتحقق أن كل أداة في التعليمات معرّفة).
 - **وحدات النوافذ سكربتات عادية لا `module`:** تتشارك الأسماء العامة مع السكربت المضمّن. ترتيب الوسوم بعد `</script>` هو ترتيب التنفيذ: كود يعمل عند التحميل لا يستدعي دالة من ملف يأتي بعده. `app-boot.js` يبقى الأخير.

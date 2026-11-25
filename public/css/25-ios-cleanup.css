@@ -1,0 +1,314 @@
+/* @file 25-ios-cleanup.css */
+/* =====================================================================
+   iOS — المهمة 9: تمشيط شامل لبقايا التصميم القديم
+   ===================================================================== */
+.emoji-removed { display: none; }
+
+/* ---------- قائمة الموديلات: قائمة منبثقة iOS ---------- */
+.model-panel {
+  border: 0;
+  border-radius: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  box-shadow: var(--glass-highlight), 0 0 0 var(--hairline) var(--glass-border), 0 18px 50px rgba(0, 0, 0, 0.45);
+  padding: 8px;
+}
+:root[data-theme="light"] .model-panel { background: rgba(250, 250, 252, 0.88); }
+.model-search {
+  border: 0;
+  border-radius: 10px;
+  background: var(--field-bg);
+  box-shadow: none;
+  color: var(--text-1);
+  font-size: var(--fs-callout);
+}
+.model-list { gap: 0; }
+.model-item {
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  position: relative;
+}
+.model-item + .model-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 12px;
+  height: var(--hairline);
+  background: var(--cell-sep);
+}
+.model-item:hover,
+.model-item.active { background: var(--field-bg) !important; box-shadow: none !important; }
+.model-item.active::before, .model-item.active + .model-item::before,
+.model-item:hover::before, .model-item:hover + .model-item::before { opacity: 0; }
+.model-item.selected { box-shadow: none; }
+.model-item-name { color: var(--text-1); font-weight: 600; }
+.model-item-meta { color: var(--text-2); }
+.model-item-check { color: var(--brand); }
+.model-tag {
+  border: 0;
+  border-radius: 999px;
+  background: var(--field-bg);
+  color: var(--text-2);
+  box-shadow: none;
+}
+.model-foot { color: var(--text-3); }
+.model-foot a { color: var(--brand); }
+.model-foot div { color: var(--success); }
+
+/* ---------- نبض النظام ---------- */
+.ios-sheet .sys-metric-head { color: var(--text-2); font-size: var(--fs-footnote); font-weight: 600; }
+.ios-sheet .sys-metric-val {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-1);
+  text-shadow: none;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+.ios-sheet .sys-metric-sub { color: var(--text-2); }
+.ios-sheet .sys-bar-track {
+  height: 6px !important;
+  border-radius: 3px;
+  background: var(--field-bg);
+  border: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+.ios-sheet .sys-bar-fill { border-radius: 3px; background: var(--success); box-shadow: none; }
+.ios-sheet .sys-bar-fill.warning { background: var(--warning); }
+.ios-sheet .sys-bar-fill.danger { background: var(--danger-1); }
+/* شارة درجة الصحة والشارات الملوّنة المضمّنة */
+#sysDeviceMeta span[style] { border-radius: 999px !important; border: 0 !important; }
+#sysDrivesContainer span[style*="border-radius: 4px"] { border-radius: 999px !important; padding: 2px 9px !important; }
+[style*="#3fb950"] { color: var(--success) !important; }
+[style*="#d29922"] { color: var(--warning); }
+[style*="#f85149"] { color: var(--danger-1); }
+
+/* أكبر الملفات: صفوف قائمة */
+#sysLargeFilesList { gap: 0; border-radius: 12px; overflow: hidden; }
+#sysLargeFilesList > div[style] {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  border-top: var(--hairline) solid var(--cell-sep);
+  padding: 10px 4px;
+}
+#sysLargeFilesList > div[style]:first-child { border-top: 0; }
+#sysLargeFilesList span[style*="border-radius: 4px"] { border-radius: 999px; }
+#sysLargeFilesList button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--tint-fill);
+  color: var(--brand);
+  padding: 4px 12px;
+  font-weight: 600;
+}
+
+/* ---------- الشبكة ---------- */
+.ios-sheet .net-ping-value {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--text-1);
+  text-shadow: none;
+}
+.ios-sheet .net-quality { border-radius: 999px; border: 0; }
+.net-q-excellent { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.net-q-good { background: var(--tint-fill); color: var(--brand); }
+.net-q-medium { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+.net-q-poor, .net-q-down { background: color-mix(in srgb, var(--danger-1) 16%, transparent); color: var(--danger-1); }
+.ios-sheet .net-kv dt { color: var(--text-2); }
+.ios-sheet .net-kv dd { color: var(--text-1); }
+.ios-sheet .net-table-wrap { border: 0; border-radius: 12px; background: transparent; }
+.ios-sheet .net-table { border-collapse: collapse; }
+.ios-sheet .net-table th {
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 500;
+  font-size: var(--fs-footnote);
+  border-bottom: var(--hairline) solid var(--cell-sep);
+}
+.ios-sheet .net-table td { border-bottom: var(--hairline) solid var(--cell-sep); color: var(--text-1) !important; }
+.ios-sheet .net-table tr:last-child td { border-bottom: 0; }
+.ios-sheet .net-table .mono,
+.ios-sheet .net-table .mono strong { color: var(--text-1) !important; }
+.ios-sheet .net-table tr.net-dev td:first-child { box-shadow: inset -3px 0 0 var(--brand); }
+.ios-sheet .net-label { color: var(--text-3); }
+.ios-sheet .net-kill-btn {
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger-1) 16%, transparent);
+  color: var(--danger-1);
+  font-weight: 600;
+  padding: 4px 12px;
+}
+.ios-sheet .net-lock { color: var(--text-3); }
+.ios-sheet .net-input#netPingHost,
+.ios-sheet #netFreePortInput { font-family: var(--font-sans); direction: ltr; text-align: start; }
+
+/* ---------- المهام والمسارات: خلايا مجمّعة ---------- */
+.ios-sheet .task-card,
+.ios-sheet #workflowsList > .memory-card {
+  margin: 0 !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 14px 16px !important;
+}
+.ios-sheet .task-card-title { color: var(--text-1); font-size: var(--fs-callout); font-weight: 600; }
+.ios-sheet .task-card-meta { color: var(--text-2); font-size: var(--fs-footnote); gap: 4px 14px; }
+.ios-sheet .task-card-meta b { color: var(--text-1); font-weight: 500; }
+.ios-sheet .task-status-badge {
+  border: 0;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ios-sheet .task-status-badge.active { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.ios-sheet .task-status-badge.paused { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+.ios-sheet .task-log-output {
+  border: 0;
+  border-radius: 10px;
+  background: var(--field-bg);
+  color: var(--text-2);
+}
+.ios-sheet .task-actions-row { gap: 8px; }
+.ios-sheet .task-btn {
+  border: 0 !important;
+  border-radius: 999px;
+  background: var(--tint-fill);
+  color: var(--brand) !important;
+  font-weight: 600;
+  padding: 6px 14px;
+  box-shadow: none;
+}
+.ios-sheet .task-btn.task-delete-btn { background: color-mix(in srgb, var(--danger-1) 16%, transparent); color: var(--danger-1) !important; }
+.ios-sheet .memory-del-btn { border-radius: 999px; padding: 4px 12px; }
+.ios-sheet #workflowsList span[style*="var(--accent)"],
+.ios-sheet #workflowsList [style*="0, 242, 254"] { color: var(--brand); background: var(--tint-fill) !important; border-color: transparent; }
+
+/* ---------- المعاينة الحية ---------- */
+#previewProjectName { font-family: var(--font-sans); color: var(--text-2); font-weight: 500; }
+
+/* ---------- الكبسولة (وضع الكبسولة) بشكل Dynamic Island موسّعة ---------- */
+.cyber-island {
+  background: var(--color-black);
+  border: 0;
+  border-radius: 32px;
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 16px 48px rgba(0, 0, 0, 0.5);
+  color: var(--color-white);
+}
+.cyber-island.floating-collapsed { border-radius: 999px; }
+.cyber-island .island-brand { color: var(--color-white); text-shadow: none; }
+.cyber-island .island-status-text { color: rgba(235, 235, 245, 0.7); }
+.cyber-island .island-icon-btn {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(118, 118, 128, 0.28);
+  color: var(--color-white);
+  box-shadow: none;
+}
+.cyber-island .island-latest-msg { color: rgba(255, 255, 255, 0.9); background: transparent; border: 0; }
+.cyber-island .island-pill-btn {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(118, 118, 128, 0.28);
+  color: var(--color-white);
+  box-shadow: none;
+  font-weight: 600;
+}
+.cyber-island .island-pill-btn.primary { background: var(--brand); color: var(--on-brand); }
+.cyber-island .wave-bar { background: var(--color-ios-green); box-shadow: none; }
+
+/* ---------- نافذة البث المباشر ---------- */
+.live-stream-hud {
+  border: 0;
+  border-radius: 24px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: var(--glass-highlight), 0 0 0 var(--hairline) var(--glass-border), 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.live-stream-hud .live-badge { color: var(--danger-1); }
+.live-stream-hud .live-hud-btn {
+  border: 0;
+  border-radius: 14px;
+  background: var(--field-bg);
+  color: var(--text-1);
+  box-shadow: none;
+}
+.live-stream-hud .live-hud-btn-primary,
+.live-stream-hud #liveAgentActBtn { background: var(--brand); color: var(--on-brand); border: 0; }
+#liveFpsBadge { color: var(--text-2); font-family: var(--font-sans); }
+
+/* ---------- حالة الاتصال: نقطة iOS بلا توهج ---------- */
+[data-brain="cloud"] { background: var(--success); box-shadow: none; }
+[data-brain="local"] { background: var(--warning); box-shadow: none; }
+[data-brain="none"] { background: var(--danger-1); box-shadow: none; }
+
+/* ---------- بطاقات الخطأ، الملاحظات، المرفقات، الإفلات ---------- */
+.error-card {
+  border: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger-1) 12%, transparent);
+  box-shadow: none;
+}
+.error-card strong { color: var(--danger-1); }
+.error-card .hint { color: var(--text-2); }
+.brain-notice {
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  color: var(--warning);
+}
+.attachment-pill {
+  border: 0;
+  border-radius: 999px;
+  background: var(--field-bg);
+  color: var(--text-1);
+  box-shadow: none;
+}
+.drop-overlay {
+  border: 2px dashed var(--brand);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface-0) 70%, transparent) !important;
+  backdrop-filter: blur(12px);
+  color: var(--text-1);
+}
+.msg-attachment-badge { border: 0; border-radius: 999px; }
+.note { color: var(--text-3); }
+
+/* شارات ملوّنة مضمّنة → ألوان iOS */
+[style*="rgba(35, 134, 54"], [style*="rgba(63,185,80"], [style*="rgba(63, 185, 80"] {
+  background: color-mix(in srgb, var(--success) 18%, transparent) !important;
+  color: var(--success) !important;
+  border-radius: 999px !important;
+  border-color: transparent !important;
+}
+[style*="rgba(210,153,34"], [style*="rgba(210, 153, 34"] {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning);
+  border-radius: 999px;
+}
+[style*="rgba(248,81,73"], [style*="rgba(248, 81, 73"] {
+  background: color-mix(in srgb, var(--danger-1) 16%, transparent);
+  color: var(--danger-1);
+  border-radius: 999px;
+}
+/* صفوف منافذ التطوير: بلا خلفية سماوية قديمة، يكفي خط العلامة الجانبي */
+.ios-sheet .net-table tr.net-dev td { background: transparent; }
+
+/* الطرفية: الواجهة بخط النظام، والمحتوى وحده بخط ثابت العرض */
+#terminalModal { font-family: var(--font-sans) !important; }
+#terminalModal .terminal-body, #terminalModal .terminal-logs, #terminalModal .terminal-input { font-family: var(--font-mono); }
+
+/* نافذة التأكيد: تعرض الأمر كاملاً بأسطره */
+.ios-alert-message { white-space: pre-line; max-height: 40vh; overflow-y: auto; text-align: start; unicode-bidi: plaintext; }
+.ios-alert { width: min(340px, calc(100vw - 32px)); }
+

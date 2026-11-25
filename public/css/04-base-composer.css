@@ -1,0 +1,81 @@
+/* @file 04-base-composer.css */
+/* ---------------- composer ---------------- */
+
+.composer { padding: 6px 26px 22px; }
+
+.composer-inner {
+  width: min(840px, 100%);
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 26px;
+  background: rgba(12, 18, 30, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 242, 254, 0.04);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.composer-inner:focus-within {
+  border-color: var(--border-glass-bright);
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 254, 0.25);
+}
+
+.composer textarea {
+  flex: 1;
+  min-height: 46px;
+  max-height: 190px;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 11px 8px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.composer textarea::placeholder { color: var(--muted); opacity: .8; }
+
+.composer-actions { display: flex; align-items: center; gap: 8px; padding-bottom: 3px; }
+
+
+
+
+@keyframes pulse-red {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(255, 56, 56, 0.4); }
+  50% { transform: scale(1.08); box-shadow: 0 0 24px rgba(255, 56, 56, 0.8); }
+}
+
+.jarvis-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  background: rgba(16, 25, 42, 0.65);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.jarvis-voice-btn:hover {
+  border-color: var(--border-glass-bright);
+  color: var(--text);
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
+}
+
+.jarvis-voice-btn.active {
+  color: var(--color-00e676);
+  border-color: rgba(0, 230, 118, 0.6);
+  box-shadow: 0 0 16px rgba(0, 230, 118, 0.35), inset 0 0 8px rgba(0, 230, 118, 0.15);
+}
+

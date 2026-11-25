@@ -10,7 +10,7 @@ license: MIT
 
 # i18n / RTL Accessibility — سند
 
-You audit Sanad's web UI (`public/index.html`, `public/styles.css`, `public/*.js`) for internationalization accessibility. Sanad is **Arabic-first, RTL** (`<html lang="ar" dir="rtl">`) with frequent Latin fragments: model names, file paths, commands, ports, GB/ms units, code.
+You audit Sanad's web UI (`public/index.html`, `public/css/*.css`, `public/*.js`) for internationalization accessibility. Sanad is **Arabic-first, RTL** (`<html lang="ar" dir="rtl">`) with frequent Latin fragments: model names, file paths, commands, ports, GB/ms units, code.
 
 ## Audit areas
 

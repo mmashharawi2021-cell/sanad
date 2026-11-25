@@ -64,7 +64,10 @@ const PAGE_LIB = `(() => {
     walk(sheet.cssRules, []);
     return out;
   }
-  const link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => /styles\\.css/.test(l.href));
+  // ملفات التنسيق في public/css/ بترتيب تحميلها = ملف واحد منطقياً
+  const links = [...document.querySelectorAll('link[rel="stylesheet"]')].filter((l) => l.href.includes("/css/"));
+  const allRules = () => links.flatMap((l) => flatRules(l.sheet));
+  const setDisabled = (v) => links.forEach((l) => { l.sheet.disabled = v; });
   const els = () => [...document.querySelectorAll("body *")].filter((e) => !(e.closest("svg") && e.tagName.toLowerCase() !== "svg"));
   function describe(el) {
     let s = el.tagName.toLowerCase();
@@ -85,13 +88,13 @@ const PAGE_LIB = `(() => {
       st.textContent = "*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}";
       document.head.append(st);
     },
-    flatCount() { return flatRules(link.sheet).map((x) => x.rule.selectorText); },
+    flatCount() { return allRules().map((x) => x.rule.selectorText); },
     async compare(candidateCss, important) {
       this.freeze();
       await frames();
       const list = els();
       const a = snap();
-      link.sheet.disabled = true;
+      setDisabled(true);
       const cand = document.createElement("style");
       cand.id = "audit-candidate";
       cand.textContent = candidateCss;
@@ -99,12 +102,12 @@ const PAGE_LIB = `(() => {
       await frames();
       const b = snap();
       cand.remove();
-      link.sheet.disabled = false;
+      setDisabled(false);
       await frames();
       // لقطة ثانية للأصل: ما تغيّر بين لقطتَي الأصل نفسه سببه بيانات حية لا التنسيق ← يُستبعد
       const a2 = snap();
       if (a2.length !== a.length || b.length !== a.length || els().length !== list.length) return { unstable: true };
-      const rules = flatRules(link.sheet);
+      const rules = allRules();
       const diffs = [];
       const needed = new Set();
       let skipped = 0;
@@ -353,7 +356,8 @@ if (process.argv[1] && process.argv[1].endsWith("audit.mjs")) {
   const { parseCss, importantDecls } = await import("./parse-css.mjs");
   const i = process.argv.indexOf("--candidate");
   if (i < 0) { console.log("الاستخدام: node scripts/css-audit/audit.mjs --candidate path.css"); process.exit(2); }
-  const current = readFileSync(join(ROOT, "public", "styles.css"), "utf8");
+  const { readBundle } = await import("./css-bundle.mjs");
+  const current = readBundle();
   const rules = parseCss(current);
   const res = await runAudit(readFileSync(process.argv[i + 1], "utf8"), importantDecls(rules), { expectedRules: rules.length });
   const total = res.states.reduce((a, x) => a + x.diffs.length, 0);

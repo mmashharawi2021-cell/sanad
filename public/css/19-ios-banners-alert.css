@@ -1,0 +1,150 @@
+/* @file 19-ios-banners-alert.css */
+/* =====================================================================
+   iOS — المهمة 3: إشعارات النظام (Banners) ونافذة التأكيد (Alert)
+   ===================================================================== */
+.ios-banners {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 20000;
+  pointer-events: none;
+}
+.ios-banner {
+  --i: 0;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(400px, calc(100vw - 16px));
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 24px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  box-shadow: var(--glass-highlight), 0 0 0 var(--hairline) var(--glass-border), 0 10px 40px rgba(0, 0, 0, 0.35);
+  color: var(--text-1);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  z-index: calc(100 - var(--i));
+  opacity: 0;
+  transform: translate(-50%, -120%) scale(0.96);
+  transition: transform 520ms var(--spring), opacity 260ms var(--ease);
+}
+:root[data-theme="light"] .ios-banner { background: rgba(250, 250, 252, 0.78); box-shadow: var(--glass-highlight), 0 0 0 var(--hairline) rgba(0, 0, 0, 0.06), 0 10px 36px rgba(0, 0, 0, 0.14); }
+.ios-banner.in { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.ios-banner.in.stacked {
+  transform: translate(-50%, calc(var(--i) * 9px)) scale(calc(1 - var(--i) * 0.05));
+  opacity: 0.85;
+}
+.ios-banner.stacked .ios-banner-content { opacity: 0; }
+.ios-banner.hidden-in-stack { opacity: 0; pointer-events: none; }
+.ios-banner.leaving { opacity: 0; transform: translate(-50%, -120%) scale(0.96); transition-duration: 360ms; }
+
+/* أيقونة التطبيق: مربع iOS مستدير بلون نوع الإشعار */
+.ios-banner-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--color-white);
+  background: linear-gradient(160deg, var(--color-ios-teal), var(--color-0a84b8));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.ios-banner-icon svg { width: 20px; height: 20px; }
+.ios-banner--success .ios-banner-icon { background: linear-gradient(160deg, var(--color-ios-green-legacy), var(--color-28a745)); }
+.ios-banner--error .ios-banner-icon { background: linear-gradient(160deg, var(--color-ff6b62), var(--color-e0352b)); }
+.ios-banner--warning .ios-banner-icon { background: linear-gradient(160deg, var(--color-ffb340), var(--color-ff8a00)); }
+
+.ios-banner-content { flex: 1; min-width: 0; transition: opacity 200ms var(--ease); }
+.ios-banner-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-footnote);
+  color: var(--text-2);
+  line-height: 1.3;
+}
+.ios-banner-app { font-weight: 600; letter-spacing: 0.2px; }
+.ios-banner-title { margin-top: 1px; font-size: var(--fs-subhead); font-weight: 600; line-height: 1.35; }
+.ios-banner-body {
+  font-size: var(--fs-subhead);
+  line-height: 1.4;
+  color: var(--text-1);
+  opacity: 0.92;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-line;
+}
+
+/* ---------- iOS Alert ---------- */
+.ios-alert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20001;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0);
+  transition: background 220ms var(--ease);
+}
+.ios-alert-backdrop.in { background: rgba(0, 0, 0, 0.42); }
+:root[data-theme="light"] .ios-alert-backdrop.in { background: rgba(0, 0, 0, 0.22); }
+.ios-alert {
+  width: 290px;
+  border-radius: 22px;
+  overflow: hidden;
+  text-align: center;
+  background: rgba(44, 44, 46, 0.78);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  box-shadow: var(--glass-highlight), 0 0 0 var(--hairline) var(--glass-border), 0 20px 60px rgba(0, 0, 0, 0.45);
+  color: var(--text-1);
+  opacity: 0;
+  transform: scale(1.12);
+  transition: transform 380ms var(--spring), opacity 200ms var(--ease);
+}
+:root[data-theme="light"] .ios-alert { background: rgba(242, 242, 247, 0.86); }
+.ios-alert-backdrop.in .ios-alert { opacity: 1; transform: scale(1); }
+.ios-alert-backdrop.leaving .ios-alert { opacity: 0; transform: scale(0.96); }
+.ios-alert-text { padding: 20px 18px 16px; }
+.ios-alert-title { font-size: var(--fs-headline); font-weight: 600; line-height: 1.35; }
+.ios-alert-message { margin-top: 4px; font-size: var(--fs-footnote); line-height: 1.45; color: var(--text-1); opacity: 0.85; }
+.ios-alert-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: var(--hairline) solid var(--line-strong);
+}
+.ios-alert-btn {
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  font-size: var(--fs-headline);
+  color: var(--brand);
+  cursor: pointer;
+  transition: background 120ms var(--ease);
+}
+.ios-alert-btn + .ios-alert-btn { border-inline-start: var(--hairline) solid var(--line-strong); }
+.ios-alert-btn:hover,
+.ios-alert-btn:focus-visible { background: var(--fill); box-shadow: none; outline: none; }
+.ios-alert-btn:active { background: var(--fill-strong); }
+.ios-alert-btn--cancel { font-weight: 600; }
+.ios-alert-btn--destructive { color: var(--danger-1); }
+
+/* الصناديق المضمّنة القديمة لم تعد تُستخدم */
+#sysCleanAlert, #desktopStatusAlert, #netAlert { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ios-banner, .ios-alert { transition-duration: 1ms; }
+}
+

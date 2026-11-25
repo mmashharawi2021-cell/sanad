@@ -1,0 +1,232 @@
+/* @file 15-layout-bubbles-light.css */
+/* =====================================================================
+   المرحلة 5 — الهيكل العام، فقاعات المحادثة، والوضع الفاتح
+   ===================================================================== */
+
+/* المتغيرات القديمة تتبع الجديدة، فتعمل الأنماط القديمة في الوضعين */
+:root,
+:root[data-theme="light"] {
+  --bg: var(--surface-0);
+  --text: var(--text-1);
+  --muted: var(--text-2);
+  --accent: var(--brand);
+  --accent-soft: var(--brand-soft);
+  --danger: var(--danger-1);
+  --ok: var(--success);
+  --border-glass: var(--line);
+  --border-glass-bright: var(--brand);
+  --raised-sm: var(--elev-1), 0 0 0 1px var(--line);
+  --inset-sm: inset 0 0 0 1px var(--line);
+}
+
+/* ---------- Shell ---------- */
+body { background: var(--surface-0); }
+:root:not([data-theme="light"]) body {
+  background:
+    radial-gradient(1200px 500px at 50% -10%, rgba(34, 211, 238, 0.06), transparent 70%),
+    var(--surface-0);
+}
+
+.sidebar {
+  background: var(--surface-1);
+  border-inline-end: 1px solid var(--line);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.brand { color: var(--text-1); text-shadow: none; letter-spacing: 1px; }
+
+.chat-head {
+  background: color-mix(in srgb, var(--surface-0) 85%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.head-titles h1 {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text-1);
+  font-family: var(--font-display);
+}
+.head-titles p { color: var(--text-3); }
+
+.btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--text-1);
+}
+.btn:hover:not(:disabled) { border-color: var(--brand); box-shadow: none; color: var(--text-1); }
+.btn-primary {
+  background: var(--brand);
+  border: 1px solid var(--brand);
+  color: var(--on-brand);
+  box-shadow: none;
+  font-weight: var(--fw-bold);
+}
+.btn-primary:hover,
+.btn:hover:not(:disabled).btn-primary {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+  color: var(--on-brand);
+  box-shadow: none;
+  transform: none;
+}
+.side-foot .btn { color: var(--text-2); }
+
+.icon-btn,
+.jarvis-voice-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--text-2);
+}
+.icon-btn:hover,
+.jarvis-voice-btn:hover { border-color: var(--brand); color: var(--text-1); box-shadow: none; }
+.jarvis-voice-btn.active {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--text-1);
+  box-shadow: none;
+}
+
+.model-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+}
+.model-btn:hover { border-color: var(--brand); }
+
+/* Conversation list */
+.conv { color: var(--text-2); }
+.conv:hover { background: var(--surface-2); border-color: transparent; color: var(--text-1); }
+.conv.active {
+  background: var(--brand-soft);
+  border-color: transparent;
+  box-shadow: inset 3px 0 0 var(--brand);
+  color: var(--text-1);
+}
+:root[dir="rtl"] .conv.active { box-shadow: inset -3px 0 0 var(--brand); }
+.stats { background: var(--surface-2); box-shadow: none; border: 1px solid var(--line); color: var(--text-3); }
+.stats b { color: var(--text-1); }
+
+/* ---------- Messages ---------- */
+.thread-inner { gap: var(--sp-5); }
+.bubble { font-size: var(--fs-base); line-height: var(--lh-base); }
+
+.msg.user .bubble {
+  background: var(--brand-soft);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+  color: var(--text-1);
+}
+.msg.assistant .bubble {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  box-shadow: var(--elev-1);
+  backdrop-filter: none;
+  color: var(--text-1);
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--brand);
+  border: 0;
+  box-shadow: none;
+  color: var(--on-brand);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: var(--fw-bold);
+}
+
+.bubble-body h3, .bubble-body h4, .bubble-body h5 {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  color: var(--text-1);
+}
+.bubble-body a { color: var(--brand); text-underline-offset: 3px; }
+.bubble-body code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text-1);
+}
+
+.code,
+.bubble-body pre {
+  background: var(--color-070b12);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+.code-head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  padding-top: 10px;
+}
+.code-head button { color: var(--text-2); border: 1px solid var(--line); }
+.code-head button:hover { color: var(--text-1); border-color: var(--brand); box-shadow: none; }
+.code pre { padding: 12px 14px; }
+.code pre code { color: var(--color-e6edf3); font-family: var(--font-mono); }
+:root[data-theme="light"] .code-head { background: var(--color-111826); color: var(--color-8b98ab); border-color: var(--color-1f2a3a); }
+
+/* Tables & quotes (renderer added in this step) */
+.md-table-wrap { overflow-x: auto; margin: 12px 0; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.md-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.md-table th, .md-table td { padding: 8px 12px; text-align: start; border-bottom: 1px solid var(--line); }
+.md-table th { background: var(--surface-2); color: var(--text-1); font-weight: var(--fw-bold); }
+.md-table tr:last-child td { border-bottom: 0; }
+.bubble-body blockquote {
+  margin: 12px 0;
+  padding: 8px 14px;
+  border-inline-start: 3px solid var(--brand);
+  background: var(--brand-soft);
+  border-radius: 0 8px 8px 0;
+  color: var(--text-2);
+}
+:root[dir="rtl"] .bubble-body blockquote { border-radius: 8px 0 0 8px; }
+
+.msg-meta { color: var(--text-3); }
+.msg-meta span { box-shadow: none; border: 1px solid var(--line); background: var(--surface-2); }
+.tool { color: var(--text-3); }
+.tool:hover { color: var(--text-1); background: var(--surface-2); box-shadow: none; }
+
+/* ---------- Composer ---------- */
+.composer-inner {
+  background: var(--surface-1);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  box-shadow: var(--elev-2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.composer-inner:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--elev-2), 0 0 0 3px var(--brand-soft);
+}
+.composer textarea { color: var(--text-1); }
+.composer textarea::placeholder { color: var(--text-3); }
+.attach-btn:hover { color: var(--text-1); background: var(--surface-2); box-shadow: none; }
+.send {
+  background: var(--brand);
+  border: 0;
+  color: var(--on-brand);
+  box-shadow: none;
+}
+.send:hover:not(:disabled) { background: var(--brand-strong); box-shadow: none; transform: none; }
+
+/* ---------- Light theme: surfaces that were hard-coded dark ---------- */
+:root[data-theme="light"] .hero h2 { color: var(--text-1); }
+:root[data-theme="light"] .palette-backdrop { background: rgba(20, 30, 50, 0.3); }
+:root[data-theme="light"] .arc-inner-core { box-shadow: 0 0 6px var(--brand); }
+
+.bubble-body pre code, .code pre code { border: 0; background: transparent; padding: 0; font-size: 12.8px; }
+
+:root[data-theme="light"] .code-head button { color: var(--color-c3ccd8); border-color: var(--color-2a3547); }
+:root[data-theme="light"] .code-head button:hover { color: var(--color-white); border-color: var(--brand); }
+

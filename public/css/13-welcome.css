@@ -1,0 +1,97 @@
+/* @file 13-welcome.css */
+/* =====================================================================
+   المرحلة 3 — شاشة الترحيب وبطاقات الاقتراحات
+   ===================================================================== */
+.thread:has(> .thread-inner > .hero) { display: flex; flex-direction: column; }
+.thread-inner:has(> .hero) { flex: 1 0 auto; justify-content: center; }
+
+.hero {
+  padding: var(--sp-6) var(--sp-2);
+  gap: var(--sp-3);
+}
+.hero-mark { margin-bottom: var(--sp-2); }
+.hero-mark .arc-reactor-hud { width: 56px; height: 56px; margin: 0; }
+.hero-mark .arc-inner-core { width: 20px; height: 20px; }
+
+.hero h2 {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3.4vw, 36px);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text-1);
+}
+.hero p {
+  color: var(--text-2);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  max-width: 46ch;
+}
+
+.hero-cards {
+  width: min(720px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+.hero-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  color: var(--text-1);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.hero-card:hover {
+  border-color: var(--brand);
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+.hero-card:active { transform: translateY(0); }
+.hero-card-ico {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  font-size: 18px;
+}
+.hero-card-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hero-card-text strong { font-size: var(--fs-base); font-weight: var(--fw-medium); }
+.hero-card-text span { font-size: var(--fs-sm); color: var(--text-3); line-height: 1.5; }
+
+@media (max-width: 900px) {
+  .hero-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .hero { padding: var(--sp-3) 0; gap: var(--sp-2); }
+  .hero-mark { display: none; }
+  .hero p { font-size: var(--fs-sm); }
+  .hero-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); margin-top: var(--sp-3); }
+  .hero-card { flex-direction: column; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-3); }
+  .hero-card-ico { width: 32px; height: 32px; font-size: 16px; }
+  .hero-card-text strong { font-size: var(--fs-sm); }
+  .hero-card-text span { display: none; }
+
+  /* صندوق الإدخال: مساحة أكبر للكتابة */
+  .composer-inner { gap: 6px; padding: 8px 10px; }
+  .composer-inner #attachBtn,
+  .composer-inner #screenVisionBtn,
+  .composer-actions button { width: 44px; height: 44px; }
+  .composer-actions { gap: 6px; }
+  .composer-inner textarea { padding-inline: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-card, .hero-card:hover { transition: none; transform: none; }
+}
+
+

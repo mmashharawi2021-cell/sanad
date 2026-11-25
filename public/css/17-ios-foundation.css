@@ -1,0 +1,231 @@
+/* @file 17-ios-foundation.css */
+/* =====================================================================
+   iOS — المهمة 1: الأساس (ألوان النظام، الخطوط، الزجاج السائل، العنوان الكبير، الحركة)
+   الأسلوب فقط: لا شعار Apple ولا خطوط SF ولا SF Symbols.
+   ===================================================================== */
+:root {
+  /* خط النظام على أجهزة Apple، و IBM Plex Sans Arabic على ويندوز */
+  --font-sans: -apple-system, BlinkMacSystemFont, "IBM Plex Sans Arabic", "Segoe UI", "Noto Kufi Arabic", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+
+  /* iOS dark — system & grouped backgrounds */
+  --surface-0: #000000;
+  --surface-1: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --line: rgba(84, 84, 88, 0.55);
+  --line-strong: rgba(84, 84, 88, 0.9);
+  --text-1: #ffffff;
+  --text-2: rgba(235, 235, 245, 0.62);
+  --text-3: rgba(235, 235, 245, 0.38);
+  --fill: rgba(118, 118, 128, 0.24);
+  --fill-strong: rgba(118, 118, 128, 0.36);
+
+  /* لون التمييز: Cyan من ألوان نظام iOS (هوية سند) */
+  --brand: #64d2ff;
+  --brand-strong: #40c4f7;
+  --brand-soft: rgba(100, 210, 255, 0.16);
+  --on-brand: #001e29;
+  --success: #30d158;
+  --warning: #ff9f0a;
+  --danger-1: #ff453a;
+
+  /* iOS type scale */
+  --fs-large-title: 34px;
+  --fs-title2: 22px;
+  --fs-headline: 17px;
+  --fs-body: 17px;
+  --fs-callout: 16px;
+  --fs-subhead: 15px;
+  --fs-footnote: 13px;
+  --fs-caption: 12px;
+  --fs-base: 16px;
+  --fs-sm: 14px;
+
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 26px;
+  --hairline: 0.5px;
+
+  /* Liquid Glass */
+  --glass-bg: rgba(28, 28, 30, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --glass-blur: blur(28px) saturate(180%);
+
+  /* حركة iOS */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur: 220ms;
+}
+
+:root[data-theme="light"] {
+  --surface-0: #f2f2f7;
+  --surface-1: #ffffff;
+  --surface-2: #e9e9ee;
+  --surface-3: #ffffff;
+  --line: rgba(60, 60, 67, 0.2);
+  --line-strong: rgba(60, 60, 67, 0.32);
+  --text-1: #000000;
+  --text-2: rgba(60, 60, 67, 0.7);
+  --text-3: rgba(60, 60, 67, 0.42);
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-strong: rgba(120, 120, 128, 0.2);
+
+  --brand: #32ade6;
+  --brand-strong: #1e9bd4;
+  --brand-soft: rgba(50, 173, 230, 0.12);
+  --on-brand: #ffffff;
+  --success: #34c759;
+  --warning: #ff9500;
+  --danger-1: #ff3b30;
+
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+  --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+body,
+:root:not([data-theme="light"]) body { background: var(--surface-0); }
+body { -webkit-font-smoothing: antialiased; }
+
+/* ---------- Liquid Glass material ---------- */
+.glass,
+.chat-head,
+.composer-inner,
+.icon-btn,
+.jarvis-voice-btn,
+.model-btn {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+.icon-btn,
+.jarvis-voice-btn,
+.model-btn {
+  box-shadow: var(--glass-highlight), 0 0 0 var(--hairline) var(--glass-border), 0 2px 10px rgba(0, 0, 0, 0.12);
+  color: var(--text-1);
+}
+.icon-btn:hover,
+.jarvis-voice-btn:hover,
+.model-btn:hover { background: var(--fill-strong) !important; }
+.jarvis-voice-btn.active { background: var(--brand); color: var(--on-brand); }
+
+/* ---------- Header + Large Title ---------- */
+.chat-head {
+  flex-wrap: wrap;
+  row-gap: 4px;
+  padding: 10px 20px 8px;
+  border-bottom: var(--hairline) solid transparent;
+  box-shadow: none;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  z-index: 5;
+}
+.chat.scrolled .chat-head { border-bottom-color: var(--line); }
+.chat:not(.scrolled) .chat-head { background: transparent !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+.chat-head > .arc-reactor-hud { display: none; }
+
+.chat-head .head-titles {
+  display: block;
+  order: 10;
+  flex: 1 0 100%;
+  padding: 6px 2px 2px;
+  transition: padding var(--dur) var(--ease);
+}
+.head-titles h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-large-title);
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--text-1);
+  transition: font-size var(--dur) var(--ease);
+}
+.head-titles p,
+.chat-head .head-titles p {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-footnote);
+  color: var(--text-2);
+  transition: opacity var(--dur) var(--ease), max-height var(--dur) var(--ease);
+  max-height: 20px;
+}
+
+/* Collapsed (scrolled): small centered title inside the toolbar row */
+.chat.scrolled .chat-head .head-titles {
+  order: 0;
+  flex: 1 1 auto;
+  padding: 0;
+  text-align: center;
+  min-width: 0;
+}
+.chat.scrolled .head-titles h1 { font-size: var(--fs-headline); font-weight: 600; }
+.chat.scrolled .head-titles p { opacity: 0; max-height: 0; margin: 0; overflow: hidden; }
+
+/* Toolbar buttons keep the first row; push the trailing group to the far side */
+.chat-head .brain-badge { margin-inline-start: auto; }
+.chat.scrolled .chat-head .brain-badge { margin-inline-start: 0; }
+
+/* ---------- Composer: glass capsule ---------- */
+.composer-inner {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-highlight), 0 0 0 var(--hairline) var(--glass-border), var(--glass-shadow);
+}
+.composer-inner:focus-within {
+  box-shadow: var(--glass-highlight), 0 0 0 1px color-mix(in srgb, var(--brand) 55%, transparent), var(--glass-shadow) !important;
+}
+.composer textarea { font-size: var(--fs-callout); }
+.composer { position: relative; z-index: 4; }
+
+/* ---------- Press feedback (iOS spring) ---------- */
+button:not(:disabled) { -webkit-tap-highlight-color: transparent; }
+.btn, .icon-btn, .jarvis-voice-btn, .model-btn, .send, .attach-btn,
+.tool-item, .hero-card, .conv, .memory-add-btn, .palette-item, .net-chip {
+  transition: transform 300ms var(--spring), background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.btn:active:not(:disabled), .icon-btn:active, .jarvis-voice-btn:active, .model-btn:active,
+.send:active:not(:disabled), .attach-btn:active, .tool-item:active,
+.hero-card:active, .conv:active, .memory-add-btn:active:not(:disabled), .palette-item:active, .net-chip:active {
+  transform: scale(0.95);
+  transition-duration: 90ms;
+}
+
+/* ---------- Hairline separators everywhere ---------- */
+.sidebar { border-inline-end: var(--hairline) solid var(--line); }
+.memory-header, .terminal-header { border-bottom-width: var(--hairline); }
+
+/* ---------- Phones ---------- */
+@media (max-width: 600px) {
+  .chat-head { padding: 8px 14px 6px; }
+  .head-titles h1 { font-size: 30px; }
+  .chat.scrolled .chat-head .head-titles { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .head-titles h1, .chat-head .head-titles, .chat-head { transition: none; }
+  button:active { transform: none !important; }
+}
+
+/* بديل للمتصفحات التي لا تدعم الضبابية */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .chat-head, .composer-inner, .icon-btn, .jarvis-voice-btn, .model-btn { background: var(--surface-1) !important; }
+}
+
+/* Floating glass bars: content scrolls beneath header and composer */
+.chat.ios-overlay { position: relative; }
+.chat.ios-overlay .chat-head { position: absolute; top: 0; inset-inline: 0; }
+.chat.ios-overlay .composer {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  background: linear-gradient(to top, var(--surface-0) 30%, color-mix(in srgb, var(--surface-0) 0%, transparent));
+  padding-top: 18px;
+}
+.chat.ios-overlay .thread {
+  padding-top: calc(var(--head-h, 120px) + 8px);
+  padding-bottom: calc(var(--composer-h, 110px) + 12px);
+  scroll-padding-top: var(--head-h, 120px);
+}
+

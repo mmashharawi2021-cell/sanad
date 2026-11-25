@@ -11,7 +11,7 @@ model: inherit
 
 ## خريطة النظام
 - **الخادم (`src/`):** `server.ts` (HTTP أصلي + SSE)، أدوات Windows (`systemTools`، `diskInspector`، `processMaestro`، `networkMaestro`، `universalTerminal`، `desktopAutomation`، `screenVision`)، العقل (`openrouter`، `ollama`، `offlineBrain`، `models`، `memory`، `config`)، المهام (`taskScheduler`، `actionMemory`)، `projectBuilder`.
-- **الواجهة (`public/`):** `index.html` (منطق رئيسي مضمّن) + وحدات iOS مستقلة (`ios*.js`، `home.js`، `palette.js`) + `styles.css`. الوحدات تستدعي أزرار/دوال `index.html` عبر معرّفاتها — **المعرّفات عقد ثابت**.
+- **الواجهة (`public/`):** `index.html` (منطق رئيسي مضمّن) + وحدات iOS مستقلة (`ios*.js`، `home.js`، `palette.js`) + `css/*.css`. الوحدات تستدعي أزرار/دوال `index.html` عبر معرّفاتها — **المعرّفات عقد ثابت**.
 - **البيانات:** `data/*.json` (الذاكرة، المهام). **الإعداد:** `.env` عبر `src/config.ts`.
 
 ## مبادئ التصميم

@@ -1,0 +1,70 @@
+/* @file 26-selfdev.css */
+/* =====================================================================
+   مطوّر سند الذاتي — ورقة المراجعة، نافذة الإضافات، ومكان الإضافات في بطاقة الجهاز
+   ===================================================================== */
+.selfdev-backdrop { z-index: 1500; }
+.selfdev-sheet { width: min(760px, 94vw); max-height: 88vh; }
+.selfdev-card {
+  background: var(--cell-bg);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.selfdev-name { font-size: var(--fs-headline); font-weight: 700; color: var(--text-1); }
+.selfdev-desc { font-size: var(--fs-subhead); color: var(--text-2); line-height: 1.5; }
+.selfdev-meta { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; font-size: var(--fs-footnote); color: var(--text-3); }
+.selfdev-warn {
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  color: var(--text-1);
+  font-size: var(--fs-footnote);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.selfdev-warn strong { color: var(--warning); }
+.selfdev-code {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  direction: ltr;
+  text-align: left;
+  border-radius: 12px;
+  background: var(--color-0d0d0f);
+  color: var(--color-e6edf3);
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.selfdev-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.selfdev-actions .memory-add-btn { flex: 1 1 160px; }
+.selfdev-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.selfdev-row-controls { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+
+/* مكان الإضافات داخل بطاقة «حالة الجهاز» */
+.widget-system .ext-slot {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: var(--hairline) solid var(--cell-sep, var(--line));
+  cursor: default;
+}
+.widget-system .ext-slot:empty { display: none; }
+.ext-widget { grid-column: 1 / -1; }
+
+/* فرق التعديل */
+.selfdev-diff { padding: 8px 0; }
+.selfdev-diff > div { padding: 0 12px; white-space: pre; }
+.selfdev-diff .diff-add { background: rgba(48, 209, 88, 0.16); color: var(--color-7ee2a0); }
+.selfdev-diff .diff-del { background: rgba(255, 69, 58, 0.16); color: var(--color-ff9a93); text-decoration: line-through; text-decoration-color: rgba(255, 154, 147, 0.5); }
+.selfdev-diff .diff-ctx { color: var(--color-8b949e); }
+.selfdev-diff .diff-skip { color: var(--color-6e7681); text-align: center; }
+.selfdev-full summary { cursor: pointer; color: var(--brand); font-size: var(--fs-footnote); font-weight: 600; padding: 4px 6px; }
+.selfdev-full[open] summary { margin-bottom: 8px; }
+
+/* إطارات الإضافات المعزولة */
+.ext-frame { width: 100%; border: 0; display: block; background: transparent; }
+

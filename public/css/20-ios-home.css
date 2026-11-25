@@ -1,0 +1,206 @@
+/* @file 20-ios-home.css */
+/* =====================================================================
+   iOS — المهمة 4: الشاشة الرئيسية (Home Screen)
+   ===================================================================== */
+/* في الشاشة الرئيسية لا عنوان كبير — كالآيفون */
+.chat:has(.home) .chat-head .head-titles { display: none; }
+.thread-inner:has(> .home) { justify-content: flex-start; }
+
+.home {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 8px 4px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: homeIn 520ms var(--spring);
+}
+@keyframes homeIn {
+  from { opacity: 0; transform: scale(1.04); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Widgets ---------- */
+.home-widgets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.widget {
+  border-radius: 24px;
+  padding: 16px 18px;
+  background: var(--surface-1);
+  box-shadow: var(--elev-1);
+  color: var(--text-1);
+}
+:root:not([data-theme="light"]) .widget {
+  background: linear-gradient(160deg, var(--color-222226), var(--color-18181b));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+.widget-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-footnote);
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 10px;
+}
+.widget-head .ico { width: 15px; height: 15px; color: var(--brand); }
+
+/* Clock (lock-screen style) */
+.widget-clock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 168px;
+  background: linear-gradient(150deg, var(--color-0a84b8) 0%, var(--color-ios-teal) 100%) !important;
+  color: var(--color-white);
+}
+.wc-day { font-size: var(--fs-subhead); font-weight: 600; opacity: 0.9; }
+.wc-time {
+  font-family: var(--font-display);
+  font-size: 58px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -1px;
+  margin: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+.wc-date { font-size: var(--fs-footnote); opacity: 0.85; }
+
+/* System rings */
+.widget-system { cursor: pointer; transition: transform 300ms var(--spring); }
+.widget-system:active { transform: scale(0.97); transition-duration: 90ms; }
+.ws-rings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ws-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ws-ring { position: relative; width: 66px; height: 66px; }
+.ws-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ws-ring circle { fill: none; stroke-width: 7; }
+.ws-ring .track { stroke: var(--fill); }
+.ws-ring .bar { stroke-linecap: round; transition: stroke-dashoffset 900ms var(--ease); }
+.r-cpu .bar { stroke: var(--color-ios-pink); }
+.r-ram .bar { stroke: var(--color-ios-green); }
+.r-bat .bar { stroke: var(--brand); }
+.ws-val {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ws-label { font-size: var(--fs-caption); color: var(--text-2); }
+.ws-foot { margin-top: 10px; font-size: var(--fs-caption); color: var(--text-3); text-align: center; }
+.widget-system:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+
+/* ---------- App grid ---------- */
+.home-apps {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 18px 8px;
+  padding: 0 4px;
+}
+.home-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  cursor: pointer;
+  transition: transform 300ms var(--spring);
+}
+.home-app:active { transform: scale(0.9); transition-duration: 90ms; }
+.app-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;           /* iOS squircle تقريبي: 26% من الحجم */
+  display: grid;
+  place-items: center;
+  color: var(--color-white);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.app-icon .ico { width: 30px; height: 30px; stroke-width: 2; }
+.app-label {
+  font-size: var(--fs-caption);
+  line-height: 1.2;
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-green    { background: linear-gradient(180deg, var(--color-ios-green-legacy), var(--color-28a745)); }
+.app-blue     { background: linear-gradient(180deg, var(--color-4aa8ff), var(--color-0a6cff)); }
+.app-graphite { background: linear-gradient(180deg, var(--color-4a4a4f), var(--color-ios-gray-6-dark)); }
+.app-indigo   { background: linear-gradient(180deg, var(--color-7d7aff), var(--color-4b48d6)); }
+.app-teal     { background: linear-gradient(180deg, var(--color-5ad2e6), var(--color-1f9fb8)); }
+.app-red      { background: linear-gradient(180deg, var(--color-ff6b62), var(--color-e0352b)); }
+.app-pink     { background: linear-gradient(180deg, var(--color-ff6584), var(--color-e0244b)); }
+.app-orange   { background: linear-gradient(180deg, var(--color-ffb340), var(--color-ff8a00)); }
+.app-yellow   { background: linear-gradient(180deg, var(--color-ffd84d), var(--color-f5b800)); }
+.app-yellow .ico { color: var(--color-3d2e00); }
+.app-purple   { background: linear-gradient(180deg, var(--color-c779f0), var(--color-9b3fd0)); }
+.app-cyan     { background: linear-gradient(180deg, var(--color-7ee0ff), var(--color-22b5e8)); }
+.app-gray     { background: linear-gradient(180deg, var(--color-a1a1a8), var(--color-6c6c73)); }
+
+/* ---------- Suggestions widget ---------- */
+.suggest-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
+.suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 6px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-1);
+  font-size: var(--fs-subhead);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), transform 300ms var(--spring);
+}
+.suggest-item:hover { background: var(--fill); }
+.suggest-item:active { transform: scale(0.97); transition-duration: 90ms; }
+.suggest-ico {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.suggest-ico .ico { width: 16px; height: 16px; }
+.suggest-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Phones ---------- */
+@media (max-width: 600px) {
+  .home { gap: 18px; padding-top: 0; }
+  .home-widgets { gap: 12px; }
+  .widget { padding: 14px; border-radius: 22px; }
+  .widget-clock { min-height: 150px; }
+  .wc-time { font-size: 44px; }
+  .ws-rings { gap: 2px; }
+  .ws-ring { width: 50px; height: 50px; }
+  .ws-ring circle { stroke-width: 8; }
+  .ws-val { font-size: 11px; }
+  .ws-label { font-size: 11px; }
+  .ws-foot { display: none; }
+  .home-apps { grid-template-columns: repeat(4, 1fr); gap: 16px 6px; }
+  .app-icon { width: 60px; height: 60px; border-radius: 15px; }
+  .suggest-list { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home { animation: none; }
+}
+
+.wc-time { display: flex; align-items: baseline; gap: 6px; }
+.wc-period { font-size: 20px; font-weight: 600; letter-spacing: 0; opacity: 0.9; }
+@media (max-width: 600px) { .wc-period { font-size: 16px; } }
+

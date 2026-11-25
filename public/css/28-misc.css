@@ -1,0 +1,30 @@
+/* @file 28-misc.css */
+/* ===== لقطة شاشة الوكيل البصري داخل فقاعة سند (عنصر صورة حقيقي، لا تُحفظ) ===== */
+.msg-screenshot {
+  margin: 0 0 var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.msg-screenshot figcaption {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.msg-screenshot img {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border-top: 1px solid var(--line);
+}
+
+/* وضع «دون اتصال»: حد طلبات OpenRouter لا يخص النماذج المحلية */
+body.work-offline #stats { display: none; }
+
+/* زر «احفظ وشغّل» في رأس كتلة الكود (public/code-run.js): يجاور «نسخ» ويبرز بلون العلامة */
+.code-head .code-run { margin-inline-start: auto; color: var(--brand); font-weight: 600; }
+.code-head .code-run:hover { color: var(--brand); background: var(--brand-soft); box-shadow: none; }
+.code-head .code-run:disabled { opacity: 0.55; cursor: progress; }
+.code-head .code-run:focus-visible, .code-head .code-copy:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }

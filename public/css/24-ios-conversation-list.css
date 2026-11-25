@@ -1,0 +1,170 @@
+/* @file 24-ios-conversation-list.css */
+/* =====================================================================
+   iOS — المهمة 8: قائمة المحادثات (الشريط الجانبي)
+   ===================================================================== */
+.sidebar { background: var(--sheet-bg); gap: 10px; padding: 16px 14px 14px; }
+:root:not([data-theme="light"]) .sidebar { background: var(--color-black); }
+.sidebar .brand { font-size: 13px; color: var(--text-2); padding-inline: 4px; }
+.sidebar .brand .arc-reactor-hud { width: 20px; height: 20px; }
+
+/* العنوان الكبير + زر الإنشاء */
+.side-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.side-title { margin: 0; font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--text-1); line-height: 1.15; }
+.compose-btn,
+.btn-primary.compose-btn,
+.btn:hover:not(:disabled).btn-primary.compose-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: grid !important;
+  place-items: center;
+  background: transparent !important;
+  color: var(--brand) !important;
+  box-shadow: none !important;
+}
+.compose-btn:hover { background: var(--tint-fill) !important; }
+.compose-btn .ico { width: 22px; height: 22px; }
+
+/* شريط البحث */
+.ios-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--field-bg);
+  color: var(--text-3);
+  cursor: text;
+}
+.ios-search .ico { width: 16px; height: 16px; flex: 0 0 auto; }
+.ios-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-1);
+  font-size: var(--fs-callout);
+}
+.ios-search input::placeholder { color: var(--text-3); }
+.ios-search:focus-within { box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent); }
+
+/* صفوف المحادثات */
+.conv-list { gap: 0; padding: 0; margin-top: 4px; }
+.conv,
+.conv.active,
+:root[dir="rtl"] .conv.active {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-1);
+  font-weight: 400;
+}
+.conv[hidden] { display: none; }
+.conv + .conv::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline-start: 66px;
+  inset-inline-end: 10px;
+  height: var(--hairline);
+  background: var(--cell-sep);
+}
+.conv:hover { background: var(--field-bg) !important; }
+.conv.active { background: var(--bubble-out) !important; color: var(--color-white); }
+.conv.active::before,
+.conv.active + .conv::before { opacity: 0; }
+.conv-avatar {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-white);
+  background: linear-gradient(180deg, var(--color-a1a1a8), var(--color-6c6c73));
+}
+.conv-avatar[data-hue="0"] { background: linear-gradient(180deg, var(--color-ios-teal), var(--color-0a84b8)); }
+.conv-avatar[data-hue="1"] { background: linear-gradient(180deg, var(--color-7d7aff), var(--color-4b48d6)); }
+.conv-avatar[data-hue="2"] { background: linear-gradient(180deg, var(--color-ios-green-legacy), var(--color-28a745)); }
+.conv-avatar[data-hue="3"] { background: linear-gradient(180deg, var(--color-ffb340), var(--color-ff8a00)); }
+.conv-avatar[data-hue="4"] { background: linear-gradient(180deg, var(--color-ff6584), var(--color-e0244b)); }
+.conv-avatar[data-hue="5"] { background: linear-gradient(180deg, var(--color-c779f0), var(--color-9b3fd0)); }
+.conv-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.conv-top { display: flex; align-items: baseline; gap: 8px; }
+.conv-title { flex: 1; min-width: 0; font-size: var(--fs-callout); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-time { flex: 0 0 auto; font-size: 13px; color: var(--text-3); }
+.conv-preview {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.conv.active .conv-time,
+.conv.active .conv-preview { color: rgba(255, 255, 255, 0.8); }
+
+/* حذف: دائرة حمراء صغيرة تظهر عند المرور (بديل «السحب للحذف») */
+.conv-del {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 8px;
+  transform: translateY(-50%) scale(0.8);
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-ios-red-light);
+  color: var(--color-white);
+  opacity: 0;
+  transition: opacity 160ms var(--ease), transform 300ms var(--spring);
+}
+.conv-del .ico { width: 14px; height: 14px; stroke-width: 2.6; }
+.conv:hover .conv-del,
+.conv:focus-within .conv-del { opacity: 1; transform: translateY(-50%) scale(1); }
+.conv.active .conv-del { opacity: 0; }
+.conv.active:hover .conv-del { opacity: 1; }
+.conv:hover .conv-time { visibility: hidden; }
+@media (hover: none) {
+  .conv-del { opacity: 1; transform: translateY(-50%) scale(1); }
+  .conv .conv-time { visibility: hidden; }
+}
+
+/* الأدوات: قائمة مجمّعة كتطبيق الإعدادات */
+.sidebar .tool-nav { background: var(--cell-bg); border-radius: 12px; padding: 4px 6px; }
+.sidebar .tool-nav-head { color: var(--text-1); font-size: var(--fs-callout); font-weight: 600; padding: 8px 6px; }
+.sidebar .tool-group-label { font-size: 12px; color: var(--text-3); padding: 8px 6px 2px; }
+.sidebar .tool-grid { grid-template-columns: 1fr 1fr; gap: 0; }
+.sidebar .tool-item { padding: 7px 6px; border-radius: 10px; color: var(--text-1); }
+.settings-ico {
+  width: 28px !important;
+  height: 28px;
+  border-radius: 7px;
+  color: var(--color-white) !important;
+  display: grid;
+  place-items: center;
+}
+.settings-ico .ico { width: 16px; height: 16px; stroke-width: 2.1; }
+.tool-item:hover .settings-ico { color: var(--color-white) !important; }
+
+/* إحصاءات وزر المظهر كصفوف iOS */
+.sidebar .stats { background: var(--cell-bg); border-radius: 12px; font-size: 13px; }
+.sidebar .side-foot .btn { background: var(--cell-bg); border-radius: 12px; color: var(--text-1); justify-content: flex-start; padding: 12px 14px; }
+.sidebar .side-foot .btn .ico { color: var(--brand); }
+
+@media (hover: none) { .conv:not(.active) .conv-main { padding-inline-end: 34px; } }
+

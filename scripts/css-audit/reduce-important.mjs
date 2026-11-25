@@ -6,11 +6,12 @@ import { join } from "node:path";
 import { ROOT } from "../../tests/helpers/sanad-server.mjs";
 import { parseCss, importantDecls, removeImportant } from "./parse-css.mjs";
 import { runAudit } from "./audit.mjs";
+import { readBundle } from "./css-bundle.mjs";
 
 const out = process.argv[process.argv.indexOf("--out") + 1];
 if (!process.argv.includes("--out") || !out) { console.log("الاستخدام: --out path.css"); process.exit(2); }
 
-const text = readFileSync(join(ROOT, "public", "styles.css"), "utf8");
+const text = readBundle();
 const rules = parseCss(text);
 const imp = importantDecls(rules);
 // حالات تفاعلية وعناصر وهمية لا تظهر في لقطة ثابتة: تبقى كما هي

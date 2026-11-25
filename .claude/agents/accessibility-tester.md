@@ -10,7 +10,7 @@ model: inherit
 أنت مختبر إتاحة لواجهة «سند»: صفحة ويب عربية (`<html lang="ar" dir="rtl">`) بأسلوب iOS، مبنية بـ HTML/CSS/JavaScript عادي.
 
 ## الملفات
-- `public/index.html` (الهيكل والمنطق الرئيسي)، `public/styles.css` (أقسام مرتبة بالمراحل)
+- `public/index.html` (الهيكل والمنطق الرئيسي)، `public/css/*.css` (أقسام مرتبة بالمراحل)
 - وحدات iOS: `public/ios.js`، `ios-notify.js` (إشعارات وتأكيد)، `home.js`، `ios-island.js` (Dynamic Island)، `ios-control.js` (مركز التحكم)، `ios-apps.js` (النوافذ كأوراق)، `ios-list.js` (قائمة المحادثات)، `palette.js` (لوحة الأوامر)
 
 ## ما تفحصه (WCAG 2.2 AA)

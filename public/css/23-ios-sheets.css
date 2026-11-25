@@ -1,0 +1,289 @@
+/* @file 23-ios-sheets.css */
+/* =====================================================================
+   iOS — المهمة 7: الأدوات كتطبيقات iOS (Sheets + قوائم مجمّعة)
+   ===================================================================== */
+:root {
+  --sheet-bg: #1c1c1e;      /* خلفية الورقة (grouped) */
+  --cell-bg: #2c2c2e;       /* خلايا القوائم */
+  --cell-sep: rgba(84, 84, 88, 0.6);
+  --field-bg: rgba(118, 118, 128, 0.24);
+  --tint-fill: rgba(100, 210, 255, 0.16);
+}
+:root[data-theme="light"] {
+  --sheet-bg: #f2f2f7;
+  --cell-bg: #ffffff;
+  --cell-sep: rgba(60, 60, 67, 0.22);
+  --field-bg: rgba(118, 118, 128, 0.12);
+  --tint-fill: rgba(50, 173, 230, 0.12);
+}
+
+/* ---------- الورقة ---------- */
+.memory-modal-backdrop,
+.terminal-modal-backdrop { background: rgba(0, 0, 0, 0.45); backdrop-filter: none; -webkit-backdrop-filter: none; }
+:root[data-theme="light"] .memory-modal-backdrop,
+:root[data-theme="light"] .terminal-modal-backdrop { background: rgba(0, 0, 0, 0.25); }
+
+.ios-sheet {
+  position: relative;
+  background: var(--sheet-bg);
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  animation: sheetUp 560ms var(--spring) !important;
+}
+@keyframes sheetUp {
+  from { transform: translateY(60px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.sheet-grabber {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(127, 127, 135, 0.45);
+  z-index: 3;
+}
+
+/* شريط التنقل */
+.ios-sheet .memory-header,
+.ios-sheet .terminal-header {
+  position: relative;
+  background: transparent;
+  border-bottom: var(--hairline) solid transparent;
+  padding: 22px 18px 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  transition: border-color var(--dur) var(--ease);
+}
+.ios-sheet.scrolled .memory-header,
+.ios-sheet.scrolled .terminal-header { border-bottom-color: var(--cell-sep); }
+.sheet-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: var(--text-1) !important;
+  line-height: 1.2;
+  transition: font-size var(--dur) var(--ease);
+}
+.ios-sheet.scrolled .sheet-title { font-size: 17px; font-weight: 600; }
+.sheet-app-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--color-white);
+  flex: 0 0 auto;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: width var(--dur) var(--ease), height var(--dur) var(--ease);
+}
+.sheet-app-icon .ico { width: 18px; height: 18px; stroke-width: 2.1; }
+.ios-sheet.scrolled .sheet-app-icon { width: 24px; height: 24px; border-radius: 6px; }
+.ios-sheet.scrolled .sheet-app-icon .ico { width: 14px; height: 14px; }
+
+/* «تم» */
+.sheet-done {
+  margin-inline-start: auto;
+  width: auto;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--tint-fill);
+  color: var(--brand);
+  font-size: var(--fs-headline);
+  font-weight: 600;
+  order: 99;
+}
+.sheet-done:hover { filter: brightness(1.15); }
+
+/* الجسم: خلفية مجمّعة */
+.ios-sheet .memory-body { padding: 8px 18px 24px !important; gap: 18px; background: transparent; }
+.ios-sheet .memory-desc { font-size: var(--fs-footnote); color: var(--text-2); padding: 0 6px; }
+.ios-sheet .memory-body h3 {
+  font-size: var(--fs-footnote) !important;
+  font-weight: 400 !important;
+  color: var(--text-2) !important;
+  text-transform: none;
+  margin: 6px 8px 6px !important;
+}
+
+/* ---------- قوائم مجمّعة (Inset Grouped) ---------- */
+.ios-sheet .memory-list {
+  gap: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--cell-bg);
+}
+.ios-sheet .memory-list:empty { display: none; }
+.ios-sheet .memory-card {
+  margin: 0 !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 12px 16px !important;
+  position: relative;
+}
+.ios-sheet .memory-card + .memory-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline-start: 16px;
+  inset-inline-end: 0;
+  height: var(--hairline);
+  background: var(--cell-sep);
+}
+.ios-sheet .memory-card-content { font-size: var(--fs-callout); }
+.ios-sheet .memory-tag { border-radius: 999px; background: var(--field-bg); }
+.ios-sheet .memory-del-btn { color: var(--danger-1); }
+.ios-sheet .memory-empty { background: var(--cell-bg); border-radius: 12px; padding: 22px; }
+
+/* البطاقات → خلايا مجمّعة */
+.ios-sheet .net-card,
+.ios-sheet .sys-metric-card,
+.ios-sheet #sysDrivesContainer > *,
+.ios-sheet .memory-body > div[style*="var(--surface)"],
+.ios-sheet .memory-body div[style*="background: var(--surface)"] {
+  background: var(--cell-bg) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: none;
+}
+.ios-sheet .net-card h3 { color: var(--text-1) !important; font-size: var(--fs-headline) !important; font-weight: 600 !important; margin: 0 0 10px !important; }
+
+/* ---------- حقول iOS ---------- */
+.ios-sheet .memory-input,
+.ios-sheet .memory-select,
+.ios-sheet .net-input,
+.ios-sheet select,
+.ios-sheet .model-search {
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: var(--field-bg) !important;
+  color: var(--text-1) !important;
+  font-size: var(--fs-callout) !important;
+  padding: 10px 12px !important;
+  box-shadow: none;
+}
+.ios-sheet .memory-input:focus,
+.ios-sheet .net-input:focus,
+.ios-sheet select:focus { box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 60%, transparent) !important; }
+
+/* ---------- أزرار iOS ---------- */
+.ios-sheet .memory-add-btn {
+  border: 0;
+  border-radius: 12px;
+  min-height: 40px;
+  font-size: var(--fs-subhead);
+  font-weight: 600;
+}
+.ios-sheet .memory-add-btn.v-sm { min-height: 34px; border-radius: 10px; font-size: var(--fs-footnote); }
+.ios-sheet .memory-add-btn:not(.v-secondary):not(.v-quiet):not(.v-danger) { background: var(--brand); color: var(--on-brand); }
+.ios-sheet .memory-add-btn.v-secondary { background: var(--tint-fill); color: var(--brand); }
+.ios-sheet .memory-add-btn.v-quiet { background: transparent; color: var(--brand); }
+.ios-sheet .memory-add-btn.v-danger { background: color-mix(in srgb, var(--danger-1) 16%, transparent); color: var(--danger-1); }
+.ios-sheet .net-chip { border: 0; background: var(--field-bg); color: var(--text-1); }
+
+/* ---------- مفاتيح التبديل (Switch) ---------- */
+.ios-sheet input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 26px;
+  margin: 0 4px;
+  border-radius: 999px;
+  background: rgba(120, 120, 128, 0.32);
+  position: relative;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 220ms var(--ease);
+  vertical-align: middle;
+}
+.ios-sheet input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-white);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: inset-inline-start 300ms var(--spring);
+}
+.ios-sheet input[type="checkbox"]:checked { background: var(--color-ios-green-light); }
+.ios-sheet input[type="checkbox"]:checked::after { inset-inline-start: 20px; }
+.ios-sheet input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 50%, transparent); }
+
+/* ---------- Segmented control ---------- */
+.ios-segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, 0.24);
+}
+.ios-segmented .seg-btn,
+.ios-segmented > button {
+  flex: 1;
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 12px;
+  background: transparent !important;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 200ms var(--ease);
+}
+.ios-segmented .seg-btn.on,
+.preview-seg > button[style*="var(--brand)"] {
+  background: var(--color-636366) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+}
+:root[data-theme="light"] .ios-segmented .seg-btn.on,
+:root[data-theme="light"] .preview-seg > button[style*="var(--brand)"] { background: var(--color-white) !important; }
+.terminal-seg { display: flex; margin: 0 14px 8px; }
+.visually-hidden-select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- الطرفية ---------- */
+#terminalModal.ios-sheet { background: var(--color-black); }
+#terminalModal .terminal-header .sheet-title { color: var(--color-white) !important; }
+#terminalModal .terminal-body { background: var(--color-black); }
+#terminalModal .terminal-input-bar { background: var(--color-ios-gray-6-dark); border-top: var(--hairline) solid rgba(84, 84, 88, 0.6); }
+#terminalModal .terminal-input { background: rgba(118, 118, 128, 0.24); border-radius: 10px; padding: 8px 12px; border: 0; color: var(--color-white); }
+#terminalModal .terminal-run-btn { border-radius: 10px; }
+#terminalModal .terminal-seg { background: rgba(118, 118, 128, 0.24); }
+#terminalModal .terminal-seg .seg-btn { color: var(--color-white); }
+#terminalModal .terminal-seg .seg-btn.on { background: var(--color-636366) !important; }
+
+/* ---------- الهاتف: ورقة من الأسفل ---------- */
+@media (max-width: 600px) {
+  .ios-sheet { border-radius: 14px 14px 0 0; margin-top: 10px; }
+  html.has-statusbar .memory-modal-backdrop,
+  html.has-statusbar .terminal-modal-backdrop { top: var(--sb-h); }
+  .memory-modal-backdrop .ios-sheet,
+  .terminal-modal-backdrop .ios-sheet { height: calc(100dvh - var(--sb-h) - 10px) !important; max-height: none !important; }
+  .sheet-title { font-size: 24px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ios-sheet { animation: none; }
+}
+

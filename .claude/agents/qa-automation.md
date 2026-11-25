@@ -15,7 +15,7 @@ model: inherit
 3. **نقاط النهاية — قراءة فقط (GET):**
    `/api/models`، `/api/system/stats`، `/api/system/disks`، `/api/system/health`، `/api/system/processes`، `/api/project/list`، `/api/desktop/status`
    تحقق من: رمز 200، JSON صالح، وجود الحقول التي تعتمد عليها الواجهة (مثلاً `cpuUsagePercent`، `usedMemoryPercent`، `batteryPercent`، `diskFreeGb` في stats).
-4. **الواجهة:** الصفحة تحمّل، والملفات `/styles.css` و `/ios*.js` و `/home.js` و `/palette.js` ترد 200، ولا أخطاء في Console. استخدم مهارة `webapp-testing` إن كانت Playwright مثبتة (`py -3`)، وإلا متصفح VS Code المدمج.
+4. **الواجهة:** الصفحة تحمّل، والملفات `/css/*.css` و `/ios*.js` و `/home.js` و `/palette.js` ترد 200، ولا أخطاء في Console. استخدم مهارة `webapp-testing` إن كانت Playwright مثبتة (`py -3`)، وإلا متصفح VS Code المدمج.
 5. **الموارد:** بعد الاختبار لا تبقى عمليات `node`/`powershell` عالقة أنشأتها أنت.
 
 ## ممنوع
