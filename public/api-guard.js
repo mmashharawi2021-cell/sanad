@@ -40,6 +40,10 @@
     "/api/tasks/toggle": "تفعيل أو إيقاف مهمة مجدولة",
     "/api/memory": "تعديل ذاكرة سند الدائمة",
     "/api/vision/workflows": "حذف مسار محفوظ",
+    // قناة تسريب محتملة: نص البحث يخرج إلى محرك بحث خارجي — نموذج خُدع بتعليمات محقونة قد يضع فيه بياناتك
+    "/api/web/search": "بحث في الويب (نص البحث يُرسَل إلى الإنترنت)",
+    // أسماء ملفاتك ومساراتها تظهر في المحادثة وتُرسَل للنموذج في الرد التالي
+    "/api/system/large-files": "قراءة أسماء ومسارات أكبر الملفات على جهازك",
     // /api/vision/execute غير مدرج عمداً: runVisualAgentLoop يعرض الخطة كاملة ويطلب الموافقة بنفسه
   };
   window.__sanadModelActing = 0;
@@ -53,7 +57,7 @@
   function describe(path, method, body) {
     let data = {};
     try { data = typeof body === "string" ? JSON.parse(body) : {}; } catch {}
-    const fields = ["command", "action", "process", "name", "port", "path", "filePath", "target", "projectName", "title", "actionValue", "goal", "content", "preset", "routine", "url"];
+    const fields = ["command", "action", "process", "name", "port", "path", "filePath", "target", "projectName", "title", "actionValue", "goal", "content", "preset", "routine", "url", "query", "minSizeMb"];
     const details = fields
       .filter((k) => data[k] != null && String(data[k]).trim() !== "")
       .map((k) => {
