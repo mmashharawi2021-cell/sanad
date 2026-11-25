@@ -299,6 +299,7 @@
         if (!head) return null;
         const obj = head[1].replace(/^ال/, "");
         const end = String.raw`(?:\s+(?:الان|هلا|بسرعه|لو سمحت))?$`;
+        /** @type {Array<[RegExp, string, string]>} */
         const APPS = [
           [new RegExp(String.raw`^(?:اركش|ارك|arcgis|arc ?pro|arc)(?:\s|$)`), "arcgis_pro", "ArcGIS Pro"],
           [new RegExp(String.raw`^(?:حاسبه|اله الحاسبه|اله حاسبه|calc|calculator)${end}`), "calc", "الآلة الحاسبة"],
@@ -329,6 +330,7 @@
         const head = q.match(/^(?:افتح|استعرض)\s+(?:لي\s+)?(?:مجلد\s+)?(.+)$/);
         if (!head) return null;
         const obj = head[1].replace(/^ال/, "");
+        /** @type {Array<[RegExp, string, string]>} */
         const FOLDERS = [
           [/^(?:تنزيلات|داونلود|downloads)$/, "downloads", "التنزيلات"],
           [/^(?:سطح المكتب|دسك توب|desktop)$/, "desktop", "سطح المكتب"],

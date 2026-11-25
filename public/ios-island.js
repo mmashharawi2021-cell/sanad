@@ -153,7 +153,7 @@
   }
 
   function stopCurrent() {
-    const stop = document.getElementById("stop");
+    const stop = /** @type {HTMLButtonElement} */ (document.getElementById("stop"));
     if (stop && !stop.classList.contains("hidden")) stop.click();
   }
 
@@ -221,7 +221,7 @@
   document.addEventListener("click", (e) => { if (!island.contains(e.target)) collapse(); });
 
   // «يفكر»: زر الإيقاف ظاهر أثناء التوليد
-  const stopBtn = document.getElementById("stop");
+  const stopBtn = /** @type {HTMLButtonElement} */ (document.getElementById("stop"));
   if (stopBtn) {
     const sync = () => { thinking = !stopBtn.classList.contains("hidden"); render(); };
     new MutationObserver(sync).observe(stopBtn, { attributes: true, attributeFilter: ["class"] });

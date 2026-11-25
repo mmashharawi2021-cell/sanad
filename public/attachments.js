@@ -92,7 +92,7 @@
       if (attachBtn && fileInput) {
         attachBtn.addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", (e) => {
-          handleFiles(e.target.files);
+          handleFiles(/** @type {HTMLInputElement} */ (e.target).files);
           fileInput.value = "";
         });
       }

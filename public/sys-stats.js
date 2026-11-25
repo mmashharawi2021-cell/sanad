@@ -206,7 +206,7 @@
             })
             .join("");
           // بدل onclick المضمّن: اسم الملف قد يحتوي ' و ) فيحقن JavaScript
-          sysLargeFilesList.querySelectorAll(".reveal-file-btn").forEach((btn) => {
+          /** @type {NodeListOf<HTMLElement>} */ (sysLargeFilesList.querySelectorAll(".reveal-file-btn")).forEach((btn) => {
             btn.addEventListener("click", () => revealFileInExplorer(btn.dataset.path || ""));
           });
         } catch (e) {

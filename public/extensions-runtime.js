@@ -160,7 +160,7 @@ button{font:inherit;cursor:pointer}</style>
     const frame = frames.get(e.source);
     if (!frame) return; // رسالة من مصدر غير معروف
     const ext = extensions.get(frame.extId) || { meta: { id: frame.extId, name: frame.extId } };
-    const reply = (value, error) => e.source.postMessage({ __sanad: 1, type: "reply", id: d.id, value, error }, "*");
+    const reply = (value, error) => /** @type {Window} */ (e.source).postMessage({ __sanad: 1, type: "reply", id: d.id, value, error }, "*");
 
     if (d.type === "call") {
       const path = READS[d.op];

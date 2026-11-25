@@ -1,0 +1,15 @@
+{
+  // فحص TypeScript لسكربتات الواجهة (public/*.js) دون بناء: الكود يبقى JavaScript يعمل كما هو،
+  // والفحص يكشف الأسماء غير الموجودة عبر الملفات والخصائص الخاطئة. التشغيل: npm.cmd run typecheck:ui
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["public/*.js", "public/globals.d.ts"]
+}

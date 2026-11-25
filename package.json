@@ -8,13 +8,14 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "models:refresh": "tsx scripts/refresh-models.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "tsc --noEmit && node --test tests/ && node scripts/test-instant-commands.mjs && node scripts/test-command-registry.mjs && node scripts/test-model-tools.mjs",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.ui.json",
+    "test": "tsc --noEmit && tsc -p tsconfig.ui.json && node --test tests/ && node scripts/test-instant-commands.mjs && node scripts/test-command-registry.mjs && node scripts/test-model-tools.mjs",
     "test:commands": "node scripts/test-instant-commands.mjs && node scripts/test-command-registry.mjs && node scripts/test-model-tools.mjs",
     "test:ui": "node tests/ui/ui-smoke.mjs",
     "test:e2e": "node tests/e2e/offline-e2e.mjs",
     "offline:setup": "node scripts/offline-setup.mjs",
-    "offline:check": "node scripts/offline-check.mjs"
+    "offline:check": "node scripts/offline-check.mjs",
+    "typecheck:ui": "tsc -p tsconfig.ui.json"
   },
   "dependencies": {
     "@openrouter/sdk": "^0.4.0",

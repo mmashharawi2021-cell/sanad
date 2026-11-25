@@ -6,11 +6,12 @@
       let islandExpanded = false;
       let islandOnlyMode = false;
 
-      function setIslandStatus(text, isListening = false) {
-        window.sanadIsland?.status(text, isListening); // Dynamic Island (public/ios-island.js)
+      // busy: يشغّل مؤشر النشاط في الكبسولة القديمة المخفية (#cyberIsland) فقط
+      function setIslandStatus(text, busy = false) {
+        window.sanadIsland?.status(text); // Dynamic Island (public/ios-island.js)
         if (islandStatusText) islandStatusText.textContent = text;
         if (islandWaves) {
-          if (isListening) islandWaves.classList.add("active");
+          if (busy) islandWaves.classList.add("active");
           else islandWaves.classList.remove("active");
         }
       }
@@ -54,7 +55,7 @@
           if (toggleIslandBtn) toggleIslandBtn.classList.add("active");
           setIslandStatus("العرض المصغّر نشط");
           window.sanadIsland?.expand();
-          document.querySelector(".dyn-island")?.focus();
+          /** @type {HTMLElement | null} */ (document.querySelector(".dyn-island"))?.focus();
           playSciFiSound("wake");
         } else {
           document.body.classList.remove("island-only-mode");

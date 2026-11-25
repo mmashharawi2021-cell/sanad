@@ -232,7 +232,7 @@
       });
 
       modelList.addEventListener("click", (event) => {
-        const item = event.target.closest(".model-item");
+        const item = /** @type {HTMLElement | null} */ (/** @type {Element} */ (event.target).closest(".model-item"));
         if (item) chooseModel(item.dataset.model || "");
       });
 
@@ -252,7 +252,7 @@
           return;
         }
 
-        if (event.key === "Enter" && !event.target.closest(".model-item")) {
+        if (event.key === "Enter" && !/** @type {Element} */ (event.target).closest(".model-item")) {
           const item = pickerItems[activeIndex];
           if (item) {
             event.preventDefault();
@@ -262,5 +262,5 @@
       });
 
       document.addEventListener("pointerdown", (event) => {
-        if (pickerOpen && !modelPicker.contains(event.target)) closeModelPicker();
+        if (pickerOpen && !modelPicker.contains(/** @type {Node} */ (event.target))) closeModelPicker();
       });

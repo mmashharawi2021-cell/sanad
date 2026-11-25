@@ -19,7 +19,7 @@
   }
 
   thread.addEventListener("click", async (event) => {
-    const btn = event.target.closest(".code-run");
+    const btn = /** @type {HTMLButtonElement | null} */ (/** @type {Element} */ (event.target).closest(".code-run"));
     if (!btn || btn.disabled) return;
     const lang = LANGS[String(btn.dataset.lang || "").toLowerCase()];
     const code = btn.closest(".code")?.querySelector("code")?.textContent || "";
@@ -45,7 +45,7 @@
       const block = `---\n> ⚡ **[احفظ وشغّل]:** \`${fence(saved.fullPath || file)}\`\n\n\`\`\`text\n> ${fence(run.command || `${lang.run} ${file}`)}\n${fence(output)}\n\`\`\`\n*(رمز الخروج: ${run.exitCode ?? "—"} | زمن التشغيل: ${run.durationMs ?? "—"}ms)*`;
 
       // تُضاف المخرجات للرد نفسه في المحادثة (رقمه في data-index)
-      const index = Number(btn.closest(".msg")?.dataset.index);
+      const index = Number(/** @type {HTMLElement | null} */ (btn.closest(".msg"))?.dataset.index);
       const conv = typeof activeConv === "function" ? activeConv() : null;
       const message = conv && Number.isInteger(index) ? conv.messages[index] : null;
       if (message) {

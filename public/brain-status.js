@@ -3,7 +3,7 @@
    يشارك المتغيرات والدوال العامة مع بقية سكربتات الصفحة، ويُحمَّل بترتيبه بعد السكربت المضمّن. */
       /* ======================= Offline Brain status ======================= */
 
-      const brainBadge = document.getElementById("brainBadge");
+      const brainBadge = /** @type {HTMLButtonElement} */ (document.getElementById("brainBadge"));
       const brainBadgeDot = document.getElementById("brainBadgeDot");
       const brainBadgeText = document.getElementById("brainBadgeText");
       const islandBrainDot = document.getElementById("islandBrainDot");

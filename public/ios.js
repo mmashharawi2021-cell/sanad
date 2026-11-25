@@ -2,7 +2,7 @@
    1) العنوان الكبير (Large Title) يصغر وينتقل إلى الشريط عند التمرير.
    2) تمييز الشريط العلوي بفاصل شعري فقط بعد أن يمر المحتوى تحته. */
 (() => {
-  const chat = document.querySelector("main.chat");
+  const chat = /** @type {HTMLElement | null} */ (document.querySelector("main.chat"));
   const thread = document.getElementById("thread");
   if (!chat || !thread) return;
 
@@ -46,8 +46,8 @@
 
   /* 3) الشريط العلوي وصندوق الإدخال يطفوان فوق المحادثة (زجاج حقيقي):
         نقيس ارتفاعهما ونعطي المحادثة مساحة مكافئة حتى لا يختفي شيء تحتهما. */
-  const head = chat.querySelector(".chat-head");
-  const composer = chat.querySelector(".composer");
+  const head = /** @type {HTMLElement | null} */ (chat.querySelector(".chat-head"));
+  const composer = /** @type {HTMLElement | null} */ (chat.querySelector(".composer"));
   if (head && composer && "ResizeObserver" in window) {
     const measure = () => {
       // نقيس الشريط في حالته الموسّعة فقط، فلا تقفز المحادثة عند طيّه

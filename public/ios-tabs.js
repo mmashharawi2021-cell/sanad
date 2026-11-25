@@ -9,9 +9,9 @@
   const app = document.getElementById("app");
   const sidebar = document.getElementById("sidebar");
   const convList = document.getElementById("convList");
-  const toolNav = document.getElementById("toolNav");
-  const openNav = document.getElementById("openNav");
-  const closeNav = document.getElementById("closeNav");
+  const toolNav = /** @type {HTMLDetailsElement} */ (document.getElementById("toolNav"));
+  const openNav = /** @type {HTMLButtonElement} */ (document.getElementById("openNav"));
+  const closeNav = /** @type {HTMLButtonElement} */ (document.getElementById("closeNav"));
   const tabs = [
     { id: "home", label: "الرئيسية", symbol: "bot" },
     { id: "history", label: "المحادثات", symbol: "clock" },
@@ -114,7 +114,7 @@
       }
     });
     sidebar?.addEventListener("click", (event) => {
-      if (event.target.closest(".tool-item") && window.matchMedia("(max-width: 600px)").matches) {
+      if (/** @type {Element} */ (event.target).closest(".tool-item") && window.matchMedia("(max-width: 600px)").matches) {
         closeNav?.click();
       }
     });
@@ -124,8 +124,8 @@
       const focusable = [...sidebar.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')]
         .filter((node) => node.getClientRects().length && getComputedStyle(node).visibility !== "hidden");
       if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      const first = /** @type {HTMLElement} */ (focusable[0]);
+      const last = /** @type {HTMLElement} */ (focusable[focusable.length - 1]);
       if (event.shiftKey && (document.activeElement === first || !sidebar.contains(document.activeElement))) {
         event.preventDefault();
         last.focus();

@@ -13,7 +13,7 @@
 # تشغيل خادم التطوير مع التحديث التلقائي (Dev Server on http://localhost:3000)
 npm.cmd run dev
 
-# فحص الأنواع الصارم والتأكد من خلو المشروع من الأخطاء (Typecheck)
+# فحص الأنواع: الخادم (tsconfig.json) والواجهة (tsconfig.ui.json) معاً — يجب 0 أخطاء
 npm.cmd run typecheck
 
 # تشغيل الخادم في وضع الإنتاج
@@ -80,7 +80,10 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية وس�
 
 | الملف | المسؤولية |
 |---|---|
-| `public/index.html` | الهيكل + sprite أيقونات SVG + **قلب المحادثة فقط** في سكربت مضمّن: الحالة، الرسم، Markdown، الإرسال والبث، الأحداث |
+| `public/index.html` | هيكل الصفحة فقط (~270 سطراً): الرأس، sprite أيقونات SVG، `#app`، ووسوم السكربتات بترتيبها |
+| `public/chat-core.js` | **قلب المحادثة**: الحالة، الرسم، Markdown، الإرسال والبث، الأحداث، وتنفيذ أدوات النموذج |
+| `public/markup-overlays.js` و `public/markup-modals.js` | هيكل HTML للكبسولة القديمة والبث ولوحة الأوامر، ولنوافذ الأدوات؛ يُدرَج في موضع وسمه نفسه (المعرّفات كما هي) |
+| `public/globals.d.ts` + `tsconfig.ui.json` | فحص TypeScript للواجهة دون بناء: أنواع الأسماء المشتركة على `window` |
 | وحدات النوافذ (سكربتات عادية تُحمَّل بعد السكربت المضمّن بالترتيب) | `models-ui.js`، `audio-fx.js`، `attachments.js`، `memory-ui.js`، `terminal-ui.js`، `tasks-ui.js`، `workflows-ui.js`، `vision-ui.js`، `visual-agent.js`، `live-stream.js`، `island-legacy.js`، `sys-stats.js`، `brain-status.js`، `network-ui.js`، `desktop-ui.js`، `preview-ui.js`، ثم `app-boot.js` أخيراً |
 | `public/styles.css` | المتغيرات (`--surface-*`، `--text-*`، `--brand`، `--glass-*`، `--sheet-bg`، `--cell-bg`) وأقسام مرتبة بالمراحل؛ الأقسام الأحدث في آخر الملف |
 | `public/ios.js` | الشريط العلوي والعنوان الكبير الذي يُطوى عند التمرير، وطفو الشريط وصندوق الإدخال فوق المحادثة |
@@ -103,6 +106,7 @@ npm.cmd run test:commands # اختبارات الأوامر الفورية وس�
 - النوافذ: المعاينة الحية `#previewModalBackdrop`، نبض النظام `#sysStatsModalBackdrop`، الطرفية `#terminalModalBackdrop`، سطح المكتب `#desktopModalBackdrop`، الشبكة `#networkModalBackdrop`، الذاكرة والمهام والمسارات.
 
 **قواعد الواجهة:**
+- **فحص الأنواع للواجهة إلزامي:** `npm.cmd run typecheck` (يشمل `tsconfig.ui.json`) يجب أن يعطي 0 أخطاء. أي `window.X` جديد يُعرَّف في `public/globals.d.ts`، وعناصر `getElementById` تُكتب بنوعها (`/** @type {HTMLInputElement} */ (…)`).
 - **أداة نموذج جديدة** تُضاف في `TOOLS` داخل `public/model-tools.js` بحقولها، وتُذكر بالصيغة نفسها في تعليمات `src/config.ts` (اختبار يتحقق أن كل أداة في التعليمات معرّفة).
 - **وحدات النوافذ سكربتات عادية لا `module`:** تتشارك الأسماء العامة مع السكربت المضمّن. ترتيب الوسوم بعد `</script>` هو ترتيب التنفيذ: كود يعمل عند التحميل لا يستدعي دالة من ملف يأتي بعده. `app-boot.js` يبقى الأخير.
 - **أي أمر محلي جديد** (يُنفَّذ دون العقل) يُضاف سجلاً في `public/command-registry.js` لا شرطاً في `index.html`: `id`، `risk` (`safe`/`action`/`danger`)، `examples` و`nonExamples` (تُختبر آلياً)، `match` و`run`. أوامر `action`/`danger` لا تطابق الأسئلة ولا الجمل الطويلة إلا بصيغة صريحة (`explicit`).

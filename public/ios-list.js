@@ -5,8 +5,8 @@
 (() => {
   const sidebar = document.getElementById("sidebar");
   const convList = document.getElementById("convList");
-  const newChat = document.getElementById("newChat");
-  const toolNav = document.getElementById("toolNav");
+  const newChat = /** @type {HTMLButtonElement} */ (document.getElementById("newChat"));
+  const toolNav = /** @type {HTMLDetailsElement} */ (document.getElementById("toolNav"));
   if (!sidebar || !convList) return;
 
   const el = (tag, cls, text) => {
@@ -50,7 +50,7 @@
     let shown = 0;
     convList.querySelectorAll(".conv").forEach((row) => {
       const match = !q || norm(row.textContent).includes(q);
-      row.hidden = !match;
+      /** @type {HTMLElement} */ (row).hidden = !match;
       if (match) shown++;
     });
     if (q && !shown) {

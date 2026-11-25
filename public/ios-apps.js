@@ -36,7 +36,7 @@
       const appIcon = el("span", `sheet-app-icon app-${color}`);
       appIcon.innerHTML = use(icon);
       if (title) {
-        heading.title = heading.textContent.trim();
+        /** @type {HTMLElement} */ (heading).title = heading.textContent.trim();
         heading.textContent = title;
         heading.prepend(appIcon);
       } else {
@@ -68,7 +68,7 @@
   document.querySelectorAll("#terminalModal .terminal-dots .dot").forEach((d) => d.remove());
 
   /* ---------- Segmented control لنوع الطرفية ---------- */
-  const shell = document.getElementById("terminalShellSelect");
+  const shell = /** @type {HTMLSelectElement} */ (document.getElementById("terminalShellSelect"));
   const bar = document.querySelector("#terminalModal .terminal-input-bar");
   if (shell && bar) {
     const seg = el("div", "ios-segmented terminal-seg");
@@ -99,6 +99,6 @@
   }
 
   /* ---------- Segmented control لمعاينة حاسوب/جوال ---------- */
-  const desk = document.getElementById("previewDesktopBtn");
+  const desk = /** @type {HTMLButtonElement} */ (document.getElementById("previewDesktopBtn"));
   if (desk?.parentElement) desk.parentElement.classList.add("ios-segmented", "preview-seg");
 })();

@@ -7,18 +7,18 @@
       const netAlert = document.getElementById("netAlert");
       const netInfoSummary = document.getElementById("netInfoSummary");
       const netInfoKv = document.getElementById("netInfoKv");
-      const netPingHost = document.getElementById("netPingHost");
-      const netPingBtn = document.getElementById("netPingBtn");
+      const netPingHost = /** @type {HTMLInputElement} */ (document.getElementById("netPingHost"));
+      const netPingBtn = /** @type {HTMLButtonElement} */ (document.getElementById("netPingBtn"));
       const netPingValue = document.getElementById("netPingValue");
       const netPingQuality = document.getElementById("netPingQuality");
       const netPingDetails = document.getElementById("netPingDetails");
-      const netFreePortForm = document.getElementById("netFreePortForm");
-      const netFreePortInput = document.getElementById("netFreePortInput");
+      const netFreePortForm = /** @type {HTMLFormElement} */ (document.getElementById("netFreePortForm"));
+      const netFreePortInput = /** @type {HTMLInputElement} */ (document.getElementById("netFreePortInput"));
       const netPortsBody = document.getElementById("netPortsBody");
       const netPortsCount = document.getElementById("netPortsCount");
-      const netPortsSearch = document.getElementById("netPortsSearch");
-      const netDevOnly = document.getElementById("netDevOnly");
-      const netShowUdp = document.getElementById("netShowUdp");
+      const netPortsSearch = /** @type {HTMLInputElement} */ (document.getElementById("netPortsSearch"));
+      const netDevOnly = /** @type {HTMLInputElement} */ (document.getElementById("netDevOnly"));
+      const netShowUdp = /** @type {HTMLInputElement} */ (document.getElementById("netShowUdp"));
       const islandLatencyBadge = document.getElementById("islandLatencyBadge");
 
       let netPortsCache = [];
@@ -245,9 +245,9 @@
       window.checkNetPort = checkNetPort;
       window.loadNetInfo = loadNetInfo;
 
-      const netMaestroBtn = document.getElementById("netMaestroBtn");
+      const netMaestroBtn = /** @type {HTMLButtonElement} */ (document.getElementById("netMaestroBtn"));
       if (netMaestroBtn) netMaestroBtn.addEventListener("click", openNetworkModal);
-      const netCloseBtn = document.getElementById("netCloseBtn");
+      const netCloseBtn = /** @type {HTMLButtonElement} */ (document.getElementById("netCloseBtn"));
       if (netCloseBtn) netCloseBtn.addEventListener("click", closeNetworkModal);
       if (networkModalBackdrop) {
         networkModalBackdrop.addEventListener("click", (e) => { if (e.target === networkModalBackdrop) closeNetworkModal(); });
@@ -256,7 +256,7 @@
         if (e.key === "Escape" && networkModalBackdrop && networkModalBackdrop.classList.contains("open")) closeNetworkModal();
       });
 
-      const netInfoRefreshBtn = document.getElementById("netInfoRefreshBtn");
+      const netInfoRefreshBtn = /** @type {HTMLButtonElement} */ (document.getElementById("netInfoRefreshBtn"));
       if (netInfoRefreshBtn) netInfoRefreshBtn.addEventListener("click", loadNetInfo);
       if (netPingBtn) netPingBtn.addEventListener("click", () => runNetPing());
       if (netPingHost) netPingHost.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); runNetPing(); } });
@@ -270,12 +270,12 @@
           killNetPort(netFreePortInput && netFreePortInput.value);
         });
       }
-      const netCheckPortBtn = document.getElementById("netCheckPortBtn");
+      const netCheckPortBtn = /** @type {HTMLButtonElement} */ (document.getElementById("netCheckPortBtn"));
       if (netCheckPortBtn) netCheckPortBtn.addEventListener("click", () => checkNetPort(netFreePortInput && netFreePortInput.value));
 
       if (netPortsBody) {
         netPortsBody.addEventListener("click", (e) => {
-          const btn = e.target.closest("[data-kill-port]");
+          const btn = /** @type {HTMLButtonElement | null} */ (/** @type {Element} */ (e.target).closest("[data-kill-port]"));
           if (!btn) return;
           btn.disabled = true;
           killNetPort(btn.getAttribute("data-kill-port")).finally(() => { btn.disabled = false; });
@@ -284,17 +284,17 @@
       if (netPortsSearch) netPortsSearch.addEventListener("input", renderNetPorts);
       if (netDevOnly) netDevOnly.addEventListener("change", renderNetPorts);
       if (netShowUdp) netShowUdp.addEventListener("change", loadNetPorts);
-      const netPortsRefreshBtn = document.getElementById("netPortsRefreshBtn");
+      const netPortsRefreshBtn = /** @type {HTMLButtonElement} */ (document.getElementById("netPortsRefreshBtn"));
       if (netPortsRefreshBtn) netPortsRefreshBtn.addEventListener("click", loadNetPorts);
 
-      const islandNetBtn = document.getElementById("islandNetBtn");
+      const islandNetBtn = /** @type {HTMLButtonElement} */ (document.getElementById("islandNetBtn"));
       if (islandNetBtn) islandNetBtn.addEventListener("click", openNetworkModal);
-      const islandPortsBtn = document.getElementById("islandPortsBtn");
+      const islandPortsBtn = /** @type {HTMLButtonElement} */ (document.getElementById("islandPortsBtn"));
       if (islandPortsBtn) islandPortsBtn.addEventListener("click", () => {
         openNetworkModal();
         if (netDevOnly) { netDevOnly.checked = true; renderNetPorts(); }
       });
-      const islandPingBtn = document.getElementById("islandPingBtn");
+      const islandPingBtn = /** @type {HTMLButtonElement} */ (document.getElementById("islandPingBtn"));
       if (islandPingBtn) islandPingBtn.addEventListener("click", async () => {
         const data = await runNetPing("8.8.8.8");
         if (data) netSpeak(data.message);

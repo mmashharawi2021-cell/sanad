@@ -104,7 +104,7 @@
   /* ---------- iOS Alert (تأكيد) ---------- */
   function confirmDialog(opts = {}) {
     return new Promise((resolve) => {
-      const lastFocus = document.activeElement;
+      const lastFocus = /** @type {HTMLElement | null} */ (document.activeElement);
       const backdrop = el("div", "ios-alert-backdrop");
       const box = el("div", "ios-alert");
       box.setAttribute("role", "alertdialog");

@@ -52,7 +52,7 @@
             .join("");
 
           // Wire action buttons
-          tasksList.querySelectorAll(".task-run-now-btn").forEach((btn) => {
+          /** @type {NodeListOf<HTMLButtonElement>} */ (tasksList.querySelectorAll(".task-run-now-btn")).forEach((btn) => {
             btn.addEventListener("click", async () => {
               btn.textContent = "جاري التشغيل… ⏳";
               btn.disabled = true;

@@ -241,7 +241,7 @@
 
   /* ---------- Entry points ---------- */
   // زر في الشريط العلوي بجانب «الأوامر»
-  const palette = document.getElementById("paletteBtn");
+  const palette = /** @type {HTMLButtonElement} */ (document.getElementById("paletteBtn"));
   if (palette) {
     const b = el("button", "jarvis-voice-btn cc-trigger");
     b.type = "button";
@@ -261,7 +261,7 @@
     let t = null;
     let longPressed = false;
     island.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".di-expanded")) return;
+      if (/** @type {Element} */ (e.target).closest(".di-expanded")) return;
       longPressed = false;
       t = setTimeout(() => { longPressed = true; open(); }, 480);
     });

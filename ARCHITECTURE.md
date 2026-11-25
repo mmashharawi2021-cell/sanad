@@ -37,7 +37,7 @@ flowchart TD
     OpenRouter -.-> Cloud[(OpenRouter)]
 ```
 
-**الواجهة:** `public/index.html` يحمل الهيكل وقلب المحادثة (سكربت مضمّن ~1,500 سطر)؛ كل نافذة في ملف مستقل (`*-ui.js` وغيرها) يُحمَّل بعده بترتيب ثابت، و`app-boot.js` أخيراً. الأوامر المحلية في `command-registry.js`.
+**الواجهة:** `public/index.html` هيكل فقط (~270 سطراً). قلب المحادثة في `chat-core.js`، وهيكل النوافذ في `markup-*.js` (يُدرَج في الموضع نفسه)، وكل نافذة في ملف (`*-ui.js` وغيرها) يُحمَّل بترتيب ثابت، و`app-boot.js` أخيراً. سكربتات عادية تتشارك الأسماء العامة، ويفحصها TypeScript (`tsconfig.ui.json` + `public/globals.d.ts`) دون خطوة بناء.
 
 **الخادم:** `src/server.ts` نقطة تشغيل فقط: طبقة الحماية (`src/http/security.ts`) ← جدول المسارات (`src/http/router.ts` + ملف لكل مجال في `src/routes/`) ← ملفات الواجهة (`src/http/static.ts`).
 

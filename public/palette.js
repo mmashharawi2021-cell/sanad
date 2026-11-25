@@ -2,10 +2,10 @@
    تُنفّذ الأوامر بالنقر على الأزرار الموجودة نفسها، فلا تكرار لمنطق أي أداة. */
 (() => {
   const backdrop = document.getElementById("paletteBackdrop");
-  const input = document.getElementById("paletteInput");
+  const input = /** @type {HTMLInputElement} */ (document.getElementById("paletteInput"));
   const list = document.getElementById("paletteList");
-  const trigger = document.getElementById("paletteBtn");
-  const toolNav = document.getElementById("toolNav");
+  const trigger = /** @type {HTMLButtonElement} */ (document.getElementById("paletteBtn"));
+  const toolNav = /** @type {HTMLDetailsElement} */ (document.getElementById("toolNav"));
   if (!backdrop || !input || !list) return;
 
   /* ---------- Sidebar tools: collapse state + close drawer on mobile ---------- */
@@ -17,7 +17,7 @@
       try { localStorage.setItem("sanad.toolNav", toolNav.open ? "open" : "closed"); } catch {}
     });
     toolNav.addEventListener("click", (e) => {
-      if (e.target.closest(".tool-item")) document.getElementById("closeNav")?.click();
+      if (/** @type {Element} */ (e.target).closest(".tool-item")) document.getElementById("closeNav")?.click();
     });
   }
 
@@ -31,10 +31,11 @@
   ];
 
   function commands() {
+    /** @type {Array<{ group: string, icon: string, label: string, target?: string, prompt?: string, hint?: string }>} */
     const out = [...fixed];
     if (toolNav) {
       let group = "الأدوات";
-      for (const el of toolNav.querySelectorAll(".tool-group-label, .tool-item")) {
+      for (const el of /** @type {NodeListOf<HTMLElement>} */ (toolNav.querySelectorAll(".tool-group-label, .tool-item"))) {
         if (el.classList.contains("tool-group-label")) { group = el.textContent.trim(); continue; }
         const label = el.querySelector(".tool-label")?.textContent.trim() || el.id;
         // .tool-ico holds static markup from index.html (an <svg><use>), safe to reuse
@@ -52,7 +53,7 @@
       islandPortsBtn: "globe", islandPingBtn: "activity",
     };
     const EMOJI = /[\p{Extended_Pictographic}️‍]/gu;
-    for (const el of document.querySelectorAll("#islandDrawer .island-pill-btn")) {
+    for (const el of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("#islandDrawer .island-pill-btn"))) {
       if (!el.id || el.id === "islandToggleModeBtn") continue;
       out.push({
         group: "إجراءات سريعة",
@@ -106,7 +107,6 @@
       const ico = document.createElement("span");
       ico.className = "tool-ico";
       if (c.icon) ico.innerHTML = c.icon;
-      else ico.textContent = c.ico;
       const label = document.createElement("span");
       label.textContent = c.label;
       b.append(ico, label);

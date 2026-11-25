@@ -111,10 +111,10 @@
         });
       }
 
-      const liveKeyEnterBtn = document.getElementById("liveKeyEnterBtn");
-      const liveKeySaveBtn = document.getElementById("liveKeySaveBtn");
-      const liveKeyNewBtn = document.getElementById("liveKeyNewBtn");
-      const liveKeyEscBtn = document.getElementById("liveKeyEscBtn");
+      const liveKeyEnterBtn = /** @type {HTMLButtonElement} */ (document.getElementById("liveKeyEnterBtn"));
+      const liveKeySaveBtn = /** @type {HTMLButtonElement} */ (document.getElementById("liveKeySaveBtn"));
+      const liveKeyNewBtn = /** @type {HTMLButtonElement} */ (document.getElementById("liveKeyNewBtn"));
+      const liveKeyEscBtn = /** @type {HTMLButtonElement} */ (document.getElementById("liveKeyEscBtn"));
 
       async function triggerKeyboardAction(options) {
         playSciFiSound("confirm");
@@ -136,7 +136,7 @@
       if (liveKeyNewBtn) liveKeyNewBtn.addEventListener("click", () => triggerKeyboardAction({ keyboardAction: "hotkey", hotkey: "ctrl+n" }));
       if (liveKeyEscBtn) liveKeyEscBtn.addEventListener("click", () => triggerKeyboardAction({ keyboardAction: "press", key: "esc" }));
 
-      const liveAgentActBtn = document.getElementById("liveAgentActBtn");
+      const liveAgentActBtn = /** @type {HTMLButtonElement} */ (document.getElementById("liveAgentActBtn"));
       if (liveAgentActBtn) {
         liveAgentActBtn.addEventListener("click", () => {
           const promptVal = promptEl?.value?.trim() || "";
