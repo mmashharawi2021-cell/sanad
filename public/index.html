@@ -1650,14 +1650,21 @@
        * الطلبات الحساسة تمر بنافذة التأكيد في api-guard.js (انظر الغلاف «أمان» أدناه).
        */
       async function checkAndExecuteModelTools(assistant) {
-        if (!assistant || !assistant.content || !window.sanadModelTools) return;
+        if (!assistant || !window.sanadModelTools) return;
+        // طلبات منظّمة (function calling) تُقدَّم على الوسوم النصية؛ ولا تُحفظ مع المحادثة
+        const calls = assistant.toolCalls;
+        delete assistant.toolCalls;
+        if (!calls?.length && !assistant.content) return;
         const json = (res) => res.json();
-        const out = await window.sanadModelTools.execute(assistant.content, {
+        const ctx = {
           get: (path) => fetch(path).then(json),
           post: (path, body) => fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(json),
           sound: playSciFiSound,
           openProjectPreview: (name) => setTimeout(() => window.openProjectPreview?.(name, "index.html"), 800),
-        });
+        };
+        const out = calls?.length
+          ? await window.sanadModelTools.executeCalls(assistant.content, calls, ctx)
+          : await window.sanadModelTools.execute(assistant.content, ctx);
         if (!out) return;
         assistant.content = out.content;
         renderThread();
@@ -1724,6 +1731,12 @@
           assistant.content += data.text ?? "";
           paint();
           scrollToBottom();
+          return false;
+        }
+
+        // «استدعاء الأدوات» الرسمي: يُجمع ثم يُنفَّذ بعد اكتمال البث (checkAndExecuteModelTools ← model-tools.js)
+        if (eventName === "tool_call") {
+          if (typeof data.name === "string") (assistant.toolCalls ||= []).push({ name: data.name, arguments: data.arguments ?? "{}" });
           return false;
         }
 

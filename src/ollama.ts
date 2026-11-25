@@ -208,6 +208,7 @@ export async function* askOllamaStream(
         keep_alive: ollamaKeepAlive(),
         think: ollamaThink(),
         options: ollamaRuntimeOptions(),
+        ...(options.tools?.length ? { tools: options.tools } : {}),
       }),
       signal: options.signal,
     });
@@ -250,6 +251,13 @@ export async function* askOllamaStream(
           if (chunk.message?.content) {
             yield { type: "delta", text: chunk.message.content };
           }
+          // Ollama يرسل طلب الأداة كاملاً (المعطيات كائن لا نص)
+          for (const call of chunk.message?.tool_calls ?? []) {
+            const name = call?.function?.name;
+            if (typeof name !== "string" || !name) continue;
+            const args = call.function.arguments;
+            yield { type: "tool_call", name, arguments: typeof args === "string" ? args : JSON.stringify(args ?? {}) };
+          }
           if (chunk.done) {
             const promptTokens = chunk.prompt_eval_count || 0;
             const completionTokens = chunk.eval_count || 0;
@@ -275,4 +283,21 @@ export async function* askOllamaStream(
     latencyMs: Date.now() - startedAt,
     usage,
   };
+}
+
+const toolSupportCache = new Map<string, boolean>();
+/** هل يدعم النموذج المحلي «استدعاء الأدوات»؟ من capabilities في /api/show، مع ذاكرة لكل نموذج. */
+export async function ollamaSupportsTools(model: string): Promise<boolean> {
+  const name = cleanOllamaModelName(model);
+  const known = toolSupportCache.get(name);
+  if (known !== undefined) return known;
+  try {
+    const res = await fetch(`${OLLAMA_HOST}/api/show`, { method: "POST", body: JSON.stringify({ model: name }), signal: AbortSignal.timeout(5000) });
+    const data = (await res.json()) as { capabilities?: unknown };
+    const ok = Array.isArray(data.capabilities) && data.capabilities.includes("tools");
+    toolSupportCache.set(name, ok);
+    return ok;
+  } catch {
+    return false;
+  }
 }

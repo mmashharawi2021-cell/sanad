@@ -1,8 +1,9 @@
 import type { IncomingMessage } from "node:http";
-import { AppError, getConfig } from "../config";
+import { AppError, getConfig, SANAD_LOCAL_NATIVE_PROMPT, SANAD_NATIVE_TOOLS_PROMPT } from "../config";
 import { readModelCatalog, toChatModels, type ChatModel, type OpenRouterModel } from "../models";
 import { ask, askStream, toAppError, type Answer, type ChatTurn } from "../openrouter";
-import { askOllama, askOllamaStream, cleanOllamaModelName, getOllamaChatModels, getOllamaStatus, isOllamaModel } from "../ollama";
+import { askOllama, askOllamaStream, cleanOllamaModelName, getOllamaChatModels, getOllamaStatus, isOllamaModel, ollamaSupportsTools } from "../ollama";
+import { toolDefinitions } from "../modelTools";
 import { getLocalSystemPromptWithMemory, getSystemPromptWithMemory } from "../memory";
 import { ensureOllamaRunning, getBrainStatus, getSanadMode, isNetworkError, isOnline, isSanadMode, markOffline, requireLocalModel, resolveLocalModel, setSanadMode } from "../offlineBrain";
 import type { Generate } from "../selfDev";
@@ -207,6 +208,30 @@ async function resolveModels(): Promise<ModelsResult> {
   });
 }
 
+/**
+ * طريقة طلب النموذج للأدوات (SANAD_TOOL_MODE):
+ * - auto (الافتراضي): «استدعاء الأدوات» الرسمي للنماذج السحابية التي تعلن دعمه، والوسوم النصية للنموذج المحلي
+ *   (قياس على qwen3.5:4b: الدقة نفسها 12/12، والرسمي أبطأ بنحو 65% لأن تعريفات الأدوات تُضاف لكل طلب).
+ * - native: الرسمي حيثما أمكن (والمحلي إن كان يدعمه).   - text: الوسوم النصية دائماً.
+ */
+type ToolMode = "auto" | "native" | "text";
+function getToolMode(): ToolMode {
+  const v = process.env.SANAD_TOOL_MODE?.trim().toLowerCase();
+  return v === "native" || v === "text" ? v : "auto";
+}
+
+async function cloudUsesNativeTools(model: string | undefined): Promise<boolean> {
+  const mode = getToolMode();
+  if (mode !== "auto") return mode === "native";
+  const id = model || getConfig().model;
+  const known = modelsCache?.models.find((m) => m.id === id) ?? (await readModelCatalog()).models.find((m) => m.id === id);
+  return known?.tools === true;
+}
+
+async function localUsesNativeTools(model: string): Promise<boolean> {
+  return getToolMode() === "native" && (await ollamaSupportsTools(model));
+}
+
 /** Server-sent events: delta… delta, then done (or a single error event). */
 async function handleStream({ req, res }: RouteContext): Promise<void> {
   const { prompt, model, messages } = await readChatRequest(req);
@@ -231,8 +256,10 @@ async function handleStream({ req, res }: RouteContext): Promise<void> {
     const streamLocal = async (localModel: string, notice?: string): Promise<void> => {
       if (notice) write(res, frame("notice", { message: notice, model: localModel }));
       await ensureOllamaRunning();
-      const system = await getLocalSystemPromptWithMemory();
-      for await (const event of askOllamaStream(prompt, { model: localModel, messages, system, signal })) {
+      const native = await localUsesNativeTools(localModel);
+      const system = await getLocalSystemPromptWithMemory(native ? SANAD_LOCAL_NATIVE_PROMPT : undefined);
+      const tools = native ? toolDefinitions() : undefined;
+      for await (const event of askOllamaStream(prompt, { model: localModel, messages, system, signal, tools })) {
         if (clientGone.signal.aborted) break;
         write(res, frame(event.type, event));
       }
@@ -243,12 +270,24 @@ async function handleStream({ req, res }: RouteContext): Promise<void> {
       await streamLocal(route.model, route.notice);
     } else {
       let sentDeltas = 0;
-      try {
-        const system = await getSystemPromptWithMemory();
-        for await (const event of askStream(prompt, { model, messages, system, signal })) {
+      const streamCloud = async (native: boolean): Promise<void> => {
+        const system = await getSystemPromptWithMemory(native ? SANAD_NATIVE_TOOLS_PROMPT : undefined);
+        const tools = native ? toolDefinitions() : undefined;
+        for await (const event of askStream(prompt, { model, messages, system, signal, tools })) {
           if (clientGone.signal.aborted) break;
-          if (event.type === "delta") sentDeltas++;
+          if (event.type === "delta" || event.type === "tool_call") sentDeltas++;
           write(res, frame(event.type, event));
+        }
+      };
+      try {
+        const native = await cloudUsesNativeTools(model);
+        try {
+          await streamCloud(native);
+        } catch (error) {
+          // مزوّد رفض الأدوات الرسمية قبل أي رد ← نفس الطلب بالوسوم النصية (المسار الاحتياطي)
+          if (!native || sentDeltas > 0 || clientGone.signal.aborted || isNetworkError(error)) throw error;
+          console.warn(`[tools] الأدوات الرسمية رُفضت (${toAppError(error).message}) — إعادة بالوسوم النصية`);
+          await streamCloud(false);
         }
       } catch (error) {
         // Only fall back when nothing was streamed yet and the failure is connectivity, not an API error.

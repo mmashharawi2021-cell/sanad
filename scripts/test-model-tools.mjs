@@ -107,6 +107,49 @@ check("تنفيذ: علامات ` في المخرجات لا تكسر كتلة �
   const out = await execute(tag("run_command", { command: "echo" }), mockCtx({ stdout: "```\n<b>x</b>", command: "echo", exitCode: 0 }));
   assert.equal((out.content.match(/```/g) || []).length, 2);
 });
+/* ---------- «استدعاء الأدوات» الرسمي ---------- */
+const { definitions, executeCalls } = sandbox.module.exports;
+check("تعريف رسمي لكل أداة، والحقول المطلوبة موجودة في الخصائص، ولا حقول إضافية", () => {
+  const defs = plain(definitions());
+  assert.deepEqual(defs.map((d) => d.function.name).sort(), Object.keys(TOOLS).sort());
+  for (const d of defs) {
+    assert.equal(d.type, "function");
+    assert.ok(d.function.description, `${d.function.name}: لا وصف`);
+    const p = d.function.parameters;
+    assert.equal(p.type, "object");
+    assert.equal(p.additionalProperties, false);
+    for (const r of p.required) assert.ok(r in p.properties, `${d.function.name}: ${r}`);
+  }
+});
+check("التعريف يحمل القيود: القيم المسموحة والمدى", () => {
+  const defs = plain(definitions());
+  const routine = defs.find((d) => d.function.name === "daily_routine").function.parameters.properties.routine;
+  assert.deepEqual(routine.enum, ["morning", "focus", "wrapup"]);
+  const pct = defs.find((d) => d.function.name === "set_brightness").function.parameters.properties.percent;
+  assert.equal(pct.maximum, 100);
+});
+check("منظّم: طلب صالح يُنفَّذ (المعطيات نص JSON أو كائن)", async () => {
+  const ctx = mockCtx({ message: "تم" });
+  const out = await executeCalls("", [{ name: "launch_app", arguments: '{"appName":"calc"}' }], ctx);
+  assert.equal(ctx.sent[0].body.target, "calc");
+  assert.equal(out.executed, "launch_app");
+  const ctx2 = mockCtx();
+  await executeCalls("", [{ name: "set_brightness", arguments: { percent: 40 } }], ctx2);
+  assert.equal(ctx2.sent[0].body.percent, 40);
+});
+check("منظّم: نفس التحقق — طلب غير صالح لا يُرسل", async () => {
+  const ctx = mockCtx();
+  const out = await executeCalls("نص", [{ name: "daily_routine", arguments: '{"routine":"evil"}' }, { name: "format_disk", arguments: "{}" }], ctx);
+  assert.equal(ctx.sent.length, 0);
+  assert.match(out.content, /غير مسموحة/);
+  assert.match(out.content, /غير معروفة/);
+});
+check("منظّم: أكثر من طلب صالح ← الأول فقط", async () => {
+  const ctx = mockCtx();
+  await executeCalls("", [{ name: "launch_app", arguments: '{"appName":"calc"}' }, { name: "run_command", arguments: '{"command":"shutdown /s"}' }], ctx);
+  assert.equal(ctx.sent.length, 1);
+});
+
 check("كل أداة في config.ts معرّفة هنا", () => {
   const cfg = readFileSync(new URL("../src/config.ts", import.meta.url), "utf8");
   const named = [...cfg.matchAll(/<tool_name>([a-z_]+)<\/tool_name>|^- ([a-z_]+): \{/gm)].map((m) => m[1] || m[2]);

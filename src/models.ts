@@ -11,6 +11,8 @@ export type ChatModel = {
   maxOutput: number | null;
   inputModalities: string[];
   description?: string;
+  /** يدعم «استدعاء الأدوات» الرسمي (من supported_parameters في OpenRouter). غير معروف = لا. */
+  tools?: boolean;
 };
 
 /** Shape of an entry from https://openrouter.ai/api/v1/models (only the fields used here). */
@@ -22,6 +24,7 @@ export type OpenRouterModel = {
   pricing?: { prompt?: string; completion?: string };
   top_provider?: { max_completion_tokens?: number | null };
   architecture?: { input_modalities?: string[]; output_modalities?: string[] };
+  supported_parameters?: string[];
 };
 
 export type ModelCatalog = {
@@ -83,6 +86,7 @@ export function toChatModels(raw: OpenRouterModel[]): ChatModel[] {
       maxOutput: model.top_provider?.max_completion_tokens ?? null,
       inputModalities: model.architecture?.input_modalities ?? ["text"],
       description: model.description,
+      tools: Array.isArray(model.supported_parameters) && model.supported_parameters.includes("tools"),
     });
   }
 
@@ -106,6 +110,7 @@ function parseChatModel(value: unknown): ChatModel[] {
         ? model.inputModalities.filter((item): item is string => typeof item === "string")
         : ["text"],
       description: typeof model.description === "string" ? model.description : undefined,
+      tools: model.tools === true,
     },
   ];
 }

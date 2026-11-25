@@ -134,9 +134,9 @@ export async function clearAllMemories(): Promise<void> {
 }
 
 /** Same as getSystemPromptWithMemory, built on the compact prompt for small local models. */
-export function getLocalSystemPromptWithMemory(): Promise<string> {
+export function getLocalSystemPromptWithMemory(basePrompt: string = SANAD_LOCAL_SYSTEM_PROMPT): Promise<string> {
   // النموذج المحلي (Ollama) يعمل على الجهاز نفسه: الذاكرة كاملة دائماً
-  return getSystemPromptWithMemory(SANAD_LOCAL_SYSTEM_PROMPT, { cloud: false });
+  return getSystemPromptWithMemory(basePrompt, { cloud: false });
 }
 
 /**

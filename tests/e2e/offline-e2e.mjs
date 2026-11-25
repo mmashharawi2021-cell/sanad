@@ -74,6 +74,41 @@ try {
     await s.request("/api/brain/mode", { body: { mode: "auto" } });
     return `${models.length} نموذج محلي`;
   });
+  // أدوات النموذج: الخادم يمرّر الطلب فقط ولا ينفّذ شيئاً (التنفيذ في الواجهة بعد موافقة المستخدم)
+  const askTool = async (server, content) => {
+    const r = await server.request("/api/chat/stream", { body: { messages: [{ role: "user", content }], model: "" }, timeoutMs: 120_000 });
+    const calls = [...r.text.matchAll(/event: tool_call\ndata: (.*)/g)].map((m) => JSON.parse(m[1]));
+    const text = [...r.text.matchAll(/event: delta\ndata: (.*)/g)].map((m) => JSON.parse(m[1]).text).join("");
+    return { calls, text };
+  };
+  await step("أداة بالوسوم النصية (الافتراضي محلياً)", async () => {
+    const { calls, text } = await askTool(s, "افتح الآلة الحاسبة");
+    must(calls.length === 0, "أُرسل tool_call في الوضع النصي");
+    must(/<tool_name>\s*launch_app\s*<\/tool_name>/.test(text), `الرد: ${text.slice(0, 120)}`);
+    return "launch_app (وسم نصي)";
+  });
+  {
+    const native = await startSanad({
+      env: { SANAD_MODE: "offline", SANAD_TOOL_MODE: "native", OLLAMA_AUTOSTART: "true" },
+      nodeOptions: `--require ${join(ROOT, "tests", "helpers", "offline-preload.cjs").replace(/\\/g, "/")}`,
+    });
+    try {
+      await step("أداة بالاستدعاء الرسمي (SANAD_TOOL_MODE=native)", async () => {
+        const { calls, text } = await askTool(native, "افتح الآلة الحاسبة");
+        must(calls.length >= 1 && calls[0].name === "launch_app", `الطلبات: ${JSON.stringify(calls)} | النص: ${text.slice(0, 80)}`);
+        must(!/<tool_use>/.test(text), "ظهر وسم نصي في الرد");
+        return `launch_app ${calls[0].arguments}`;
+      });
+      await step("سؤال بالاستدعاء الرسمي ← نص بلا أداة", async () => {
+        const { calls, text } = await askTool(native, "ما الأمر لعرض العمليات في PowerShell؟");
+        must(calls.length === 0, `استدعى أداة: ${JSON.stringify(calls)}`);
+        must(text.trim().length > 0, "لا نص");
+        return text.replace(/\s+/g, " ").slice(0, 40);
+      });
+    } finally {
+      await native.stop();
+    }
+  }
   if (VISION) {
     await step("فحص الشاشة (رؤية محلية)", async () => {
       const r = await s.request("/api/vision/analyze", { body: { imageBase64: tinyPng().toString("base64"), mimeType: "image/png", prompt: "صف الصورة بجملة." } });

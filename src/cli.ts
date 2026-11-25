@@ -21,7 +21,7 @@ try {
     for await (const event of askStream(prompt)) {
       if (event.type === "delta") {
         process.stdout.write(event.text);
-      } else {
+      } else if (event.type === "done") {
         servedModel = event.model;
         latencyMs = event.latencyMs;
         usage = event.usage;

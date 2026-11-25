@@ -1,5 +1,6 @@
 import { OpenRouter } from "@openrouter/sdk";
 import { AppError, getConfig, JARVIS_SYSTEM_PROMPT } from "./config";
+import type { ToolDefinition } from "./modelTools";
 
 export type Usage = {
   promptTokens: number;
@@ -23,6 +24,8 @@ export type AskOptions = {
   messages?: ChatTurn[];
   /** Abort signal to cancel the request. */
   signal?: AbortSignal;
+  /** «استدعاء الأدوات» الرسمي: تعريفات الأدوات (من public/model-tools.js). دونها يعمل المسار النصي. */
+  tools?: ToolDefinition[];
 };
 
 export type ChatTurn = {
@@ -32,6 +35,8 @@ export type ChatTurn = {
 
 export type StreamEvent =
   | { type: "delta"; text: string }
+  /** طلب أداة منظّم؛ الخادم لا ينفّذه، بل يمرّره للواجهة التي تتحقق منه وتطلب موافقة المستخدم. */
+  | { type: "tool_call"; name: string; arguments: string }
   | { type: "done"; model: string; latencyMs: number; usage?: Usage };
 
 let client: OpenRouter | undefined;
@@ -136,6 +141,8 @@ export async function* askStream(prompt: string, options: AskOptions = {}): Asyn
   let servedModel = model;
   let usage: Usage | undefined;
   let received = 0;
+  // أجزاء طلبات الأدوات تصل مقطّعة عبر البث: تُجمع حسب index ثم تُرسل كاملة في النهاية
+  const toolParts = new Map<number, { name: string; arguments: string }>();
 
   try {
     const stream = await getClient().chat.send(
@@ -146,6 +153,7 @@ export async function* askStream(prompt: string, options: AskOptions = {}): Asyn
         temperature: 0.7,
         stream: true,
         streamOptions: { includeUsage: true },
+        ...(options.tools?.length ? { tools: options.tools, toolChoice: "auto" } : {}),
       },
       { signal: options.signal, timeoutMs: 90_000 },
     );
@@ -166,12 +174,21 @@ export async function* askStream(prompt: string, options: AskOptions = {}): Asyn
         received += delta.length;
         yield { type: "delta", text: delta };
       }
+      for (const call of chunk.choices?.[0]?.delta?.toolCalls ?? []) {
+        const part = toolParts.get(call.index) ?? { name: "", arguments: "" };
+        if (call.function?.name) part.name += call.function.name;
+        if (call.function?.arguments) part.arguments += call.function.arguments;
+        toolParts.set(call.index, part);
+      }
     }
   } catch (error) {
     throw toAppError(error);
   }
 
-  if (received === 0) {
+  const toolCalls = [...toolParts.entries()].sort(([a], [b]) => a - b).map(([, p]) => p).filter((p) => p.name);
+  for (const call of toolCalls) yield { type: "tool_call", name: call.name, arguments: call.arguments || "{}" };
+
+  if (received === 0 && toolCalls.length === 0) {
     throw new AppError("The model returned no text.", {
       status: 502,
       hint: "Try again, or pick another free model.",

@@ -161,6 +161,58 @@
     },
   };
 
+  /* ---------------- تعريفات «استدعاء الأدوات» الرسمي (function calling) ----------------
+     تُبنى من الحقول نفسها: الخادم يقرؤها من هذا الملف ويرسلها للنموذج (src/modelTools.ts)،
+     فالأداة تُعرَّف في مكان واحد ويتحقق منها نفس validate() مهما كانت طريقة الاستدعاء. */
+  const DESCRIPTIONS = {
+    run_command: "تشغيل أمر في طرفية الجهاز (PowerShell افتراضياً). فقط عندما يطلب المستخدم تنفيذ أمر صراحة.",
+    launch_app: "فتح برنامج على الجهاز، مثل calc أو notepad أو chrome أو vscode.",
+    kill_process: "إغلاق برنامج أو عملية بالاسم أو رقم PID.",
+    set_brightness: "ضبط سطوع الشاشة بنسبة مئوية.",
+    daily_routine: "تشغيل روتين يومي: morning (بداية العمل) أو focus (تركيز) أو wrapup (نهاية العمل).",
+    organize_desktop: "فرز ملفات سطح المكتب أو التنزيلات في مجلدات حسب النوع.",
+    workspace_preset: "تجهيز بيئة عمل (فتح برامجها).",
+    create_project: "إنشاء مشروع برمجي على سطح المكتب: إما من قالب، أو بملفات محددة.",
+    create_file: "إنشاء ملف نصي وكتابة محتواه، مثل Desktop/notes.txt.",
+    web_search: "بحث مباشر في الويب عن معلومة حية.",
+    optimize_ram: "تحرير الذاكرة العشوائية (RAM).",
+    clean_disk: "حذف الملفات المؤقتة والكاش بأمان.",
+    inspect_disks: "عرض مساحات أقراص الجهاز.",
+    find_large_files: "البحث عن أكبر الملفات على الجهاز.",
+    open_media: "فتح صورة أو ملف PDF من سطح المكتب أو التنزيلات.",
+  };
+  function fieldSchema(f) {
+    if (f.type === "files") {
+      return {
+        type: "array",
+        maxItems: f.maxItems,
+        items: { type: "object", properties: { relativePath: { type: "string" }, content: { type: "string" } }, required: ["relativePath", "content"], additionalProperties: false },
+      };
+    }
+    const s = f.type === "string|number" ? { type: ["string", "number"] } : { type: f.type };
+    if (f.enum) s.enum = f.enum;
+    if (f.maxLen) s.maxLength = f.maxLen;
+    if (f.type === "number" && f.min != null) s.minimum = f.min;
+    if (f.type === "number" && f.max != null) s.maximum = f.max;
+    return s;
+  }
+  /** تعريفات الأدوات بصيغة OpenAI/OpenRouter/Ollama: [{ type: "function", function: { name, description, parameters } }] */
+  function definitions() {
+    return Object.entries(TOOLS).map(([name, t]) => ({
+      type: "function",
+      function: {
+        name,
+        description: DESCRIPTIONS[name] || t.title,
+        parameters: {
+          type: "object",
+          properties: Object.fromEntries(Object.entries(t.fields).map(([k, f]) => [k, fieldSchema(f)])),
+          required: Object.entries(t.fields).filter(([, f]) => f.req).map(([k]) => k),
+          additionalProperties: false,
+        },
+      },
+    }));
+  }
+
   const ALIASES = {};
   for (const [name, t] of Object.entries(TOOLS)) for (const al of t.aliases || []) ALIASES[al] = name;
   ALIASES.execute_command = "run_command";
@@ -269,7 +321,44 @@
     return { content: [base, result, ...notes].filter(Boolean).join("\n\n"), executed: valid ? valid.name : null };
   }
 
-  const api = { TOOLS, ALIASES, parse, validate, stripCalls, execute, maskCode, unwrapFencedCalls };
+  /** طلب أداة منظّم (function calling): الاسم والمعطيات (كائن أو نص JSON) ← { name, args } أو { name, error }. */
+  function resolveCall(rawName, rawArgs) {
+    const name = ALIASES[rawName] || rawName;
+    const tool = TOOLS[name];
+    if (!tool) return { name: String(rawName), error: `أداة غير معروفة: «${rawName}».` };
+    let args = rawArgs;
+    if (typeof rawArgs === "string") {
+      try { args = JSON.parse(rawArgs.trim() || "{}"); } catch { return { name, error: "معطيات JSON غير صالحة." }; }
+    }
+    if (args == null) args = {};
+    const error = validate(tool, args);
+    return error ? { name, error } : { name, args };
+  }
+
+  /**
+   * ينفّذ طلبات الأدوات المنظّمة القادمة من البث (حدث tool_call). نفس قواعد execute: تحقق صارم، أول طلب صالح فقط.
+   * calls: [{ name, arguments }] — يعيد { content, executed }.
+   */
+  async function executeCalls(text, calls, ctx) {
+    const resolved = (calls || []).map((c) => resolveCall(c && c.name, c && c.arguments));
+    if (!resolved.length) return null;
+    const notes = [];
+    const valid = resolved.find((c) => !c.error);
+    for (const c of resolved) if (c.error) notes.push(`> ⚠️ **لم يُنفَّذ طلب الأداة \`${fence(c.name)}\`:** ${c.error}`);
+    if (valid && resolved.filter((c) => !c.error).length > 1) notes.push("> ℹ️ طلب النموذج أكثر من إجراء؛ نُفِّذ الأول فقط.");
+    let result = "";
+    if (valid) {
+      try {
+        result = await TOOLS[valid.name].run(valid.args, ctx);
+        ctx.sound?.("action");
+      } catch (e) {
+        result = `> ❌ **تعذر تنفيذ «${TOOLS[valid.name].title}»:** ${quote(e && e.message ? e.message : e)}`;
+      }
+    }
+    return { content: [String(text || "").trim(), result, ...notes].filter(Boolean).join("\n\n"), executed: valid ? valid.name : null };
+  }
+
+  const api = { TOOLS, ALIASES, parse, validate, stripCalls, execute, executeCalls, resolveCall, definitions, maskCode, unwrapFencedCalls };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.sanadModelTools = api;
 })(typeof window !== "undefined" ? window : globalThis);
