@@ -3064,7 +3064,7 @@ body { background: var(--surface-0); }
 /* Calm logo: no spinning rings unless voice mode is active */
 .chat-head .arc-reactor-hud:not(.active) *,
 .brand .arc-reactor-hud *,
-.hero-mark .arc-reactor-hud * { animation: none !important; }
+.hero-mark .arc-reactor-hud * { animation: none; }
 .arc-outer-ring { border-style: solid; border-color: color-mix(in srgb, var(--brand) 30%, transparent); }
 .arc-middle-ring { border-color: transparent; }
 .arc-inner-core { background: radial-gradient(circle at 35% 35%, var(--color-white), var(--brand) 70%); box-shadow: 0 0 12px color-mix(in srgb, var(--brand) 50%, transparent); }
@@ -4586,8 +4586,8 @@ body.island-only-mode .ios-tabs { display: none; }
 .ios-sheet .terminal-header {
   position: relative;
   background: transparent;
-  border-bottom: var(--hairline) solid transparent !important;
-  padding: 22px 18px 10px !important;
+  border-bottom: var(--hairline) solid transparent;
+  padding: 22px 18px 10px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -4640,7 +4640,7 @@ body.island-only-mode .ios-tabs { display: none; }
 .sheet-done:hover { filter: brightness(1.15); }
 
 /* الجسم: خلفية مجمّعة */
-.ios-sheet .memory-body { padding: 8px 18px 24px !important; gap: 18px; background: transparent !important; }
+.ios-sheet .memory-body { padding: 8px 18px 24px !important; gap: 18px; background: transparent; }
 .ios-sheet .memory-desc { font-size: var(--fs-footnote); color: var(--text-2); padding: 0 6px; }
 .ios-sheet .memory-body h3 {
   font-size: var(--fs-footnote) !important;
@@ -4762,20 +4762,20 @@ body.island-only-mode .ios-tabs { display: none; }
 .ios-segmented {
   display: inline-flex;
   gap: 2px;
-  padding: 2px !important;
-  border: 0 !important;
-  border-radius: 9px !important;
-  background: rgba(118, 118, 128, 0.24) !important;
+  padding: 2px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, 0.24);
 }
 .ios-segmented .seg-btn,
 .ios-segmented > button {
   flex: 1;
-  border: 0 !important;
-  border-radius: 7px !important;
-  padding: 5px 12px !important;
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 12px;
   background: transparent !important;
-  color: var(--text-1) !important;
-  font-size: 13px !important;
+  color: var(--text-1);
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: background 200ms var(--ease);
@@ -4805,7 +4805,7 @@ body.island-only-mode .ios-tabs { display: none; }
 #terminalModal .terminal-input { background: rgba(118, 118, 128, 0.24); border-radius: 10px; padding: 8px 12px; border: 0; color: var(--color-white); }
 #terminalModal .terminal-run-btn { border-radius: 10px; }
 #terminalModal .terminal-seg { background: rgba(118, 118, 128, 0.24); }
-#terminalModal .terminal-seg .seg-btn { color: var(--color-white) !important; }
+#terminalModal .terminal-seg .seg-btn { color: var(--color-white); }
 #terminalModal .terminal-seg .seg-btn.on { background: var(--color-636366) !important; }
 
 /* ---------- الهاتف: ورقة من الأسفل ---------- */
@@ -4827,7 +4827,7 @@ body.island-only-mode .ios-tabs { display: none; }
 .sidebar { background: var(--sheet-bg); gap: 10px; padding: 16px 14px 14px; }
 :root:not([data-theme="light"]) .sidebar { background: var(--color-black); }
 .sidebar .brand { font-size: 13px; color: var(--text-2); padding-inline: 4px; }
-.sidebar .brand .arc-reactor-hud { width: 20px !important; height: 20px !important; }
+.sidebar .brand .arc-reactor-hud { width: 20px; height: 20px; }
 
 /* العنوان الكبير + زر الإنشاء */
 .side-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
@@ -5080,13 +5080,13 @@ body.island-only-mode .ios-tabs { display: none; }
 [style*="#f85149"] { color: var(--danger-1); }
 
 /* أكبر الملفات: صفوف قائمة */
-#sysLargeFilesList { gap: 0 !important; border-radius: 12px; overflow: hidden; }
+#sysLargeFilesList { gap: 0; border-radius: 12px; overflow: hidden; }
 #sysLargeFilesList > div[style] {
   background: transparent;
   border: 0;
   border-radius: 0;
   border-top: var(--hairline) solid var(--cell-sep);
-  padding: 10px 4px !important;
+  padding: 10px 4px;
 }
 #sysLargeFilesList > div[style]:first-child { border-top: 0; }
 #sysLargeFilesList span[style*="border-radius: 4px"] { border-radius: 999px; }
@@ -5123,8 +5123,8 @@ body.island-only-mode .ios-tabs { display: none; }
   font-size: var(--fs-footnote);
   border-bottom: var(--hairline) solid var(--cell-sep);
 }
-.ios-sheet .net-table td { border-bottom: var(--hairline) solid var(--cell-sep) !important; color: var(--text-1) !important; }
-.ios-sheet .net-table tr:last-child td { border-bottom: 0 !important; }
+.ios-sheet .net-table td { border-bottom: var(--hairline) solid var(--cell-sep); color: var(--text-1) !important; }
+.ios-sheet .net-table tr:last-child td { border-bottom: 0; }
 .ios-sheet .net-table .mono,
 .ios-sheet .net-table .mono strong { color: var(--text-1) !important; }
 .ios-sheet .net-table tr.net-dev td:first-child { box-shadow: inset -3px 0 0 var(--brand); }
@@ -5185,7 +5185,7 @@ body.island-only-mode .ios-tabs { display: none; }
 .ios-sheet #workflowsList [style*="0, 242, 254"] { color: var(--brand); background: var(--tint-fill) !important; border-color: transparent; }
 
 /* ---------- المعاينة الحية ---------- */
-#previewProjectName { font-family: var(--font-sans) !important; color: var(--text-2) !important; font-weight: 500; }
+#previewProjectName { font-family: var(--font-sans); color: var(--text-2); font-weight: 500; }
 
 /* ---------- الكبسولة (وضع الكبسولة) بشكل Dynamic Island موسّعة ---------- */
 .cyber-island {
@@ -5228,15 +5228,15 @@ body.island-only-mode .ios-tabs { display: none; }
 }
 .live-stream-hud .live-badge { color: var(--danger-1); }
 .live-stream-hud .live-hud-btn {
-  border: 0 !important;
+  border: 0;
   border-radius: 14px;
-  background: var(--field-bg) !important;
+  background: var(--field-bg);
   color: var(--text-1);
   box-shadow: none;
 }
 .live-stream-hud .live-hud-btn-primary,
-.live-stream-hud #liveAgentActBtn { background: var(--brand) !important; color: var(--on-brand); border: 0 !important; }
-#liveFpsBadge { color: var(--text-2) !important; font-family: var(--font-sans) !important; }
+.live-stream-hud #liveAgentActBtn { background: var(--brand); color: var(--on-brand); border: 0; }
+#liveFpsBadge { color: var(--text-2); font-family: var(--font-sans); }
 
 /* ---------- حالة الاتصال: نقطة iOS بلا توهج ---------- */
 [data-brain="cloud"] { background: var(--success); box-shadow: none; }

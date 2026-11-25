@@ -144,6 +144,82 @@ const PAGE_LIB = `(() => {
       }
       return { elements: a.length, diffs, needed: [...needed], skipped };
     },
+    /**
+     * أنماط داخلية (style="…") من هيكل الصفحة: تُزال مؤقتاً من العناصر التي نصّها مطابق، ويُقارن الشكل.
+     * يعيد لكل نمط هل غيّرت إزالته شيئاً (في العنصر نفسه أو داخله).
+     */
+    async compareInline(styles, keep) {
+      this.freeze();
+      await frames();
+      const list = els();
+      const targets = list.map((el, i) => ({ el, i, s: el.getAttribute("style") })).filter((t) => t.s !== null && styles.includes(t.s) && !keep.includes(t.s));
+      const a = snap();
+      for (const t of targets) t.el.removeAttribute("style");
+      await frames();
+      const b = snap();
+      for (const t of targets) t.el.setAttribute("style", t.s);
+      await frames();
+      const a2 = snap();
+      if (a2.length !== a.length || b.length !== a.length) return { unstable: true };
+      const needed = new Set();
+      let diffs = 0;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] === b[i]) continue;
+        const va = a[i].split("\\u0001"), vb = b[i].split("\\u0001"), va2 = a2[i].split("\\u0001");
+        if (!PROPS.some((_, k) => va[k] !== vb[k] && va[k] === va2[k])) continue;
+        diffs++;
+        // السبب: أقرب عنصر (العنصر نفسه أو أحد آبائه) أُزيل نمطه
+        for (let p = list[i]; p; p = p.parentElement) {
+          const t = targets.find((x) => x.el === p);
+          if (t) { needed.add(t.s); break; }
+        }
+      }
+      return { elements: a.length, removed: targets.length, diffs, needed: [...needed] };
+    },
+    /**
+     * مثل compareInline لكن لكل خاصية على حدة: items = [{ style, prop }] — تُحذف الخاصية prop من كل عنصر
+     * نمطه الأصلي style، وتُنسب الفروق إلى (style, prop) المسؤول. keep: مفاتيح "style\\u0002prop" تبقى.
+     */
+    async compareInlineProps(items, keep) {
+      this.freeze();
+      await frames();
+      const list = els();
+      const keyOf = (it) => it.style + "\\u0002" + it.prop;
+      const active = items.filter((it) => !keep.includes(keyOf(it)));
+      const targets = [];
+      for (const el of list) {
+        const s = el.getAttribute("style");
+        if (s === null) continue;
+        const props = active.filter((it) => it.style === s).map((it) => it.prop);
+        if (props.length) targets.push({ el, s, props });
+      }
+      const a = snap();
+      for (const t of targets) for (const p of t.props) t.el.style.removeProperty(p);
+      await frames();
+      const b = snap();
+      for (const t of targets) t.el.setAttribute("style", t.s);
+      await frames();
+      const a2 = snap();
+      if (a2.length !== a.length || b.length !== a.length) return { unstable: true };
+      const needed = new Set();
+      let diffs = 0;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] === b[i]) continue;
+        const va = a[i].split("\\u0001"), vb = b[i].split("\\u0001"), va2 = a2[i].split("\\u0001");
+        const changed = PROPS.filter((_, k) => va[k] !== vb[k] && va[k] === va2[k]);
+        if (!changed.length) continue;
+        diffs++;
+        // العنصر نفسه: الخاصية المحذوفة التي تؤثر في ما تغيّر؛ وإلا أقرب أب له خصائص محذوفة (كلها احتياطاً)
+        const own = targets.find((x) => x.el === list[i]);
+        const hits = own ? own.props.filter((p) => changed.some((c) => physical(p).includes(c))) : [];
+        if (hits.length) { for (const p of hits) needed.add(own.s + "\\u0002" + p); continue; }
+        for (let p = own ? list[i] : list[i].parentElement; p; p = p.parentElement) {
+          const t = targets.find((x) => x.el === p);
+          if (t) { for (const pr of t.props) needed.add(t.s + "\\u0002" + pr); break; }
+        }
+      }
+      return { elements: a.length, removed: targets.length, diffs, needed: [...needed] };
+    },
   };
 })()`;
 
@@ -228,6 +304,48 @@ export async function runAudit(candidateCss, important, { expectedRules, log = c
     await s.stop();
   }
   return { states, needed, ruleCountOk };
+}
+
+/** يمر على الحالات ويقيس أثر إزالة الأنماط الداخلية (عدا keep). يعيد الأنماط التي لها أثر. */
+export async function runInlineAudit(styles, keep, { log = console.log, perProp = false } = {}) {
+  const s = await startSanad();
+  const browser = await launchBrowser();
+  const page = await browser.newPage();
+  await page.send("Runtime.enable");
+  await page.send("Page.enable");
+  const needed = new Set();
+  let total = 0;
+  try {
+    let lastViewport = "";
+    for (const st of STATES) {
+      const vp = `${st.vw}x${st.vh}${st.mobile}`;
+      if (vp !== lastViewport) { await page.viewport(st.vw, st.vh, st.mobile); lastViewport = vp; }
+      await page.navigate(`${s.base}/`);
+      await page.evaluate(`document.documentElement.setAttribute("data-theme", ${JSON.stringify(st.theme)})`);
+      await new Promise((r) => setTimeout(r, 2200));
+      await page.evaluate("window.sanadModePicker?.close(); try { localStorage.clear() } catch {}");
+      if (st.setup) await page.evaluate(st.setup);
+      await new Promise((r) => setTimeout(r, st.wait || 600));
+      await page.evaluate(PAGE_LIB);
+      let r;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        r = await page.evaluate(perProp
+          ? `window.__cssAudit.compareInlineProps(${JSON.stringify(styles)}, ${JSON.stringify(keep)})`
+          : `window.__cssAudit.compareInline(${JSON.stringify(styles)}, ${JSON.stringify(keep)})`);
+        if (!r.unstable) break;
+        await new Promise((res) => setTimeout(res, 1500));
+      }
+      if (r.unstable) throw new Error(`الحالة ${st.name} لم تستقر للقياس`);
+      for (const k of r.needed) needed.add(k);
+      total += r.diffs;
+      log(`${r.diffs ? "✗" : "✓"} ${st.name.padEnd(34)} أُزيل ${r.removed} نمطاً  ${r.diffs} فرق`);
+    }
+  } finally {
+    page.close();
+    await browser.close();
+    await s.stop();
+  }
+  return { needed, total };
 }
 
 // تشغيل مباشر: مقارنة ملف مرشّح بالحالي

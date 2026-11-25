@@ -133,7 +133,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
               <button class="memory-add-btn v-quiet" id="sysRefreshBtn" type="button">🔄 تحديث</button>
             </div>
           </div>
-          <div id="sysCleanAlert" style="display: none; padding: 10px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 14px; line-height: 1.6;"></div>
+          <div id="sysCleanAlert" style="padding: 10px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 14px; line-height: 1.6;"></div>
           
           <div class="sys-grid" id="sysGrid" style="margin-bottom: 18px;">
             <!-- Rendered by JS -->
@@ -160,8 +160,8 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
               <button class="memory-add-btn v-primary v-sm" id="sysScanLargeFilesBtn" type="button">🔍 فحص أكبر الملفات الآن</button>
             </div>
             <p style="font-size: 12px; color: var(--muted); margin: 0 0 10px 0;">يكتشف ملفات الفيديو، المثبتات، الحزم المضغوطة، وقواعد البيانات الكبيرة في مجلداتك لتفريغ المساحة بسهولة.</p>
-            <div id="sysLargeFilesList" style="display: flex; flex-direction: column; gap: 8px;">
-              <div style="font-size: 12px; color: var(--muted); text-align: center; padding: 12px;">اضغط "فحص أكبر الملفات الآن" لعرض قائمة أضخم الملفات المخزنة.</div>
+            <div id="sysLargeFilesList" style="display: flex; flex-direction: column;">
+              <div style="font-size: 12px; color: var(--muted); text-align: center;">اضغط "فحص أكبر الملفات الآن" لعرض قائمة أضخم الملفات المخزنة.</div>
             </div>
           </div>
         </div>
@@ -239,7 +239,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
                   <tr><th>المنفذ</th><th>البروتوكول</th><th>البرنامج</th><th>PID</th><th>العنوان</th><th>الإجراء</th></tr>
                 </thead>
                 <tbody id="netPortsBody">
-                  <tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 16px;">جاري فحص المنافذ...</td></tr>
+                  <tr><td colspan="6" style="text-align: center; padding: 16px;">جاري فحص المنافذ...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -260,7 +260,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             يقوم «سند» بتنظيم وتصنيف ملفات سطح المكتب والتنزيلات بأمان تام دون حذف أي ملف، وتجهيز بيئات العمل كبرنامج ArcGIS Pro.
           </p>
 
-          <div id="desktopStatusAlert" style="display: none; padding: 12px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 14px; line-height: 1.6; white-space: pre-line;"></div>
+          <div id="desktopStatusAlert" style="padding: 12px 14px; border-radius: 8px; background: rgba(35, 134, 54, 0.15); border: 1px solid rgba(35, 134, 54, 0.3); color: #3fb950; font-size: 13px; margin-bottom: 14px; line-height: 1.6; white-space: pre-line;"></div>
 
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px;">
             <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
@@ -276,7 +276,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             </div>
           </div>
 
-          <h3 style="font-size: 14px; margin-bottom: 10px;">⚡ بيئات العمل السريعة (Workspace Presets):</h3>
+          <h3>⚡ بيئات العمل السريعة (Workspace Presets):</h3>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="memory-add-btn v-secondary" id="presetGisBtn" type="button">🗺️ بيئة GIS (ArcGIS Pro + مجلد الخرائط)</button>
             <button class="memory-add-btn v-secondary" id="presetCodingBtn" type="button">💻 بيئة البرمجة والتطوير</button>
@@ -289,17 +289,17 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
     <!-- Autonomous Project Builder & Live Web Preview Modal -->
     <div class="memory-modal-backdrop" id="previewModalBackdrop">
       <div class="memory-modal" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle" style="max-width: 95vw; width: 1100px; height: 88vh; max-height: 88vh; display: flex; flex-direction: column;">
-        <div class="memory-header" style="flex-shrink: 0; padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div class="memory-header" style="flex-shrink: 0; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <h2 id="previewModalTitle" style="margin: 0; font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
               <span>🌐</span>
               <span>معاينة حية:</span>
-              <span id="previewProjectName" style="color: var(--accent); font-family: monospace;"></span>
+              <span id="previewProjectName"></span>
             </h2>
             <select id="previewProjectSelect" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; outline: none; cursor: pointer;" title="اختر مشروعاً للمعاينة"></select>
-            <div style="display: inline-flex; gap: 2px; background: var(--surface); padding: 2px 4px; border-radius: 6px; border: 1px solid var(--border);">
-              <button id="previewDesktopBtn" type="button" style="background: var(--brand); color: var(--on-brand); border: none; cursor: pointer; padding: 2px 8px; font-size: 11px; border-radius: 4px; font-weight: 600;" title="شاشة حاسوب">🖥️ حاسوب</button>
-              <button id="previewMobileBtn" type="button" style="background: transparent; color: var(--muted); border: none; cursor: pointer; padding: 2px 8px; font-size: 11px; border-radius: 4px;" title="شاشة جوال">📱 جوال</button>
+            <div style="display: inline-flex;">
+              <button id="previewDesktopBtn" type="button" style="background: var(--brand); font-weight: 600;" title="شاشة حاسوب">🖥️ حاسوب</button>
+              <button id="previewMobileBtn" type="button" title="شاشة جوال">📱 جوال</button>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -309,8 +309,8 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
             <button class="memory-close-btn" id="previewCloseBtn" type="button" aria-label="إغلاق">✕</button>
           </div>
         </div>
-        <div class="memory-body" style="flex: 1; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: stretch; background: #0b0f19;">
-          <iframe id="projectPreviewIframe" style="width: 100%; height: 100%; border: none; background: #ffffff; transition: width 0.25s ease;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        <div class="memory-body" style="flex: 1; overflow: hidden; justify-content: center; align-items: stretch;">
+          <iframe id="projectPreviewIframe" style="width: 100%; height: 100%; border: none; background: #ffffff;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
         </div>
       </div>
     </div>

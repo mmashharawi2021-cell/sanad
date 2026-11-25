@@ -71,7 +71,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
           <span>بث سند المباشر (LIVE)</span>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span id="liveFpsBadge" style="font-size: 10px; color: var(--accent); font-family: monospace;">60 FPS</span>
+          <span id="liveFpsBadge" style="font-size: 10px;">60 FPS</span>
           <button id="liveCloseBtn" type="button" title="إغلاق البث" style="background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 6px;">✕</button>
         </div>
       </div>
@@ -83,7 +83,7 @@ document.currentScript.insertAdjacentHTML("beforebegin", String.raw`
           <span>👁️</span>
           <span>ماذا ترى في الشاشة الآن؟</span>
         </button>
-        <button class="live-hud-btn live-hud-btn-primary" id="liveAgentActBtn" type="button" style="background: linear-gradient(135deg, rgba(0, 242, 254, 0.35), rgba(112, 0, 255, 0.4)); border-color: rgba(0, 242, 254, 0.6);" title="تكليف سند بمهمة بصرية متسلسلة على الشاشة (النقر، الكتابة، والتنفيذ الذاتي)">
+        <button class="live-hud-btn live-hud-btn-primary" id="liveAgentActBtn" type="button" title="تكليف سند بمهمة بصرية متسلسلة على الشاشة (النقر، الكتابة، والتنفيذ الذاتي)">
           <span>🤖</span>
           <span>تكليف سند بمهمة على الشاشة</span>
         </button>
