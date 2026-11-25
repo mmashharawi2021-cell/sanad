@@ -15,6 +15,9 @@ const OUTPUT = join(HERE, "output");
 const UPDATE = process.argv.includes("--update");
 // الفرق الطبيعي بين تشغيلين (الساعة والأرقام الحية) قيس ≤ 0.65%؛ أكثر من 2% ← تغيّر حقيقي في الشكل.
 const MAX_DIFF = 0.02;
+// نوافذ تعرض بيانات حية متغيرة (المنافذ المفتوحة، حالة الاتصال، استهلاك المعالج): قيس تغيّرها بين تشغيلين
+// دون أي تعديل في الكود حتى ~6%. حد أعلى لها فقط، حتى لا تُحدَّث لقطاتها في كل مرحلة بلا سبب.
+const LIVE_DATA_MAX_DIFF = { "modal-netMaestroBtn": 0.09, "modal-sysStatsBtn": 0.06 };
 // اللقطات المرجعية تحوي بيانات شخصية (ملفات سطح المكتب، الذاكرة، المشاريع) والمستودع عام:
 // تبقى على الجهاز فقط (tests/ui/baseline و output مستثناة من git).
 
@@ -34,7 +37,7 @@ const MODALS = [
 // مشكلات قائمة قبل إعادة البناء، موثّقة هنا حتى لا تُخفي أخطاء جديدة. كل بند يُصلَح في مرحلة لاحقة ثم يُحذف من هنا.
 // (أُصلحت في المرحلة 3: معاينة مشروع بلا index.html كانت تعطي 404 — صارت تعرض رسالة واضحة.)
 const KNOWN_ERRORS = [];
-const GLOBALS = ["sendMessage", "sanadNotify", "sanadConfirm", "sanadIntents", "sanadCommands", "sanadModePicker", "reloadModels", "openNetworkModal", "refreshBrainStatus"];
+const GLOBALS = ["sendMessage", "sanadNotify", "sanadConfirm", "sanadIntents", "sanadCommands", "sanadModelTools", "sanadModePicker", "reloadModels", "openNetworkModal", "refreshBrainStatus"];
 
 const results = [];
 const record = (name, ok, detail = "") => { results.push({ name, ok, detail }); console.log(`${ok ? "✓" : "✗"} ${name}${detail ? `  — ${detail}` : ""}`); };
@@ -88,7 +91,8 @@ async function shot(name) {
     return;
   }
   const ratio = diffRatio(decodePng(png), decodePng(readFileSync(base)));
-  record(`مطابقة الشكل: ${name}`, ratio <= MAX_DIFF, `${(ratio * 100).toFixed(2)}% مختلف`);
+  const limit = LIVE_DATA_MAX_DIFF[name] ?? MAX_DIFF;
+  record(`مطابقة الشكل: ${name}`, ratio <= limit, `${(ratio * 100).toFixed(2)}% مختلف${limit !== MAX_DIFF ? ` (بيانات حية، الحد ${limit * 100}%)` : ""}`);
 }
 
 // ورقة «وضع العمل» تظهر عند كل فتح؛ keepPicker يُبقيها لاختبارها، وإلا تُغلق (دون تغيير الوضع) قبل اللقطة.
@@ -138,6 +142,26 @@ try {
     record("أوامر سند في لوحة Ctrl+K", p > 0, `${p}`);
     // محادثة الاختبار تُحفظ في المتصفح؛ تُمسح حتى لا تظهر في لقطات النوافذ التالية
     await page.evaluate("localStorage.clear()");
+  }
+
+  // 2ج) أدوات النموذج: طلب غير صالح لا يُرسل أي طلب، وكتلة بايثون تحمل زر «احفظ وشغّل»
+  {
+    const r = await page.evaluate(`(async () => {
+      const before = performance.getEntriesByType("resource").length;
+      const a = { role: "assistant", content: 'حاضر <tool_use><tool_name>daily_routine</tool_name><arguments>{"routine":"evil"}</arguments></tool_use>' };
+      await checkAndExecuteModelTools(a);
+      const sent = performance.getEntriesByType("resource").slice(before).filter((e) => e.name.includes("/api/")).length;
+      newConversation();
+      const conv = activeConv();
+      conv.messages.push({ role: "user", content: "مثال" }, { role: "assistant", content: ["\x60\x60\x60python", "print(1)", "\x60\x60\x60", "\x60\x60\x60bash", "ls", "\x60\x60\x60"].join(String.fromCharCode(10)) });
+      renderThread();
+      const run = document.querySelectorAll("#thread .code-run").length;
+      const codes = document.querySelectorAll("#thread .code").length;
+      localStorage.clear();
+      return { blocked: /لم يُنفَّذ طلب الأداة/.test(a.content) && sent === 0, run, codes };
+    })()`);
+    record("أداة نموذج غير صالحة لا تُرسل أي طلب", r.blocked);
+    record("زر «احفظ وشغّل» لكود بايثون فقط", r.codes === 2 && r.run === 1, `كتل: ${r.codes}، أزرار: ${r.run}`);
   }
 
   // 3) كل نافذة آمنة تُفتح

@@ -5387,3 +5387,9 @@ body.island-only-mode .ios-tabs { display: none; }
 
 /* وضع «دون اتصال»: حد طلبات OpenRouter لا يخص النماذج المحلية */
 body.work-offline #stats { display: none; }
+
+/* زر «احفظ وشغّل» في رأس كتلة الكود (public/code-run.js): يجاور «نسخ» ويبرز بلون العلامة */
+.code-head .code-run { margin-inline-start: auto; color: var(--brand); font-weight: 600; }
+.code-head .code-run:hover { color: var(--brand); background: var(--brand-soft); box-shadow: none; }
+.code-head .code-run:disabled { opacity: 0.55; cursor: progress; }
+.code-head .code-run:focus-visible, .code-head .code-copy:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
